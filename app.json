@@ -1,0 +1,34 @@
+{
+  "expo": {
+    "name": "Mefie",
+    "slug": "mefie",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "scheme": "mefie",
+    "userInterfaceStyle": "dark",
+    "plugins": [
+      "expo-router",
+      ["expo-camera", {"cameraPermission": "Mefie needs camera access to capture shared moments."}],
+      ["expo-image-picker", {"photosPermission": "Mefie needs photo access to save and share your moments."}]
+    ],
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "app.mefie.mobile",
+      "associatedDomains": ["applinks:mefie.app"]
+    },
+    "android": {
+      "package": "app.mefie.mobile",
+      "intentFilters": [
+        {
+          "action": "VIEW",
+          "autoVerify": true,
+          "data": [{"scheme": "https", "host": "mefie.app", "pathPrefix": "/e"}],
+          "category": ["BROWSABLE", "DEFAULT"]
+        }
+      ]
+    },
+    "extra": {
+      "router": {"origin": false}
+    }
+  }
+}
