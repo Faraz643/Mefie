@@ -40,10 +40,11 @@ export default function CameraScreen(){
     if(!ref.current||busy||!cameraReady)return;
     setBusy(true);setMessage('');await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     try{
-      // Android can reject capture if the preview has only just become ready.
-      await new Promise(resolve=>setTimeout(resolve,150));
+      // Some Android camera HALs reject a processed capture immediately after preview startup.
+      // skipProcessing avoids the native post-processing path that triggers that rejection.
+      await new Promise(resolve=>setTimeout(resolve,250));
       if(!ref.current)throw new Error('Camera is not ready.');
-      const photo=await ref.current.takePictureAsync({quality:0.9,skipProcessing:false});
+      const photo=await ref.current.takePictureAsync({quality:0.8,skipProcessing:true});
       if(!photo?.uri)throw new Error('Could not capture the photo.');
       await upload(photo.uri,photo.width,photo.height);
       await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
