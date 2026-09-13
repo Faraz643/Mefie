@@ -18,8 +18,8 @@ export default function HomeScreen() {
       <Text style={styles.kicker}>Good morning, {displayName} 👋</Text>
       <Text style={styles.title}>Same moments.{`\n`}Everyone's view.</Text>
     </View>
-    <GlassAction primary label="Create an event" subtitle="Get a link. Start sharing." onPress={() => router.push('/create-event')} icon={<MaterialCommunityIcons name="plus" size={32} color={colors.black} />} />
-    <GlassAction label="Join an event" subtitle="Scan or enter a link." onPress={() => router.push('/join-event')} icon={<MaterialCommunityIcons name="link-variant" size={28} color={colors.white} />} />
+    <GlassAction primary label="Create an event" onPress={() => router.push('/create-event')} icon={<MaterialCommunityIcons name="plus" size={27} color={colors.black} />} />
+    <GlassAction label="Join an event" onPress={() => router.push('/join-event')} icon={<MaterialCommunityIcons name="link-variant" size={24} color={colors.white} />} />
     <View style={styles.eventsSection}><View style={styles.sectionRow}><SectionTitle>Your events</SectionTitle>{events.length > 0 ? <Pressable onPress={() => router.push('/events')}><Text style={styles.seeAll}>See all <Text style={styles.seeArrow}>›</Text></Text></Pressable> : null}</View>{events.length === 0 ? <GlassCard><Text style={styles.emptyTitle}>Your moments start here.</Text><Text style={styles.emptySub}>Create an event and invite your people.</Text></GlassCard> : <View style={styles.grid}>{events.slice(0, 4).map(e => <Pressable key={e.id} onPress={() => router.push({ pathname:'/event/[id]', params:{id:e.id} })} style={styles.eventCard}><View style={styles.cover}>{e.cover ? <Image source={{ uri: e.cover }} style={styles.coverImage} /> : null}<View style={styles.eventInfo}><Text style={styles.eventName} numberOfLines={1}>{e.name}</Text><Text style={styles.eventMeta}>{e.people || '—'} people · {e.photos || '—'} photos</Text></View></View></Pressable>)}</View>}</View>
   </Screen><BottomNav active="home" /></View>;
 }
