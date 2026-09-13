@@ -15,20 +15,20 @@ export default function HomeScreen() {
   return <View style={styles.root}><Screen>
     <Header title="Mefie" right={<IconButton accessibilityLabel="Open profile" onPress={() => router.push('/you')}><Text style={styles.avatarText}>{displayName.slice(0,1).toUpperCase()}</Text></IconButton>} />
     <View style={styles.hero}>
-      <Text style={styles.kicker}>Good morning, {displayName} 👋</Text>
+      <Text style={styles.greeting}>Hey {displayName} 👋</Text>
       <Text style={styles.title}>Same moments.{`\n`}Everyone's view.</Text>
     </View>
-    <GlassAction primary label="Create an event" onPress={() => router.push('/create-event')} icon={<MaterialCommunityIcons name="plus" size={27} color={colors.black} />} />
-    <GlassAction label="Join an event" onPress={() => router.push('/join-event')} icon={<MaterialCommunityIcons name="link-variant" size={24} color={colors.white} />} />
+    <GlassAction primary label="Create an event" onPress={() => router.push('/create-event')} icon={<MaterialCommunityIcons name="plus" size={30} color={colors.black} />} />
+    <GlassAction label="Join an event" onPress={() => router.push('/join-event')} icon={<MaterialCommunityIcons name="link-variant" size={26} color={colors.white} />} />
     <View style={styles.eventsSection}><View style={styles.sectionRow}><SectionTitle>Your events</SectionTitle>{events.length > 0 ? <Pressable onPress={() => router.push('/events')}><Text style={styles.seeAll}>See all <Text style={styles.seeArrow}>›</Text></Text></Pressable> : null}</View>{events.length === 0 ? <GlassCard><Text style={styles.emptyTitle}>Your moments start here.</Text><Text style={styles.emptySub}>Create an event and invite your people.</Text></GlassCard> : <View style={styles.grid}>{events.slice(0, 4).map(e => <Pressable key={e.id} onPress={() => router.push({ pathname:'/event/[id]', params:{id:e.id} })} style={styles.eventCard}><View style={styles.cover}>{e.cover ? <Image source={{ uri: e.cover }} style={styles.coverImage} /> : null}<View style={styles.eventInfo}><Text style={styles.eventName} numberOfLines={1}>{e.name}</Text><Text style={styles.eventMeta}>{e.people || '—'} people · {e.photos || '—'} photos</Text></View></View></Pressable>)}</View>}</View>
   </Screen><BottomNav active="home" /></View>;
 }
 
 const styles=StyleSheet.create({
   root:{flex:1,backgroundColor:'#0A0F15'},
-  hero:{paddingTop:46,paddingBottom:8},
-  kicker:{color:colors.muted,fontSize:15,fontWeight:'600'},
-  title:{color:colors.white,fontSize:39,lineHeight:42,fontWeight:'800',letterSpacing:-1.25,marginTop:8},
+  hero:{paddingTop:30,paddingBottom:8},
+  greeting:{color:colors.white,fontSize:34,lineHeight:40,fontWeight:'500',letterSpacing:-0.8},
+  title:{color:'rgba(255,255,255,0.88)',fontSize:21,lineHeight:27,fontWeight:'400',letterSpacing:-0.2,marginTop:2},
   avatarText:{color:colors.white,fontSize:17,fontWeight:'700'},
   eventsSection:{marginTop:10},
   sectionRow:{flexDirection:'row',alignItems:'center',justifyContent:'space-between'},
