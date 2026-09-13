@@ -66,7 +66,7 @@ const styles = StyleSheet.create({
   markA: { position: 'absolute', width: 17, height: 20, borderRadius: 6, borderWidth: 2, borderColor: '#FFF', left: 7, top: 7 },
   markB: { position: 'absolute', width: 17, height: 20, borderRadius: 6, borderWidth: 2, borderColor: '#C9D7F5', left: 11, top: 7 },
   brand: { color: colors.white, fontSize: 21, fontWeight: '800', letterSpacing: -0.6 },
-  nav: { position: 'absolute', left: 9, right: 9, minHeight: 92, borderRadius: 28, borderWidth: 1, borderColor: 'rgba(255,255,255,0.10)', overflow: 'hidden', ...shadows },
+  nav: { position: 'absolute', left: 0, right: 0, minHeight: 92, borderRadius: 28, borderWidth: 1, borderColor: 'rgba(255,255,255,0.10)', overflow: 'hidden', ...shadows },
   navInner: { flex: 1, minHeight: 92, backgroundColor: 'rgba(31,39,48,0.76)', flexDirection: 'row', justifyContent: 'space-around', alignItems: 'center', paddingTop: 5, paddingBottom: 7 },
   navItem: { alignItems: 'center', justifyContent: 'center', minWidth: 82, gap: 3 },
   navText: { color: 'rgba(255,255,255,0.52)', fontSize: 13, lineHeight: 16, fontWeight: '500' },
