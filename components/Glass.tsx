@@ -1,4 +1,5 @@
 import { BlurView } from 'expo-blur';
+import { ChevronRight } from 'lucide-react-native';
 import { Pressable, StyleSheet, Text, TextInput, View, ViewStyle } from 'react-native';
 import { colors, radii, shadows } from '../lib/theme';
 
@@ -6,16 +7,27 @@ export function GlassCard({ children, style }: { children: React.ReactNode; styl
   return <BlurView intensity={42} tint="dark" style={[styles.card, style]}>{children}</BlurView>;
 }
 
-export function GlassButton({ label, onPress, primary = false, icon }: { label: string; onPress?: () => void; primary?: boolean; icon?: string }) {
-  return <Pressable onPress={onPress} style={({ pressed }) => [styles.button, primary && styles.primary, pressed && styles.pressed]}>
-    {icon ? <View style={[styles.buttonIcon, primary && styles.primaryIcon]}><Text style={[styles.iconText, primary && styles.primaryIconText]}>{icon}</Text></View> : null}
+export function GlassButton({ label, onPress, primary = false, icon, disabled = false }: { label: string; onPress?: () => void; primary?: boolean; icon?: React.ReactNode; disabled?: boolean }) {
+  return <Pressable disabled={disabled} onPress={onPress} style={({ pressed }) => [styles.button, primary && styles.primary, disabled && styles.disabled, pressed && styles.pressed]}>
+    {icon ? <View style={[styles.buttonIcon, primary && styles.primaryIcon]}>{icon}</View> : null}
     <Text style={[styles.buttonLabel, primary && styles.primaryLabel]}>{label}</Text>
-    <Text style={[styles.buttonArrow, primary && styles.primaryLabel]}>›</Text>
+    <ChevronRight size={20} strokeWidth={2.1} color={primary ? colors.black : colors.white} />
   </Pressable>;
 }
 
-export function IconButton({ label, onPress }: { label: string; onPress?: () => void }) {
-  return <Pressable onPress={onPress} style={({ pressed }) => [styles.iconButton, pressed && styles.pressed]}><Text style={styles.iconButtonText}>{label}</Text></Pressable>;
+export function GlassAction({ label, subtitle, onPress, primary = false, icon }: { label: string; subtitle?: string; onPress?: () => void; primary?: boolean; icon: React.ReactNode }) {
+  return <Pressable onPress={onPress} style={({ pressed }) => [styles.action, primary ? styles.actionPrimary : styles.actionGlass, pressed && styles.pressed]}>
+    <View style={[styles.actionIcon, primary ? styles.actionIconPrimary : styles.actionIconGlass]}>{icon}</View>
+    <View style={styles.actionCopy}>
+      <Text style={[styles.actionTitle, primary && styles.actionTitlePrimary]}>{label}</Text>
+      {subtitle ? <Text style={[styles.actionSubtitle, primary && styles.actionSubtitlePrimary]}>{subtitle}</Text> : null}
+    </View>
+    <ChevronRight size={24} strokeWidth={2.1} color={primary ? colors.black : colors.white} />
+  </Pressable>;
+}
+
+export function IconButton({ children, onPress, accessibilityLabel }: { children: React.ReactNode; onPress?: () => void; accessibilityLabel: string }) {
+  return <Pressable accessibilityRole="button" accessibilityLabel={accessibilityLabel} onPress={onPress} style={({ pressed }) => [styles.iconButton, pressed && styles.pressed]}>{children}</Pressable>;
 }
 
 export function GlassInput({ label, value, onChangeText, placeholder }: { label?: string; value: string; onChangeText: (v: string) => void; placeholder?: string }) {
@@ -26,20 +38,28 @@ export function SectionTitle({ children }: { children: React.ReactNode }) { retu
 
 const styles = StyleSheet.create({
   card: { overflow: 'hidden', backgroundColor: colors.glass, borderColor: colors.line, borderWidth: 1, borderRadius: radii.card, padding: 18, ...shadows },
-  button: { minHeight: 62, borderRadius: radii.button, backgroundColor: colors.glassLight, borderWidth: 1, borderColor: colors.line, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 14, flexDirection: 'row', ...shadows },
-  primary: { backgroundColor: 'rgba(255,255,255,0.94)', borderColor: 'rgba(255,255,255,0.98)' },
-  pressed: { transform: [{ scale: 0.985 }], opacity: 0.88 },
-  buttonIcon: { width: 38, height: 38, borderRadius: 19, backgroundColor: 'rgba(255,255,255,0.15)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.18)', alignItems: 'center', justifyContent: 'center', marginRight: 12 },
-  primaryIcon: { backgroundColor: 'rgba(12,17,23,0.08)', borderColor: 'rgba(12,17,23,0.12)' },
-  iconText: { color: colors.white, fontSize: 20, fontWeight: '500' },
-  primaryIconText: { color: colors.black },
-  buttonLabel: { color: colors.white, fontSize: 16, fontWeight: '700', flex: 1 },
+  action: { minHeight: 112, borderRadius: 27, borderWidth: 1, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 18, paddingVertical: 15, overflow: 'hidden', ...shadows },
+  actionPrimary: { backgroundColor: 'rgba(250,252,255,0.96)', borderColor: 'rgba(255,255,255,0.98)' },
+  actionGlass: { backgroundColor: 'rgba(35,43,52,0.36)', borderColor: 'rgba(255,255,255,0.25)' },
+  actionIcon: { width: 62, height: 62, borderRadius: 31, alignItems: 'center', justifyContent: 'center', borderWidth: 1 },
+  actionIconPrimary: { backgroundColor: 'rgba(255,255,255,0.72)', borderColor: 'rgba(15,20,27,0.72)' },
+  actionIconGlass: { backgroundColor: 'rgba(255,255,255,0.14)', borderColor: 'rgba(255,255,255,0.25)' },
+  actionCopy: { flex: 1, paddingHorizontal: 16 },
+  actionTitle: { color: colors.white, fontSize: 20, fontWeight: '800', letterSpacing: -0.35 },
+  actionTitlePrimary: { color: colors.black },
+  actionSubtitle: { color: colors.muted, fontSize: 13, marginTop: 4 },
+  actionSubtitlePrimary: { color: 'rgba(16,21,28,0.58)' },
+  button: { minHeight: 58, borderRadius: radii.button, backgroundColor: colors.glassLight, borderWidth: 1, borderColor: colors.line, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16 },
+  primary: { backgroundColor: colors.white, borderColor: colors.white },
+  disabled: { opacity: 0.5 },
+  buttonIcon: { marginRight: 10 },
+  primaryIcon: { opacity: 0.9 },
+  buttonLabel: { color: colors.white, fontSize: 15, fontWeight: '750', flex: 1 },
   primaryLabel: { color: colors.black },
-  buttonArrow: { color: colors.white, fontSize: 25, fontWeight: '300', marginLeft: 8 },
-  iconButton: { width: 44, height: 44, borderRadius: 22, borderWidth: 1, borderColor: colors.lineStrong, backgroundColor: 'rgba(255,255,255,0.12)', alignItems: 'center', justifyContent: 'center', ...shadows },
-  iconButtonText: { color: colors.white, fontSize: 18, fontWeight: '600' },
   inputWrap: { backgroundColor: 'rgba(255,255,255,0.12)', borderWidth: 1, borderColor: colors.line, borderRadius: 20, paddingHorizontal: 15, paddingVertical: 12 },
   inputLabel: { color: colors.muted, fontSize: 12, marginBottom: 5, fontWeight: '600' },
   input: { color: colors.white, fontSize: 16, paddingVertical: 4, minHeight: 26 },
-  sectionTitle: { color: colors.white, fontSize: 19, fontWeight: '800', marginBottom: 12, letterSpacing: -0.3 },
+  sectionTitle: { color: colors.white, fontSize: 20, fontWeight: '800', marginBottom: 12, letterSpacing: -0.3 },
+  iconButton: { width: 44, height: 44, borderRadius: 22, borderWidth: 1, borderColor: colors.lineStrong, backgroundColor: 'rgba(255,255,255,0.12)', alignItems: 'center', justifyContent: 'center', ...shadows },
+  pressed: { transform: [{ scale: 0.985 }], opacity: 0.88 },
 });
