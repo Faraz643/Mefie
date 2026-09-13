@@ -1,5 +1,5 @@
 import { LinearGradient } from 'expo-linear-gradient';
-import { CalendarDays, ChevronLeft, Home, Images, UserRound } from 'lucide-react-native';
+import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { useRouter } from 'expo-router';
 import React from 'react';
 import { ImageBackground, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
@@ -17,17 +17,17 @@ export function Screen({ children, backgroundImage = hero }: { children: React.R
   </ImageBackground>;
 }
 
-export function BackButton() { const router = useRouter(); return <IconButton accessibilityLabel="Go back" onPress={() => router.back()}><ChevronLeft size={22} strokeWidth={2.1} color={colors.white} /></IconButton>; }
+export function BackButton() { const router = useRouter(); return <IconButton accessibilityLabel="Go back" onPress={() => router.back()}><MaterialCommunityIcons name="chevron-left" size={25} color={colors.white} /></IconButton>; }
 
 export function BottomNav({ active = 'home' }: { active?: 'home'|'events'|'you' }) {
   const router = useRouter();
   const items = [
-    { key: 'home' as const, label: 'Home', Icon: Home, path: '/' },
-    { key: 'events' as const, label: 'Events', Icon: Images, path: '/events' },
-    { key: 'you' as const, label: 'You', Icon: UserRound, path: '/you' },
+    { key: 'home' as const, label: 'Home', icon: 'home-outline' as const, path: '/' },
+    { key: 'events' as const, label: 'Events', icon: 'image-multiple-outline' as const, path: '/events' },
+    { key: 'you' as const, label: 'You', icon: 'account-outline' as const, path: '/you' },
   ];
-  return <View style={styles.nav}>{items.map(({ key, label, Icon, path }) => <Pressable key={key} onPress={() => router.replace(path)} style={styles.navItem}>
-    <View style={[styles.navIconWrap, active === key && styles.navIconActive]}><Icon size={23} strokeWidth={active === key ? 2.3 : 1.8} color={active === key ? colors.white : 'rgba(255,255,255,0.55)'} /></View>
+  return <View style={styles.nav}>{items.map(({ key, label, icon, path }) => <Pressable key={key} onPress={() => router.replace(path)} style={styles.navItem}>
+    <View style={[styles.navIconWrap, active === key && styles.navIconActive]}><MaterialCommunityIcons name={icon} size={24} color={active === key ? colors.white : 'rgba(255,255,255,0.55)'} /></View>
     <Text style={[styles.navText, active === key && styles.navTextSelected]}>{label}</Text>
   </Pressable>)}</View>;
 }
