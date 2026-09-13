@@ -1,5 +1,5 @@
 import { BlurView } from 'expo-blur';
-import { ChevronRight } from 'lucide-react-native';
+import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { Pressable, StyleSheet, Text, TextInput, View, ViewStyle } from 'react-native';
 import { colors, radii, shadows } from '../lib/theme';
 
@@ -11,7 +11,7 @@ export function GlassButton({ label, onPress, primary = false, icon, disabled = 
   return <Pressable disabled={disabled} onPress={onPress} style={({ pressed }) => [styles.button, primary && styles.primary, disabled && styles.disabled, pressed && styles.pressed]}>
     {icon ? <View style={[styles.buttonIcon, primary && styles.primaryIcon]}>{icon}</View> : null}
     <Text style={[styles.buttonLabel, primary && styles.primaryLabel]}>{label}</Text>
-    <ChevronRight size={20} strokeWidth={2.1} color={primary ? colors.black : colors.white} />
+    <MaterialCommunityIcons name="chevron-right" size={20} color={primary ? colors.black : colors.white} />
   </Pressable>;
 }
 
@@ -22,7 +22,7 @@ export function GlassAction({ label, subtitle, onPress, primary = false, icon }:
       <Text style={[styles.actionTitle, primary && styles.actionTitlePrimary]}>{label}</Text>
       {subtitle ? <Text style={[styles.actionSubtitle, primary && styles.actionSubtitlePrimary]}>{subtitle}</Text> : null}
     </View>
-    <ChevronRight size={24} strokeWidth={2.1} color={primary ? colors.black : colors.white} />
+    <MaterialCommunityIcons name="chevron-right" size={27} color={primary ? colors.black : colors.white} />
   </Pressable>;
 }
 
