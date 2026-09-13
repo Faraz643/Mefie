@@ -1,3 +1,4 @@
+import { BlurView } from 'expo-blur';
 import { LinearGradient } from 'expo-linear-gradient';
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { useRouter } from 'expo-router';
@@ -36,14 +37,22 @@ export function BottomNav({ active = 'home' }: { active?: 'home' | 'events' | 'y
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const items = [
-    { key: 'home' as const, label: 'Home', icon: 'home-outline' as const, path: '/' },
-    { key: 'events' as const, label: 'Events', icon: 'image-multiple-outline' as const, path: '/events' },
+    { key: 'home' as const, label: 'Home', icon: 'home' as const, path: '/' },
+    { key: 'events' as const, label: 'Events', icon: 'image-outline' as const, path: '/events' },
     { key: 'you' as const, label: 'You', icon: 'account-outline' as const, path: '/you' },
   ];
-  return <View style={[styles.nav, { bottom: Math.max(insets.bottom + 10, 18) }]}>{items.map(({ key, label, icon, path }) => <Pressable key={key} onPress={() => router.replace(path)} style={styles.navItem}>
-    <View style={[styles.navIconWrap, active === key && styles.navIconActive]}><MaterialCommunityIcons name={icon} size={24} color={active === key ? colors.white : 'rgba(255,255,255,0.55)'} /></View>
-    <Text style={[styles.navText, active === key && styles.navTextSelected]}>{label}</Text>
-  </Pressable>)}</View>;
+  return (
+    <BlurView intensity={62} tint="dark" style={[styles.nav, { bottom: Math.max(insets.bottom + 10, 18) }]}>
+      <View style={styles.navInner}>
+        {items.map(({ key, label, icon, path }) => <Pressable key={key} onPress={() => router.replace(path)} style={styles.navItem}>
+          <View style={styles.navIconWrap}>
+            <MaterialCommunityIcons name={icon} size={25} color={active === key ? colors.white : 'rgba(255,255,255,0.60)'} />
+          </View>
+          <Text style={[styles.navText, active === key && styles.navTextSelected]}>{label}</Text>
+        </Pressable>)}
+      </View>
+    </BlurView>
+  );
 }
 
 export function Header({ title, right }: { title: string; right?: React.ReactNode }) {
@@ -59,10 +68,10 @@ const styles = StyleSheet.create({
   markA: { position: 'absolute', width: 17, height: 20, borderRadius: 6, borderWidth: 2, borderColor: '#FFF', left: 7, top: 7 },
   markB: { position: 'absolute', width: 17, height: 20, borderRadius: 6, borderWidth: 2, borderColor: '#C9D7F5', left: 11, top: 7 },
   brand: { color: colors.white, fontSize: 21, fontWeight: '800', letterSpacing: -0.6 },
-  nav: { position: 'absolute', left: 14, right: 14, minHeight: 76, borderRadius: 27, backgroundColor: 'rgba(22,29,38,0.72)', flexDirection: 'row', justifyContent: 'space-around', paddingTop: 8, paddingBottom: 5, ...shadows },
+  nav: { position: 'absolute', left: 14, right: 14, minHeight: 76, borderRadius: 27, borderWidth: 1, borderColor: 'rgba(255,255,255,0.10)', overflow: 'hidden', ...shadows },
+  navInner: { flex: 1, minHeight: 76, backgroundColor: 'rgba(22,29,38,0.48)', flexDirection: 'row', justifyContent: 'space-around', paddingTop: 8, paddingBottom: 5 },
   navItem: { alignItems: 'center', minWidth: 76 },
   navIconWrap: { width: 42, height: 34, borderRadius: 17, alignItems: 'center', justifyContent: 'center' },
-  navIconActive: { backgroundColor: 'rgba(255,255,255,0.13)' },
   navText: { color: 'rgba(255,255,255,0.50)', fontSize: 11, marginTop: 2, fontWeight: '600' },
   navTextSelected: { color: colors.white },
 });
