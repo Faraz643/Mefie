@@ -21,7 +21,7 @@ export function Screen({ children, backgroundImage }: { children: React.ReactNod
     <View style={styles.bg}>
       <ImageBackground source={source} style={StyleSheet.absoluteFill} resizeMode="cover" />
       <LinearGradient colors={['rgba(5,9,14,0.02)', 'rgba(5,9,14,0.00)', 'rgba(5,9,14,0.10)', 'rgba(5,9,14,0.78)']} locations={[0, 0.34, 0.62, 1]} style={StyleSheet.absoluteFill} />
-      <ScrollView contentContainerStyle={[styles.content, { paddingTop: insets.top + 16, paddingBottom: insets.bottom + 128 }]} showsVerticalScrollIndicator={false}>
+      <ScrollView contentContainerStyle={[styles.content, { paddingTop: insets.top + 16, paddingBottom: insets.bottom + 138 }]} showsVerticalScrollIndicator={false}>
         {children}
       </ScrollView>
     </View>
@@ -42,12 +42,10 @@ export function BottomNav({ active = 'home' }: { active?: 'home' | 'events' | 'y
     { key: 'you' as const, label: 'You', icon: 'account-outline' as const, path: '/you' },
   ];
   return (
-    <BlurView intensity={62} tint="dark" style={[styles.nav, { bottom: Math.max(insets.bottom + 10, 18) }]}>
+    <BlurView intensity={72} tint="dark" style={[styles.nav, { bottom: Math.max(insets.bottom + 7, 12) }]}>
       <View style={styles.navInner}>
         {items.map(({ key, label, icon, path }) => <Pressable key={key} onPress={() => router.replace(path)} style={styles.navItem}>
-          <View style={styles.navIconWrap}>
-            <MaterialCommunityIcons name={icon} size={25} color={active === key ? colors.white : 'rgba(255,255,255,0.60)'} />
-          </View>
+          <MaterialCommunityIcons name={icon} size={29} color={active === key ? colors.white : 'rgba(255,255,255,0.62)'} />
           <Text style={[styles.navText, active === key && styles.navTextSelected]}>{label}</Text>
         </Pressable>)}
       </View>
@@ -68,10 +66,9 @@ const styles = StyleSheet.create({
   markA: { position: 'absolute', width: 17, height: 20, borderRadius: 6, borderWidth: 2, borderColor: '#FFF', left: 7, top: 7 },
   markB: { position: 'absolute', width: 17, height: 20, borderRadius: 6, borderWidth: 2, borderColor: '#C9D7F5', left: 11, top: 7 },
   brand: { color: colors.white, fontSize: 21, fontWeight: '800', letterSpacing: -0.6 },
-  nav: { position: 'absolute', left: 14, right: 14, minHeight: 76, borderRadius: 27, borderWidth: 1, borderColor: 'rgba(255,255,255,0.10)', overflow: 'hidden', ...shadows },
-  navInner: { flex: 1, minHeight: 76, backgroundColor: 'rgba(22,29,38,0.48)', flexDirection: 'row', justifyContent: 'space-around', paddingTop: 8, paddingBottom: 5 },
-  navItem: { alignItems: 'center', minWidth: 76 },
-  navIconWrap: { width: 42, height: 34, borderRadius: 17, alignItems: 'center', justifyContent: 'center' },
-  navText: { color: 'rgba(255,255,255,0.50)', fontSize: 11, marginTop: 2, fontWeight: '600' },
-  navTextSelected: { color: colors.white },
+  nav: { position: 'absolute', left: 9, right: 9, minHeight: 92, borderRadius: 28, borderWidth: 1, borderColor: 'rgba(255,255,255,0.10)', overflow: 'hidden', ...shadows },
+  navInner: { flex: 1, minHeight: 92, backgroundColor: 'rgba(31,39,48,0.76)', flexDirection: 'row', justifyContent: 'space-around', alignItems: 'center', paddingTop: 5, paddingBottom: 7 },
+  navItem: { alignItems: 'center', justifyContent: 'center', minWidth: 82, gap: 3 },
+  navText: { color: 'rgba(255,255,255,0.52)', fontSize: 13, lineHeight: 16, fontWeight: '500' },
+  navTextSelected: { color: colors.white, fontWeight: '600' },
 });
