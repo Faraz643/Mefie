@@ -1,4 +1,5 @@
 import { CameraView, useCameraPermissions } from 'expo-camera';
+import { File } from 'expo-file-system';
 import * as Haptics from 'expo-haptics';
 import * as ImagePicker from 'expo-image-picker';
 import { useLocalSearchParams, useRouter } from 'expo-router';
@@ -24,24 +25,31 @@ export default function CameraScreen(){
 
   const upload=async(uri:string,width?:number,height?:number)=>{
     if(!supabase)throw new Error('Cloud connection is not configured.');
+    setMessage('Joining event…');
     const participantId=await ensureParticipant(String(eventId),displayName);
     if(!participantId)throw new Error('Could not join this event.');
-    const response=await fetch(uri);
-    const blob=await response.blob();
+
+    // React Native's Blob/fetch(file://) path is unreliable for Supabase Storage.
+    // Read the local image as an ArrayBuffer and upload the bytes directly instead.
+    setMessage('Preparing photo…');
+    const file=new File(uri);
+    if(!file.exists)throw new Error('The captured photo could not be read from device storage.');
+    const body=await file.arrayBuffer();
+    if(!body.byteLength)throw new Error('The captured photo is empty.');
+
     const path=`${eventId}/${Date.now()}-${Math.random().toString(36).slice(2,10)}.jpg`;
-    const {error:uploadError}=await supabase.storage.from('photos').upload(path,blob,{contentType:'image/jpeg',upsert:false});
-    if(uploadError)throw uploadError;
+    setMessage('Uploading…');
+    const {error:uploadError}=await supabase.storage.from('photos').upload(path,body,{contentType:'image/jpeg',upsert:false});
+    if(uploadError)throw new Error(`Photo upload failed: ${uploadError.message}`);
     const {data:urlData}=supabase.storage.from('photos').getPublicUrl(path);
-    const {error:insertError}=await supabase.from('photos').insert({event_id:eventId,participant_id:participantId,storage_path:path,original_filename:`mefie-${Date.now()}.jpg`,file_size:blob.size,width:width||null,height:height||null,public_url:urlData.publicUrl});
-    if(insertError)throw insertError;
+    const {error:insertError}=await supabase.from('photos').insert({event_id:eventId,participant_id:participantId,storage_path:path,original_filename:`mefie-${Date.now()}.jpg`,file_size:body.byteLength,width:width||null,height:height||null,public_url:urlData.publicUrl});
+    if(insertError)throw new Error(`Photo record failed: ${insertError.message}`);
   };
 
   const capture=async()=>{
     if(!ref.current||busy||!cameraReady)return;
     setBusy(true);setMessage('');await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     try{
-      // Some Android camera HALs reject a processed capture immediately after preview startup.
-      // skipProcessing avoids the native post-processing path that triggers that rejection.
       await new Promise(resolve=>setTimeout(resolve,250));
       if(!ref.current)throw new Error('Camera is not ready.');
       const photo=await ref.current.takePictureAsync({quality:0.8,skipProcessing:true});
