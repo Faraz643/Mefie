@@ -22,7 +22,7 @@ export function GlassAction({ label, subtitle, onPress, primary = false, icon }:
       <Text style={[styles.actionTitle, primary && styles.actionTitlePrimary]}>{label}</Text>
       {subtitle ? <Text style={[styles.actionSubtitle, primary && styles.actionSubtitlePrimary]}>{subtitle}</Text> : null}
     </View>
-    <MaterialCommunityIcons name="chevron-right" size={27} color={primary ? colors.black : colors.white} />
+    <MaterialCommunityIcons name="chevron-right" size={26} color={primary ? colors.black : colors.white} />
   </Pressable>;
 }
 
@@ -37,29 +37,29 @@ export function GlassInput({ label, value, onChangeText, placeholder }: { label?
 export function SectionTitle({ children }: { children: React.ReactNode }) { return <Text style={styles.sectionTitle}>{children}</Text>; }
 
 const styles = StyleSheet.create({
-  card: { overflow: 'hidden', backgroundColor: colors.glass, borderColor: colors.line, borderWidth: 1, borderRadius: radii.card, padding: 18, ...shadows },
-  action: { minHeight: 112, borderRadius: 27, borderWidth: 1, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 18, paddingVertical: 15, overflow: 'hidden', ...shadows },
-  actionPrimary: { backgroundColor: 'rgba(250,252,255,0.96)', borderColor: 'rgba(255,255,255,0.98)' },
-  actionGlass: { backgroundColor: 'rgba(35,43,52,0.36)', borderColor: 'rgba(255,255,255,0.25)' },
-  actionIcon: { width: 62, height: 62, borderRadius: 31, alignItems: 'center', justifyContent: 'center', borderWidth: 1 },
-  actionIconPrimary: { backgroundColor: 'rgba(255,255,255,0.72)', borderColor: 'rgba(15,20,27,0.72)' },
-  actionIconGlass: { backgroundColor: 'rgba(255,255,255,0.14)', borderColor: 'rgba(255,255,255,0.25)' },
-  actionCopy: { flex: 1, paddingHorizontal: 16 },
-  actionTitle: { color: colors.white, fontSize: 20, fontWeight: '800', letterSpacing: -0.35 },
+  card: { overflow: 'hidden', backgroundColor: colors.glass, borderRadius: radii.card, padding: 18, ...shadows },
+  action: { minHeight: 96, borderRadius: 22, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 12, overflow: 'hidden', ...shadows },
+  actionPrimary: { backgroundColor: 'rgba(250,252,255,0.97)' },
+  actionGlass: { backgroundColor: 'rgba(35,43,52,0.52)' },
+  actionIcon: { width: 56, height: 56, borderRadius: 28, alignItems: 'center', justifyContent: 'center' },
+  actionIconPrimary: { backgroundColor: 'rgba(255,255,255,0.72)' },
+  actionIconGlass: { backgroundColor: 'rgba(255,255,255,0.13)' },
+  actionCopy: { flex: 1, paddingHorizontal: 15 },
+  actionTitle: { color: colors.white, fontSize: 19, fontWeight: '800', letterSpacing: -0.3 },
   actionTitlePrimary: { color: colors.black },
   actionSubtitle: { color: colors.muted, fontSize: 13, marginTop: 4 },
   actionSubtitlePrimary: { color: 'rgba(16,21,28,0.58)' },
-  button: { minHeight: 58, borderRadius: radii.button, backgroundColor: colors.glassLight, borderWidth: 1, borderColor: colors.line, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16 },
-  primary: { backgroundColor: colors.white, borderColor: colors.white },
+  button: { minHeight: 58, borderRadius: radii.button, backgroundColor: colors.glassLight, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16 },
+  primary: { backgroundColor: colors.white },
   disabled: { opacity: 0.5 },
   buttonIcon: { marginRight: 10 },
   primaryIcon: { opacity: 0.9 },
   buttonLabel: { color: colors.white, fontSize: 15, fontWeight: '750', flex: 1 },
   primaryLabel: { color: colors.black },
-  inputWrap: { backgroundColor: 'rgba(255,255,255,0.12)', borderWidth: 1, borderColor: colors.line, borderRadius: 20, paddingHorizontal: 15, paddingVertical: 12 },
+  inputWrap: { backgroundColor: 'rgba(255,255,255,0.12)', borderRadius: 20, paddingHorizontal: 15, paddingVertical: 12 },
   inputLabel: { color: colors.muted, fontSize: 12, marginBottom: 5, fontWeight: '600' },
   input: { color: colors.white, fontSize: 16, paddingVertical: 4, minHeight: 26 },
   sectionTitle: { color: colors.white, fontSize: 20, fontWeight: '800', marginBottom: 12, letterSpacing: -0.3 },
-  iconButton: { width: 44, height: 44, borderRadius: 22, borderWidth: 1, borderColor: colors.lineStrong, backgroundColor: 'rgba(255,255,255,0.12)', alignItems: 'center', justifyContent: 'center', ...shadows },
+  iconButton: { width: 44, height: 44, borderRadius: 22, backgroundColor: 'rgba(255,255,255,0.12)', alignItems: 'center', justifyContent: 'center', ...shadows },
   pressed: { transform: [{ scale: 0.985 }], opacity: 0.88 },
 });
