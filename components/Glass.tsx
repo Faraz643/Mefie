@@ -8,9 +8,10 @@ export function GlassCard({ children, style }: { children: React.ReactNode; styl
 }
 
 export function GlassButton({ label, onPress, primary = false, icon, disabled = false }: { label: string; onPress?: () => void; primary?: boolean; icon?: React.ReactNode; disabled?: boolean }) {
-  return <Pressable disabled={disabled} onPress={onPress} focusable={false} android_ripple={{ color: 'transparent' }} style={({ pressed }) => [styles.button, disabled && styles.disabled, pressed && styles.pressed]}>
-    <Text style={styles.buttonLabel}>{label}</Text>
-    <MaterialCommunityIcons name="chevron-right" size={21} color={colors.black} />
+  return <Pressable disabled={disabled} onPress={onPress} focusable={false} android_ripple={{ color: 'transparent' }} style={({ pressed }) => [styles.button, primary && styles.primary, disabled && styles.disabled, pressed && styles.pressed]}>
+    {icon ? <View style={[styles.buttonIcon, primary && styles.primaryIcon]}>{icon}</View> : null}
+    <Text style={[styles.buttonLabel, primary && styles.primaryLabel]}>{label}</Text>
+    <MaterialCommunityIcons name="chevron-right" size={20} color={primary ? colors.black : colors.white} />
   </Pressable>;
 }
 
@@ -62,9 +63,13 @@ const styles = StyleSheet.create({
   actionTitlePrimary: { color: colors.black },
   actionSubtitle: { color: colors.muted, fontSize: 13, marginTop: 4, backgroundColor: 'transparent' },
   actionSubtitlePrimary: { color: 'rgba(16,21,28,0.58)' },
-  button: { height: 66, borderRadius: radii.pill, backgroundColor: 'rgba(250,252,255,0.98)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.86)', flexDirection: 'row', alignItems: 'center', paddingHorizontal: 22, ...shadows },
+  button: { minHeight: 58, borderRadius: radii.button, backgroundColor: colors.glassLight, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, borderWidth: 1, borderColor: 'rgba(255,255,255,0.14)' },
+  primary: { backgroundColor: colors.white, borderColor: 'rgba(255,255,255,0.82)' },
   disabled: { opacity: 0.5 },
-  buttonLabel: { color: colors.black, fontSize: 16, fontWeight: '700', letterSpacing: -0.15, flex: 1, textAlign: 'center' },
+  buttonIcon: { marginRight: 10 },
+  primaryIcon: { opacity: 0.9 },
+  buttonLabel: { color: colors.white, fontSize: 15, fontWeight: '750', flex: 1 },
+  primaryLabel: { color: colors.black },
   inputWrap: { backgroundColor: 'rgba(255,255,255,0.12)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.16)', borderRadius: 20, paddingHorizontal: 15, paddingVertical: 12 },
   inputLabel: { color: colors.muted, fontSize: 12, marginBottom: 5, fontWeight: '600' },
   input: { color: colors.white, fontSize: 16, paddingVertical: 4, minHeight: 26 },
