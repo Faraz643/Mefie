@@ -5,15 +5,81 @@ import React, { useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { BackButton, Screen } from '../components/Screen';
 import { GlassButton, GlassCard, GlassInput } from '../components/Glass';
-import { colors } from '../lib/theme';
-import { ensureParticipant, supabase } from '../lib/app-context';
+import { colors, radii, shadows } from '../lib/theme';
+import { ensureParticipant, supabase, useApp } from '../lib/app-context';
 
 function inviteFromValue(value: string) { const raw=value.trim().replace(/\/$/,''); const match=raw.match(/\/e\/([^/?#]+)/i); return (match?.[1]||raw).toUpperCase(); }
+
 export default function JoinEventScreen() {
-  const router=useRouter(); const [link,setLink]=useState(''); const [name,setName]=useState(''); const [scanning,setScanning]=useState(false); const [error,setError]=useState(''); const [perm,request]=useCameraPermissions();
-  const join=async(value=link)=>{setError('');const invite=inviteFromValue(value);if(!invite){setError('Paste an event link or code.');return;}if(!name.trim()){setError('Enter your name first.');return;}if(!supabase){setError('Cloud connection is not configured.');return;}const {data,error:lookupError}=await supabase.from('events').select('id,name,invite_code').eq('invite_code',invite).eq('status','active').maybeSingle();if(lookupError){setError(lookupError.message);return;}if(!data){setError("We couldn't find that event.");return;}try{await ensureParticipant(data.id,name);router.replace({pathname:'/event/[id]',params:{id:data.id}})}catch(e:any){setError(e?.message||'Could not join the event.')}};
+  const router=useRouter();
+  const { displayName } = useApp();
+  const [link,setLink]=useState('');
+  const [scanning,setScanning]=useState(false);
+  const [error,setError]=useState('');
+  const [perm,request]=useCameraPermissions();
+
+  const join=async(value=link)=>{
+    setError('');
+    const invite=inviteFromValue(value);
+    if(!invite){setError('Paste an event link or code.');return;}
+    if(!supabase){setError('Cloud connection is not configured.');return;}
+    const {data,error:lookupError}=await supabase.from('events').select('id,name,invite_code').eq('invite_code',invite).eq('status','active').maybeSingle();
+    if(lookupError){setError(lookupError.message);return;}
+    if(!data){setError("We couldn't find that event.");return;}
+    try{await ensureParticipant(data.id,displayName);router.replace({pathname:'/event/[id]',params:{id:data.id}})}catch(e:any){setError(e?.message||'Could not join the event.')}
+  };
+
   const startScan=async()=>{if(!perm?.granted){const result=await request();if(!result.granted)return;}setScanning(true);setError('')};
+
   if(scanning)return <View style={styles.scanner}><CameraView style={StyleSheet.absoluteFill} facing="back" barcodeScannerSettings={{barcodeTypes:['qr']}} onBarcodeScanned={({data})=>{setScanning(false);setLink(data);join(data)}}/><View style={styles.scanOverlay}><View style={styles.scanTop}><Text style={styles.scanEyebrow}>MEFIE</Text><Pressable style={styles.closeCircle} onPress={()=>setScanning(false)}><MaterialCommunityIcons name="close" size={24} color="#fff"/></Pressable></View><Text style={styles.scanTitle}>Scan to join</Text><Text style={styles.scanSub}>Point your camera at the event QR code.</Text><View style={styles.scanBox}><View style={styles.cornerTL}/><View style={styles.cornerTR}/><View style={styles.cornerBL}/><View style={styles.cornerBR}/><MaterialCommunityIcons name="scan-helper" size={28} color="rgba(255,255,255,.9)"/></View></View></View>;
-  return <Screen><BackButton/><View style={styles.heading}><View style={styles.step}><Text style={styles.stepText}>02</Text></View><Text style={styles.title}>Join an event</Text><Text style={styles.sub}>Link, code, or QR. That's it.</Text></View><GlassCard style={styles.formCard}><GlassInput label="Your name" value={name} onChangeText={setName} placeholder="Aman"/><View style={{height:12}}/><GlassInput label="Event link or code" value={link} onChangeText={setLink} placeholder="Paste event link here"/></GlassCard>{error?<Text style={styles.error}>{error}</Text>:null}<GlassButton primary label="Join event" icon={<MaterialCommunityIcons name="link-variant" size={20} color={colors.black}/>} onPress={()=>join()}/><View style={styles.or}><View style={styles.orLine}/><Text style={styles.orText}>or</Text><View style={styles.orLine}/></View><GlassButton label="Scan QR Code" icon={<MaterialCommunityIcons name="qrcode-scan" size={21} color={colors.white}/>} onPress={startScan}/></Screen>;
+
+  return <Screen>
+    <View style={styles.topBack}><BackButton/></View>
+    <View style={styles.heading}>
+      <Text style={styles.title}>Join an event</Text>
+      <Text style={styles.sub}>Link, code, or QR. That's it.</Text>
+    </View>
+
+    <GlassCard style={styles.formCard}>
+      <GlassInput value={link} onChangeText={setLink} placeholder="Paste event link here" />
+      <Pressable disabled={!link.trim()} onPress={()=>join()} focusable={false} android_ripple={{color:'transparent'}} style={({pressed})=>[styles.joinButton,!link.trim()&&styles.joinDisabled,pressed&&styles.pressed]}>
+        <Text style={styles.joinLabel}>Join</Text>
+        <MaterialCommunityIcons name="arrow-right" size={23} color={colors.white}/>
+      </Pressable>
+    </GlassCard>
+
+    {error?<Text style={styles.error}>{error}</Text>:null}
+
+    <View style={styles.or}><View style={styles.orLine}/><Text style={styles.orText}>or</Text><View style={styles.orLine}/></View>
+
+    <GlassButton label="Scan QR Code" icon={<MaterialCommunityIcons name="qrcode-scan" size={21} color={colors.white}/>} onPress={startScan}/>
+  </Screen>;
 }
-const styles=StyleSheet.create({heading:{marginTop:34,paddingBottom:3},step:{width:34,height:34,borderRadius:17,backgroundColor:'rgba(255,255,255,.12)',borderWidth:1,borderColor:'rgba(255,255,255,.22)',alignItems:'center',justifyContent:'center',marginBottom:18},stepText:{color:colors.muted,fontSize:11,fontWeight:'800'},title:{color:colors.white,fontSize:34,fontWeight:'800',letterSpacing:-1},sub:{color:colors.muted,fontSize:15,marginTop:7},formCard:{padding:14},or:{flexDirection:'row',alignItems:'center',gap:10,marginVertical:2},orLine:{height:1,backgroundColor:colors.line,flex:1},orText:{color:colors.faint,fontSize:12},error:{color:colors.danger,fontSize:13,marginHorizontal:4},scanner:{flex:1,backgroundColor:'#000'},scanOverlay:{...StyleSheet.absoluteFillObject,backgroundColor:'rgba(0,0,0,.16)',alignItems:'center'},scanTop:{position:'absolute',top:58,left:22,right:22,flexDirection:'row',justifyContent:'space-between',alignItems:'center'},scanEyebrow:{color:'#fff',fontSize:12,fontWeight:'900',letterSpacing:2},closeCircle:{width:42,height:42,borderRadius:21,backgroundColor:'rgba(20,25,32,.62)',borderWidth:1,borderColor:'rgba(255,255,255,.22)',alignItems:'center',justifyContent:'center'},scanTitle:{color:'#fff',fontSize:26,fontWeight:'800',marginTop:118},scanSub:{color:'rgba(255,255,255,.72)',fontSize:13,marginTop:7},scanBox:{width:270,height:270,marginTop:42,borderRadius:28,borderWidth:1,borderColor:'rgba(255,255,255,.25)',backgroundColor:'rgba(255,255,255,.04)',alignItems:'center',justifyContent:'center'},cornerTL:{position:'absolute',left:-2,top:-2,width:42,height:42,borderLeftWidth:4,borderTopWidth:4,borderColor:'#fff',borderTopLeftRadius:26},cornerTR:{position:'absolute',right:-2,top:-2,width:42,height:42,borderRightWidth:4,borderTopWidth:4,borderColor:'#fff',borderTopRightRadius:26},cornerBL:{position:'absolute',left:-2,bottom:-2,width:42,height:42,borderLeftWidth:4,borderBottomWidth:4,borderColor:'#fff',borderBottomLeftRadius:26},cornerBR:{position:'absolute',right:-2,bottom:-2,width:42,height:42,borderRightWidth:4,borderBottomWidth:4,borderColor:'#fff',borderBottomRightRadius:26}});
+
+const styles=StyleSheet.create({
+  topBack:{marginBottom:4},
+  heading:{marginTop:58,paddingBottom:4},
+  title:{color:colors.white,fontSize:29,fontWeight:'600',letterSpacing:-.7},
+  sub:{color:'rgba(255,255,255,.70)',fontSize:14,marginTop:7},
+  formCard:{padding:10,borderRadius:22,backgroundColor:'rgba(220,225,232,.18)',borderColor:'rgba(255,255,255,.25)',shadowOpacity:.2},
+  joinButton:{height:66,borderRadius:18,marginTop:10,backgroundColor:'rgba(8,14,20,.94)',borderWidth:1,borderColor:'rgba(255,255,255,.08)',flexDirection:'row',alignItems:'center',justifyContent:'center',gap:7,...shadows},
+  joinLabel:{color:colors.white,fontSize:16,fontWeight:'500'},
+  joinDisabled:{opacity:.6},
+  pressed:{transform:[{scale:.985}],opacity:.88},
+  or:{flexDirection:'row',alignItems:'center',gap:10,marginVertical:20,paddingHorizontal:8},
+  orLine:{height:1,backgroundColor:'rgba(255,255,255,.30)',flex:1},
+  orText:{color:'rgba(255,255,255,.78)',fontSize:14},
+  error:{color:colors.danger,fontSize:13,marginHorizontal:4,marginTop:-5},
+  scanner:{flex:1,backgroundColor:'#000'},
+  scanOverlay:{...StyleSheet.absoluteFillObject,backgroundColor:'rgba(0,0,0,.16)',alignItems:'center'},
+  scanTop:{position:'absolute',top:58,left:22,right:22,flexDirection:'row',justifyContent:'space-between',alignItems:'center'},
+  scanEyebrow:{color:'#fff',fontSize:12,fontWeight:'900',letterSpacing:2},
+  closeCircle:{width:42,height:42,borderRadius:21,backgroundColor:'rgba(20,25,32,.62)',borderWidth:1,borderColor:'rgba(255,255,255,.22)',alignItems:'center',justifyContent:'center'},
+  scanTitle:{color:'#fff',fontSize:26,fontWeight:'800',marginTop:118},
+  scanSub:{color:'rgba(255,255,255,.72)',fontSize:13,marginTop:7},
+  scanBox:{width:270,height:270,marginTop:42,borderRadius:28,borderWidth:1,borderColor:'rgba(255,255,255,.25)',backgroundColor:'rgba(255,255,255,.04)',alignItems:'center',justifyContent:'center'},
+  cornerTL:{position:'absolute',left:-2,top:-2,width:42,height:42,borderLeftWidth:4,borderTopWidth:4,borderColor:'#fff',borderTopLeftRadius:26},
+  cornerTR:{position:'absolute',right:-2,top:-2,width:42,height:42,borderRightWidth:4,borderTopWidth:4,borderColor:'#fff',borderTopRightRadius:26},
+  cornerBL:{position:'absolute',left:-2,bottom:-2,width:42,height:42,borderLeftWidth:4,borderBottomWidth:4,borderColor:'#fff',borderBottomLeftRadius:26},
+  cornerBR:{position:'absolute',right:-2,bottom:-2,width:42,height:42,borderRightWidth:4,borderBottomWidth:4,borderColor:'#fff',borderBottomRightRadius:26}
+});
