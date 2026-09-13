@@ -42,10 +42,15 @@ export function BottomNav({ active = 'home' }: { active?: 'home' | 'events' | 'y
     { key: 'you' as const, label: 'You', icon: 'account-outline' as const, path: '/you' },
   ];
   return (
-    <BlurView intensity={82} tint="dark" style={[styles.nav, { bottom: 0, paddingBottom: Math.max(insets.bottom, 0) }]}>
+    <BlurView intensity={90} tint="light" style={[styles.nav, { bottom: 0, paddingBottom: Math.max(insets.bottom, 0) }]}>
+      <LinearGradient
+        colors={['rgba(255,255,255,0.34)', 'rgba(255,255,255,0.20)', 'rgba(255,255,255,0.14)']}
+        locations={[0, 0.48, 1]}
+        style={StyleSheet.absoluteFill}
+      />
       <View style={styles.navInner}>
         {items.map(({ key, label, icon, path }) => <Pressable key={key} onPress={() => router.replace(path)} style={styles.navItem}>
-          <MaterialCommunityIcons name={icon} size={32} color={active === key ? colors.white : 'rgba(255,255,255,0.62)'} />
+          <MaterialCommunityIcons name={icon} size={32} color={active === key ? '#FFFFFF' : 'rgba(255,255,255,0.72)'} />
           <Text style={[styles.navText, active === key && styles.navTextSelected]}>{label}</Text>
         </Pressable>)}
       </View>
@@ -66,9 +71,9 @@ const styles = StyleSheet.create({
   markA: { position: 'absolute', width: 17, height: 20, borderRadius: 6, borderWidth: 2, borderColor: '#FFF', left: 7, top: 7 },
   markB: { position: 'absolute', width: 17, height: 20, borderRadius: 6, borderWidth: 2, borderColor: '#C9D7F5', left: 11, top: 7 },
   brand: { color: colors.white, fontSize: 21, fontWeight: '800', letterSpacing: -0.6 },
-  nav: { position: 'absolute', left: 0, right: 0, bottom: 0, minHeight: 102, borderTopLeftRadius: 30, borderTopRightRadius: 30, borderBottomLeftRadius: 0, borderBottomRightRadius: 0, borderTopWidth: 1, borderTopColor: 'rgba(255,255,255,0.10)', overflow: 'hidden' },
-  navInner: { flex: 1, minHeight: 82, backgroundColor: 'rgba(36,44,53,0.62)', flexDirection: 'row', justifyContent: 'space-around', alignItems: 'center', paddingTop: 8, paddingBottom: 4 },
+  nav: { position: 'absolute', left: 0, right: 0, bottom: 0, minHeight: 102, borderTopLeftRadius: 30, borderTopRightRadius: 30, borderBottomLeftRadius: 0, borderBottomRightRadius: 0, borderTopWidth: 1, borderTopColor: 'rgba(255,255,255,0.30)', overflow: 'hidden', ...shadows },
+  navInner: { flex: 1, minHeight: 82, backgroundColor: 'rgba(255,255,255,0.10)', flexDirection: 'row', justifyContent: 'space-around', alignItems: 'center', paddingTop: 8, paddingBottom: 4 },
   navItem: { alignItems: 'center', justifyContent: 'center', minWidth: 90, gap: 3 },
-  navText: { color: 'rgba(255,255,255,0.58)', fontSize: 14, lineHeight: 18, fontWeight: '500' },
+  navText: { color: 'rgba(255,255,255,0.68)', fontSize: 14, lineHeight: 18, fontWeight: '500' },
   navTextSelected: { color: colors.white, fontWeight: '600' },
 });
