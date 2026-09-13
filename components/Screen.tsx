@@ -11,10 +11,13 @@ const hero = 'https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=
 
 export function Screen({ children, backgroundImage = hero }: { children: React.ReactNode; backgroundImage?: string }) {
   const insets = useSafeAreaInsets();
-  return <ImageBackground source={{ uri: backgroundImage }} style={styles.bg} blurRadius={9}>
-    <LinearGradient colors={['rgba(17,23,31,0.12)', 'rgba(7,11,16,0.88)']} style={StyleSheet.absoluteFill} />
+  return <View style={styles.bg}>
+    <ImageBackground source={{ uri: backgroundImage }} style={styles.clearBackground} resizeMode="cover" />
+    <ImageBackground source={{ uri: backgroundImage }} style={styles.blurBackground} blurRadius={14} resizeMode="cover" />
+    <LinearGradient colors={['rgba(7,11,16,0.02)', 'rgba(7,11,16,0.10)', 'rgba(7,11,16,0.58)']} locations={[0, 0.48, 1]} style={StyleSheet.absoluteFill} />
+    <LinearGradient colors={['rgba(17,23,31,0.02)', 'rgba(7,11,16,0.82)']} style={styles.lowerShade} />
     <ScrollView contentContainerStyle={[styles.content, { paddingTop: insets.top + 16, paddingBottom: insets.bottom + 128 }]} showsVerticalScrollIndicator={false}>{children}</ScrollView>
-  </ImageBackground>;
+  </View>;
 }
 
 export function BackButton() { const router = useRouter(); return <IconButton accessibilityLabel="Go back" onPress={() => router.back()}><MaterialCommunityIcons name="chevron-left" size={25} color={colors.white} /></IconButton>; }
@@ -39,6 +42,9 @@ export function Header({ title, right }: { title: string; right?: React.ReactNod
 
 const styles = StyleSheet.create({
   bg: { flex: 1, backgroundColor: '#0A0F15' },
+  clearBackground: { ...StyleSheet.absoluteFillObject },
+  blurBackground: { position: 'absolute', left: 0, right: 0, top: '42%', bottom: 0 },
+  lowerShade: { position: 'absolute', left: 0, right: 0, top: '38%', bottom: 0 },
   content: { paddingHorizontal: 20, gap: 16 },
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   brandRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
