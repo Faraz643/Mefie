@@ -47,7 +47,7 @@ const styles = StyleSheet.create({
   actionPrimary: { backgroundColor: 'rgba(250,252,255,0.97)', borderColor: 'rgba(255,255,255,0.82)' },
   actionGlass: { backgroundColor: 'rgba(35,43,52,0.46)', borderColor: 'rgba(255,255,255,0.18)' },
   actionIcon: { width: 48, height: 48, borderRadius: 24, alignItems: 'center', justifyContent: 'center' },
-  actionIconPrimary: { backgroundColor: 'rgba(255,255,255,0.72)' },
+  actionIconPrimary: { backgroundColor: 'rgba(255,255,255,0.72)', borderWidth: 1.5, borderColor: '#111111' },
   actionIconGlass: { backgroundColor: 'rgba(255,255,255,0.13)' },
   actionCopy: { flex: 1, paddingHorizontal: 14, backgroundColor: 'transparent', borderWidth: 0 },
   actionTitle: { color: colors.white, fontSize: 17, fontWeight: '700', letterSpacing: -0.2, backgroundColor: 'transparent' },
