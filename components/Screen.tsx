@@ -13,7 +13,7 @@ export function Screen({ children, backgroundImage = hero }: { children: React.R
   const insets = useSafeAreaInsets();
   return <ImageBackground source={{ uri: backgroundImage }} style={styles.bg} blurRadius={9}>
     <LinearGradient colors={['rgba(17,23,31,0.12)', 'rgba(7,11,16,0.88)']} style={StyleSheet.absoluteFill} />
-    <ScrollView contentContainerStyle={[styles.content, { paddingTop: insets.top + 16, paddingBottom: insets.bottom + 118 }]} showsVerticalScrollIndicator={false}>{children}</ScrollView>
+    <ScrollView contentContainerStyle={[styles.content, { paddingTop: insets.top + 16, paddingBottom: insets.bottom + 128 }]} showsVerticalScrollIndicator={false}>{children}</ScrollView>
   </ImageBackground>;
 }
 
@@ -21,12 +21,13 @@ export function BackButton() { const router = useRouter(); return <IconButton ac
 
 export function BottomNav({ active = 'home' }: { active?: 'home'|'events'|'you' }) {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const items = [
     { key: 'home' as const, label: 'Home', icon: 'home-outline' as const, path: '/' },
     { key: 'events' as const, label: 'Events', icon: 'image-multiple-outline' as const, path: '/events' },
     { key: 'you' as const, label: 'You', icon: 'account-outline' as const, path: '/you' },
   ];
-  return <View style={styles.nav}>{items.map(({ key, label, icon, path }) => <Pressable key={key} onPress={() => router.replace(path)} style={styles.navItem}>
+  return <View style={[styles.nav, { bottom: Math.max(insets.bottom + 10, 18) }]}>{items.map(({ key, label, icon, path }) => <Pressable key={key} onPress={() => router.replace(path)} style={styles.navItem}>
     <View style={[styles.navIconWrap, active === key && styles.navIconActive]}><MaterialCommunityIcons name={icon} size={24} color={active === key ? colors.white : 'rgba(255,255,255,0.55)'} /></View>
     <Text style={[styles.navText, active === key && styles.navTextSelected]}>{label}</Text>
   </Pressable>)}</View>;
@@ -45,7 +46,7 @@ const styles = StyleSheet.create({
   markA: { position: 'absolute', width: 17, height: 20, borderRadius: 6, borderWidth: 2, borderColor: '#FFF', left: 7, top: 7 },
   markB: { position: 'absolute', width: 17, height: 20, borderRadius: 6, borderWidth: 2, borderColor: '#C9D7F5', left: 11, top: 7 },
   brand: { color: colors.white, fontSize: 21, fontWeight: '800', letterSpacing: -0.6 },
-  nav: { position: 'absolute', left: 14, right: 14, bottom: 12, minHeight: 76, borderRadius: 27, backgroundColor: 'rgba(22,29,38,0.72)', flexDirection: 'row', justifyContent: 'space-around', paddingTop: 8, paddingBottom: 5, ...shadows },
+  nav: { position: 'absolute', left: 14, right: 14, minHeight: 76, borderRadius: 27, backgroundColor: 'rgba(22,29,38,0.72)', flexDirection: 'row', justifyContent: 'space-around', paddingTop: 8, paddingBottom: 5, ...shadows },
   navItem: { alignItems: 'center', minWidth: 76 },
   navIconWrap: { width: 42, height: 34, borderRadius: 17, alignItems: 'center', justifyContent: 'center' },
   navIconActive: { backgroundColor: 'rgba(255,255,255,0.13)' },
