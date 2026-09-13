@@ -3,7 +3,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { useRouter } from 'expo-router';
 import React from 'react';
-import { ImageBackground, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ImageBackground, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors, shadows } from '../lib/theme';
 import { useApp } from '../lib/app-context';
@@ -11,7 +11,7 @@ import { IconButton } from './Glass';
 
 const hero = require('../assets/hero-background.jpg');
 
-export function Screen({ children, backgroundImage }: { children: React.ReactNode; backgroundImage?: any }) {
+export function Screen({ children, backgroundImage, blurBackground = false }: { children: React.ReactNode; backgroundImage?: any; blurBackground?: boolean }) {
   const insets = useSafeAreaInsets();
   const { backgroundImage: userBackground } = useApp();
   const activeBackground = backgroundImage ?? userBackground ?? hero;
@@ -20,6 +20,7 @@ export function Screen({ children, backgroundImage }: { children: React.ReactNod
   return (
     <View style={styles.bg}>
       <ImageBackground source={source} style={StyleSheet.absoluteFill} resizeMode="cover" />
+      {blurBackground ? <BlurView intensity={22} tint="dark" style={StyleSheet.absoluteFill} /> : null}
       <LinearGradient colors={['rgba(5,9,14,0.02)', 'rgba(5,9,14,0.00)', 'rgba(5,9,14,0.10)', 'rgba(5,9,14,0.78)']} locations={[0, 0.34, 0.62, 1]} style={StyleSheet.absoluteFill} />
       <ScrollView contentContainerStyle={[styles.content, { paddingTop: insets.top + 16, paddingBottom: insets.bottom + 138 }]} showsVerticalScrollIndicator={false}>
         {children}
