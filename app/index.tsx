@@ -18,7 +18,7 @@ export default function HomeScreen() {
       <Text style={styles.kicker}>Good morning, {displayName} 👋</Text>
       <Text style={styles.title}>Same moments.{`\n`}Everyone's view.</Text>
     </View>
-    <GlassAction primary label="Create an event" subtitle="Get a link. Start sharing." onPress={() => router.push('/create-event')} icon={<MaterialCommunityIcons name="plus" size={32} color={colors.black} strokeWidth={1} />} />
+    <GlassAction primary label="Create an event" subtitle="Get a link. Start sharing." onPress={() => router.push('/create-event')} icon={<MaterialCommunityIcons name="plus" size={32} color={colors.black} />} />
     <GlassAction label="Join an event" subtitle="Scan or enter a link." onPress={() => router.push('/join-event')} icon={<MaterialCommunityIcons name="link-variant" size={28} color={colors.white} />} />
     <View style={styles.eventsSection}><View style={styles.sectionRow}><SectionTitle>Your events</SectionTitle>{events.length > 0 ? <Pressable onPress={() => router.push('/events')}><Text style={styles.seeAll}>See all <Text style={styles.seeArrow}>›</Text></Text></Pressable> : null}</View>{events.length === 0 ? <GlassCard><Text style={styles.emptyTitle}>Your moments start here.</Text><Text style={styles.emptySub}>Create an event and invite your people.</Text></GlassCard> : <View style={styles.grid}>{events.slice(0, 4).map(e => <Pressable key={e.id} onPress={() => router.push({ pathname:'/event/[id]', params:{id:e.id} })} style={styles.eventCard}><View style={styles.cover}>{e.cover ? <Image source={{ uri: e.cover }} style={styles.coverImage} /> : null}<View style={styles.eventInfo}><Text style={styles.eventName} numberOfLines={1}>{e.name}</Text><Text style={styles.eventMeta}>{e.people || '—'} people · {e.photos || '—'} photos</Text></View></View></Pressable>)}</View>}</View>
   </Screen><BottomNav active="home" /></View>;
@@ -38,7 +38,7 @@ const styles=StyleSheet.create({
   eventCard:{width:'48%',height:170,borderRadius:radii.card,overflow:'hidden',backgroundColor:'#26313F',...shadows},
   cover:{flex:1,position:'relative',justifyContent:'flex-end'},
   coverImage:{...StyleSheet.absoluteFillObject,width:'100%',height:'100%'},
-  eventInfo:{paddingHorizontal:13,paddingTop:26,paddingBottom:13,backgroundColor:'rgba(14,20,27,0.45)',borderTopWidth:1,borderColor:'rgba(255,255,255,0.10)'},
+  eventInfo:{paddingHorizontal:13,paddingTop:26,paddingBottom:13,backgroundColor:'rgba(14,20,27,0.45)'},
   eventName:{color:colors.white,fontSize:16,fontWeight:'800',letterSpacing:-.2},
   eventMeta:{color:'rgba(255,255,255,0.72)',fontSize:11,marginTop:4},
   emptyTitle:{color:colors.white,fontSize:16,fontWeight:'700'},
