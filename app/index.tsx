@@ -1,4 +1,5 @@
 import { useFocusEffect } from '@react-navigation/native';
+import { BlurView } from 'expo-blur';
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { useRouter } from 'expo-router';
 import React, { useCallback } from 'react';
@@ -20,7 +21,7 @@ export default function HomeScreen() {
     </View>
     <GlassAction primary label="Create an event" onPress={() => router.push('/create-event')} icon={<MaterialCommunityIcons name="plus" size={30} color={colors.black} />} />
     <GlassAction label="Join an event" onPress={() => router.push('/join-event')} icon={<MaterialCommunityIcons name="link-variant" size={26} color={colors.white} />} />
-    <View style={styles.eventsSection}><View style={styles.sectionRow}><SectionTitle>Your events</SectionTitle>{events.length > 0 ? <Pressable onPress={() => router.push('/events')}><Text style={styles.seeAll}>See all <Text style={styles.seeArrow}>›</Text></Text></Pressable> : null}</View>{events.length === 0 ? <GlassCard><Text style={styles.emptyTitle}>Your moments start here.</Text><Text style={styles.emptySub}>Create an event and invite your people.</Text></GlassCard> : <View style={styles.grid}>{events.slice(0, 4).map(e => <Pressable key={e.id} onPress={() => router.push({ pathname:'/event/[id]', params:{id:e.id} })} style={styles.eventCard}><View style={styles.cover}>{e.cover ? <Image source={{ uri: e.cover }} style={styles.coverImage} /> : null}<View style={styles.eventInfo}><Text style={styles.eventName} numberOfLines={1}>{e.name}</Text><Text style={styles.eventMeta}>{e.people || '—'} people · {e.photos || '—'} photos</Text></View></View></Pressable>)}</View>}</View>
+    <View style={styles.eventsSection}><View style={styles.sectionRow}><SectionTitle>Your events</SectionTitle>{events.length > 0 ? <Pressable onPress={() => router.push('/events')}><Text style={styles.seeAll}>See all <Text style={styles.seeArrow}>›</Text></Text></Pressable> : null}</View>{events.length === 0 ? <GlassCard><Text style={styles.emptyTitle}>Your moments start here.</Text><Text style={styles.emptySub}>Create an event and invite your people.</Text></GlassCard> : <View style={styles.grid}>{events.slice(0, 4).map(e => <Pressable key={e.id} onPress={() => router.push({ pathname:'/event/[id]', params:{id:e.id} })} style={styles.eventCard}><View style={styles.cover}>{e.cover ? <Image source={{ uri: e.cover }} style={styles.coverImage} /> : null}<BlurView intensity={42} tint="dark" style={styles.eventInfo}><Text style={styles.eventName} numberOfLines={1}>{e.name}</Text><Text style={styles.eventMeta}>{e.people || '—'} people · {e.photos || '—'} photos</Text></BlurView></View></Pressable>)}</View>}</View>
   </Screen><BottomNav active="home" /></View>;
 }
 
@@ -38,7 +39,7 @@ const styles=StyleSheet.create({
   eventCard:{width:'48%',height:170,borderRadius:radii.card,overflow:'hidden',backgroundColor:'#26313F',...shadows},
   cover:{flex:1,position:'relative',justifyContent:'flex-end'},
   coverImage:{...StyleSheet.absoluteFillObject,width:'100%',height:'100%'},
-  eventInfo:{paddingHorizontal:13,paddingTop:26,paddingBottom:13,backgroundColor:'rgba(14,20,27,0.45)'},
+  eventInfo:{paddingHorizontal:13,paddingTop:16,paddingBottom:13,backgroundColor:'rgba(14,20,27,0.52)',borderTopWidth:1,borderTopColor:'rgba(255,255,255,0.08)'},
   eventName:{color:colors.white,fontSize:16,fontWeight:'800',letterSpacing:-.2},
   eventMeta:{color:'rgba(255,255,255,0.72)',fontSize:11,marginTop:4},
   emptyTitle:{color:colors.white,fontSize:16,fontWeight:'700'},
