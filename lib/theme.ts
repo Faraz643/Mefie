@@ -1,18 +1,29 @@
 import { Platform } from 'react-native';
 
 export const colors = {
-  ink: '#F7F8FA',
-  muted: 'rgba(247,248,250,0.66)',
-  line: 'rgba(255,255,255,0.14)',
-  glass: 'rgba(16,22,30,0.58)',
-  glassStrong: 'rgba(14,20,27,0.78)',
+  ink: '#F8FAFC',
+  muted: 'rgba(248,250,252,0.68)',
+  faint: 'rgba(248,250,252,0.46)',
+  line: 'rgba(255,255,255,0.20)',
+  lineStrong: 'rgba(255,255,255,0.34)',
+  glass: 'rgba(28,34,42,0.54)',
+  glassStrong: 'rgba(19,25,33,0.74)',
+  glassLight: 'rgba(255,255,255,0.14)',
   white: '#FFFFFF',
-  accent: '#DDE7FF',
-  accentStrong: '#6F9FFF',
+  black: '#0B1016',
+  accent: '#E8F0FF',
+  accentStrong: '#78A5FF',
+  danger: '#FFB8B8',
+};
+
+export const radii = {
+  card: 26,
+  button: 21,
+  pill: 999,
 };
 
 export const shadows = Platform.select({
-  ios: { shadowColor: '#000', shadowOpacity: 0.28, shadowRadius: 24, shadowOffset: { width: 0, height: 12 } },
-  android: { elevation: 14 },
+  ios: { shadowColor: '#000', shadowOpacity: 0.30, shadowRadius: 28, shadowOffset: { width: 0, height: 14 } },
+  android: { elevation: 16 },
   default: {},
 });
