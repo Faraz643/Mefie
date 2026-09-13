@@ -7,20 +7,56 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors, radii, shadows } from '../lib/theme';
 import { IconButton } from './Glass';
 
-const hero = 'https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=1400&q=80';
+// const hero = 'https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=1400&q=80';
+const hero = require('../assets/hero-background.jpg');
 
-export function Screen({ children, backgroundImage = hero }: { children: React.ReactNode; backgroundImage?: string }) {
+export function Screen({
+  children,
+  backgroundImage = hero,
+}: {
+  children: React.ReactNode;
+  backgroundImage?: any;
+}) {
   const insets = useSafeAreaInsets();
-  return <View style={styles.bg}>
-    <ImageBackground source={{ uri: backgroundImage }} style={styles.clearBackground} resizeMode="cover" />
-    <ImageBackground source={{ uri: backgroundImage }} style={[styles.blurLayer, styles.blurLayer1]} blurRadius={14} resizeMode="cover" />
-    <ImageBackground source={{ uri: backgroundImage }} style={[styles.blurLayer, styles.blurLayer2]} blurRadius={14} resizeMode="cover" />
-    <ImageBackground source={{ uri: backgroundImage }} style={[styles.blurLayer, styles.blurLayer3]} blurRadius={14} resizeMode="cover" />
-    <ImageBackground source={{ uri: backgroundImage }} style={[styles.blurLayer, styles.blurLayer4]} blurRadius={14} resizeMode="cover" />
-    <LinearGradient colors={['rgba(7,11,16,0.00)', 'rgba(7,11,16,0.04)', 'rgba(7,11,16,0.20)', 'rgba(7,11,16,0.62)']} locations={[0, 0.32, 0.58, 1]} style={StyleSheet.absoluteFill} />
-    <LinearGradient colors={['rgba(17,23,31,0.00)', 'rgba(7,11,16,0.12)', 'rgba(7,11,16,0.72)']} locations={[0, 0.38, 1]} style={StyleSheet.absoluteFill} />
-    <ScrollView contentContainerStyle={[styles.content, { paddingTop: insets.top + 16, paddingBottom: insets.bottom + 128 }]} showsVerticalScrollIndicator={false}>{children}</ScrollView>
-  </View>;
+
+  const source =
+    typeof backgroundImage === 'string'
+      ? { uri: backgroundImage }
+      : backgroundImage;
+
+  return (
+    <View style={styles.bg}>
+      <ImageBackground
+        source={source}
+        style={StyleSheet.absoluteFill}
+        resizeMode="cover"
+      />
+
+      <LinearGradient
+        colors={[
+          'rgba(7,11,16,0.00)',
+          'rgba(7,11,16,0.02)',
+          'rgba(7,11,16,0.18)',
+          'rgba(7,11,16,0.72)',
+        ]}
+        locations={[0, 0.45, 0.70, 1]}
+        style={StyleSheet.absoluteFill}
+      />
+
+      <ScrollView
+        contentContainerStyle={[
+          styles.content,
+          {
+            paddingTop: insets.top + 16,
+            paddingBottom: insets.bottom + 128,
+          },
+        ]}
+        showsVerticalScrollIndicator={false}
+      >
+        {children}
+      </ScrollView>
+    </View>
+  );
 }
 
 export function BackButton() { const router = useRouter(); return <IconButton accessibilityLabel="Go back" onPress={() => router.back()}><MaterialCommunityIcons name="chevron-left" size={25} color={colors.white} /></IconButton>; }
@@ -62,6 +98,6 @@ const styles = StyleSheet.create({
   navItem: { alignItems: 'center', minWidth: 76 },
   navIconWrap: { width: 42, height: 34, borderRadius: 17, alignItems: 'center', justifyContent: 'center' },
   navIconActive: { backgroundColor: 'rgba(255,255,255,0.13)' },
-  navText: { color: 'rgba(255,255,255,0.50)', fontSize: 11, marginTop: 2, fontWeight: '650' },
+  navText: { color: 'rgba(255,255,255,0.50)', fontSize: 11, marginTop: 2, fontWeight: '600' },
   navTextSelected: { color: colors.white },
 });
