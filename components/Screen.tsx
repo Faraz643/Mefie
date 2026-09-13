@@ -13,9 +13,12 @@ export function Screen({ children, backgroundImage = hero }: { children: React.R
   const insets = useSafeAreaInsets();
   return <View style={styles.bg}>
     <ImageBackground source={{ uri: backgroundImage }} style={styles.clearBackground} resizeMode="cover" />
-    <ImageBackground source={{ uri: backgroundImage }} style={styles.blurBackground} blurRadius={14} resizeMode="cover" />
-    <LinearGradient colors={['rgba(7,11,16,0.02)', 'rgba(7,11,16,0.10)', 'rgba(7,11,16,0.58)']} locations={[0, 0.48, 1]} style={StyleSheet.absoluteFill} />
-    <LinearGradient colors={['rgba(17,23,31,0.02)', 'rgba(7,11,16,0.82)']} style={styles.lowerShade} />
+    <ImageBackground source={{ uri: backgroundImage }} style={[styles.blurLayer, styles.blurLayer1]} blurRadius={14} resizeMode="cover" />
+    <ImageBackground source={{ uri: backgroundImage }} style={[styles.blurLayer, styles.blurLayer2]} blurRadius={14} resizeMode="cover" />
+    <ImageBackground source={{ uri: backgroundImage }} style={[styles.blurLayer, styles.blurLayer3]} blurRadius={14} resizeMode="cover" />
+    <ImageBackground source={{ uri: backgroundImage }} style={[styles.blurLayer, styles.blurLayer4]} blurRadius={14} resizeMode="cover" />
+    <LinearGradient colors={['rgba(7,11,16,0.00)', 'rgba(7,11,16,0.04)', 'rgba(7,11,16,0.20)', 'rgba(7,11,16,0.62)']} locations={[0, 0.32, 0.58, 1]} style={StyleSheet.absoluteFill} />
+    <LinearGradient colors={['rgba(17,23,31,0.00)', 'rgba(7,11,16,0.12)', 'rgba(7,11,16,0.72)']} locations={[0, 0.38, 1]} style={StyleSheet.absoluteFill} />
     <ScrollView contentContainerStyle={[styles.content, { paddingTop: insets.top + 16, paddingBottom: insets.bottom + 128 }]} showsVerticalScrollIndicator={false}>{children}</ScrollView>
   </View>;
 }
@@ -43,8 +46,11 @@ export function Header({ title, right }: { title: string; right?: React.ReactNod
 const styles = StyleSheet.create({
   bg: { flex: 1, backgroundColor: '#0A0F15' },
   clearBackground: { ...StyleSheet.absoluteFillObject },
-  blurBackground: { position: 'absolute', left: 0, right: 0, top: '42%', bottom: 0 },
-  lowerShade: { position: 'absolute', left: 0, right: 0, top: '38%', bottom: 0 },
+  blurLayer: { position: 'absolute', left: 0, right: 0, bottom: 0 },
+  blurLayer1: { top: '30%', opacity: 0.12 },
+  blurLayer2: { top: '42%', opacity: 0.12 },
+  blurLayer3: { top: '54%', opacity: 0.14 },
+  blurLayer4: { top: '66%', opacity: 0.16 },
   content: { paddingHorizontal: 20, gap: 16 },
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   brandRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
