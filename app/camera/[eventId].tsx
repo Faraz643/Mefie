@@ -1,5 +1,6 @@
 import { CameraView, useCameraPermissions } from 'expo-camera';
-import { File } from 'expo-file-system';
+import * as FileSystem from 'expo-file-system/legacy';
+import { decode } from 'base64-arraybuffer';
 import * as Haptics from 'expo-haptics';
 import * as ImagePicker from 'expo-image-picker';
 import { useLocalSearchParams, useRouter } from 'expo-router';
@@ -7,6 +8,8 @@ import React, { useRef, useState } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
 import { ensureParticipant, supabase, useApp } from '../../lib/app-context';
 import { colors } from '../../lib/theme';
+
+const PHOTO_BUCKET = 'photos';
 
 export default function CameraScreen(){
   const router=useRouter();
@@ -25,31 +28,77 @@ export default function CameraScreen(){
 
   const upload=async(uri:string,width?:number,height?:number)=>{
     if(!supabase)throw new Error('Cloud connection is not configured.');
+    if(!eventId)throw new Error('Event ID is missing.');
+
     setMessage('Joining event…');
     const participantId=await ensureParticipant(String(eventId),displayName);
     if(!participantId)throw new Error('Could not join this event.');
 
-    // React Native's Blob/fetch(file://) path is unreliable for Supabase Storage.
-    // Read the local image as an ArrayBuffer and upload the bytes directly instead.
-    setMessage('Preparing photo…');
-    const file=new File(uri);
-    if(!file.exists)throw new Error('The captured photo could not be read from device storage.');
-    const body=await file.arrayBuffer();
-    if(!body.byteLength)throw new Error('The captured photo is empty.');
+    setMessage('Reading photo…');
+    let localUri=uri;
+    let temporaryUri:string|undefined;
+    try{
+      // Camera normally returns file://. Some Android gallery providers return content://;
+      // copy those to the app cache because the legacy reader supports local files reliably.
+      if(uri.startsWith('content://')){
+        temporaryUri=`${FileSystem.cacheDirectory}mefie-upload-${Date.now()}.jpg`;
+        await FileSystem.copyAsync({from:uri,to:temporaryUri});
+        localUri=temporaryUri;
+      }
 
-    const path=`${eventId}/${Date.now()}-${Math.random().toString(36).slice(2,10)}.jpg`;
-    setMessage('Uploading…');
-    const {error:uploadError}=await supabase.storage.from('photos').upload(path,body,{contentType:'image/jpeg',upsert:false});
-    if(uploadError)throw new Error(`Photo upload failed: ${uploadError.message}`);
-    const {data:urlData}=supabase.storage.from('photos').getPublicUrl(path);
-    const {error:insertError}=await supabase.from('photos').insert({event_id:eventId,participant_id:participantId,storage_path:path,original_filename:`mefie-${Date.now()}.jpg`,file_size:body.byteLength,width:width||null,height:height||null,public_url:urlData.publicUrl});
-    if(insertError)throw new Error(`Photo record failed: ${insertError.message}`);
+      const info=await FileSystem.getInfoAsync(localUri,{size:true});
+      if(!info.exists)throw new Error('The photo file no longer exists on the device.');
+      if(!info.size)throw new Error('The captured photo is empty.');
+
+      // Do not use fetch(file://) or the modern File class here. On Android those paths
+      // can fail or produce Hermes/native-module errors. The legacy filesystem reader
+      // gives us stable base64 bytes, which are decoded to the ArrayBuffer expected by
+      // Supabase Storage in React Native.
+      const base64=await FileSystem.readAsStringAsync(localUri,{encoding:FileSystem.EncodingType.Base64});
+      if(!base64)throw new Error('Could not read the captured photo.');
+      const body=decode(base64);
+
+      const path=`${eventId}/${Date.now()}-${Math.random().toString(36).slice(2,10)}.jpg`;
+      setMessage('Uploading…');
+      const {error:uploadError}=await supabase.storage.from(PHOTO_BUCKET).upload(path,body,{contentType:'image/jpeg',upsert:false,cacheControl:'3600'});
+      if(uploadError)throw new Error(`Photo upload failed: ${uploadError.message}`);
+
+      const {data:urlData}=supabase.storage.from(PHOTO_BUCKET).getPublicUrl(path);
+      setMessage('Saving photo…');
+      const {error:insertError}=await supabase.from('photos').insert({
+        event_id:eventId,
+        participant_id:participantId,
+        storage_path:path,
+        original_filename:`mefie-${Date.now()}.jpg`,
+        file_size:body.byteLength,
+        width:width||null,
+        height:height||null,
+        public_url:urlData.publicUrl,
+      });
+
+      if(insertError){
+        // Avoid leaving an orphaned Storage object when the database insert fails.
+        await supabase.storage.from(PHOTO_BUCKET).remove([path]).catch(()=>undefined);
+        throw new Error(`Photo record failed: ${insertError.message}`);
+      }
+    }catch(error:any){
+      const message=error?.message||String(error)||'Photo upload failed.';
+      if(message.includes('Network request failed')){
+        throw new Error('Could not reach photo storage. Check the phone internet connection and try again.');
+      }
+      throw error;
+    }finally{
+      if(temporaryUri){
+        await FileSystem.deleteAsync(temporaryUri,{idempotent:true}).catch(()=>undefined);
+      }
+    }
   };
 
   const capture=async()=>{
     if(!ref.current||busy||!cameraReady)return;
     setBusy(true);setMessage('');await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     try{
+      // Give Android camera HALs a moment after preview startup before requesting a still.
       await new Promise(resolve=>setTimeout(resolve,250));
       if(!ref.current)throw new Error('Camera is not ready.');
       const photo=await ref.current.takePictureAsync({quality:0.8,skipProcessing:true});
