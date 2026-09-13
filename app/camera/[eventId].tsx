@@ -1,5 +1,5 @@
 import { CameraView, useCameraPermissions } from 'expo-camera';
-import * as FileSystem from 'expo-file-system/legacy';
+import * as FileSystem from 'expo-file-system';
 import { decode } from 'base64-arraybuffer';
 import * as Haptics from 'expo-haptics';
 import * as ImagePicker from 'expo-image-picker';
@@ -38,8 +38,6 @@ export default function CameraScreen(){
     let localUri=uri;
     let temporaryUri:string|undefined;
     try{
-      // Camera normally returns file://. Some Android gallery providers return content://;
-      // copy those to the app cache because the legacy reader supports local files reliably.
       if(uri.startsWith('content://')){
         temporaryUri=`${FileSystem.cacheDirectory}mefie-upload-${Date.now()}.jpg`;
         await FileSystem.copyAsync({from:uri,to:temporaryUri});
@@ -50,10 +48,6 @@ export default function CameraScreen(){
       if(!info.exists)throw new Error('The photo file no longer exists on the device.');
       if(!info.size)throw new Error('The captured photo is empty.');
 
-      // Do not use fetch(file://) or the modern File class here. On Android those paths
-      // can fail or produce Hermes/native-module errors. The legacy filesystem reader
-      // gives us stable base64 bytes, which are decoded to the ArrayBuffer expected by
-      // Supabase Storage in React Native.
       const base64=await FileSystem.readAsStringAsync(localUri,{encoding:FileSystem.EncodingType.Base64});
       if(!base64)throw new Error('Could not read the captured photo.');
       const body=decode(base64);
@@ -77,7 +71,6 @@ export default function CameraScreen(){
       });
 
       if(insertError){
-        // Avoid leaving an orphaned Storage object when the database insert fails.
         await supabase.storage.from(PHOTO_BUCKET).remove([path]).catch(()=>undefined);
         throw new Error(`Photo record failed: ${insertError.message}`);
       }
@@ -98,7 +91,6 @@ export default function CameraScreen(){
     if(!ref.current||busy||!cameraReady)return;
     setBusy(true);setMessage('');await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     try{
-      // Give Android camera HALs a moment after preview startup before requesting a still.
       await new Promise(resolve=>setTimeout(resolve,250));
       if(!ref.current)throw new Error('Camera is not ready.');
       const photo=await ref.current.takePictureAsync({quality:0.8,skipProcessing:true});
