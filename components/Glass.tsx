@@ -8,7 +8,7 @@ export function GlassCard({ children, style }: { children: React.ReactNode; styl
 }
 
 export function GlassButton({ label, onPress, primary = false, icon, disabled = false }: { label: string; onPress?: () => void; primary?: boolean; icon?: React.ReactNode; disabled?: boolean }) {
-  return <Pressable disabled={disabled} onPress={onPress} style={({ pressed }) => [styles.button, primary && styles.primary, disabled && styles.disabled, pressed && styles.pressed]}>
+  return <Pressable disabled={disabled} onPress={onPress} android_ripple={{ color: 'transparent' }} style={({ pressed }) => [styles.button, primary && styles.primary, disabled && styles.disabled, pressed && styles.pressed]}>
     {icon ? <View style={[styles.buttonIcon, primary && styles.primaryIcon]}>{icon}</View> : null}
     <Text style={[styles.buttonLabel, primary && styles.primaryLabel]}>{label}</Text>
     <MaterialCommunityIcons name="chevron-right" size={20} color={primary ? colors.black : colors.white} />
@@ -16,7 +16,12 @@ export function GlassButton({ label, onPress, primary = false, icon, disabled = 
 }
 
 export function GlassAction({ label, subtitle, onPress, primary = false, icon }: { label: string; subtitle?: string; onPress?: () => void; primary?: boolean; icon: React.ReactNode }) {
-  return <Pressable onPress={onPress} style={({ pressed }) => [styles.action, primary ? styles.actionPrimary : styles.actionGlass, pressed && styles.pressed]}>
+  return <Pressable
+    onPress={onPress}
+    focusable={false}
+    android_ripple={{ color: 'transparent' }}
+    style={({ pressed }) => [styles.action, primary ? styles.actionPrimary : styles.actionGlass, pressed && styles.pressed]}
+  >
     <View style={[styles.actionIcon, primary ? styles.actionIconPrimary : styles.actionIconGlass]}>{icon}</View>
     <View style={styles.actionCopy}>
       <Text style={[styles.actionTitle, primary && styles.actionTitlePrimary]}>{label}</Text>
@@ -27,7 +32,7 @@ export function GlassAction({ label, subtitle, onPress, primary = false, icon }:
 }
 
 export function IconButton({ children, onPress, accessibilityLabel }: { children: React.ReactNode; onPress?: () => void; accessibilityLabel: string }) {
-  return <Pressable accessibilityRole="button" accessibilityLabel={accessibilityLabel} onPress={onPress} style={({ pressed }) => [styles.iconButton, pressed && styles.pressed]}>{children}</Pressable>;
+  return <Pressable accessibilityRole="button" accessibilityLabel={accessibilityLabel} onPress={onPress} focusable={false} android_ripple={{ color: 'transparent' }} style={({ pressed }) => [styles.iconButton, pressed && styles.pressed]}>{children}</Pressable>;
 }
 
 export function GlassInput({ label, value, onChangeText, placeholder }: { label?: string; value: string; onChangeText: (v: string) => void; placeholder?: string }) {
@@ -38,16 +43,16 @@ export function SectionTitle({ children }: { children: React.ReactNode }) { retu
 
 const styles = StyleSheet.create({
   card: { overflow: 'hidden', backgroundColor: colors.glass, borderRadius: radii.card, padding: 18, ...shadows },
-  action: { minHeight: 96, borderRadius: 22, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 12, overflow: 'hidden', ...shadows },
+  action: { height: 96, borderRadius: 22, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 12, overflow: 'hidden', ...shadows },
   actionPrimary: { backgroundColor: 'rgba(250,252,255,0.97)' },
   actionGlass: { backgroundColor: 'rgba(35,43,52,0.52)' },
   actionIcon: { width: 56, height: 56, borderRadius: 28, alignItems: 'center', justifyContent: 'center' },
   actionIconPrimary: { backgroundColor: 'rgba(255,255,255,0.72)' },
   actionIconGlass: { backgroundColor: 'rgba(255,255,255,0.13)' },
-  actionCopy: { flex: 1, paddingHorizontal: 15 },
-  actionTitle: { color: colors.white, fontSize: 19, fontWeight: '800', letterSpacing: -0.3 },
+  actionCopy: { flex: 1, paddingHorizontal: 15, backgroundColor: 'transparent', borderWidth: 0 },
+  actionTitle: { color: colors.white, fontSize: 19, fontWeight: '800', letterSpacing: -0.3, backgroundColor: 'transparent' },
   actionTitlePrimary: { color: colors.black },
-  actionSubtitle: { color: colors.muted, fontSize: 13, marginTop: 4 },
+  actionSubtitle: { color: colors.muted, fontSize: 13, marginTop: 4, backgroundColor: 'transparent' },
   actionSubtitlePrimary: { color: 'rgba(16,21,28,0.58)' },
   button: { minHeight: 58, borderRadius: radii.button, backgroundColor: colors.glassLight, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16 },
   primary: { backgroundColor: colors.white },
