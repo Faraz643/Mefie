@@ -1,11 +1,12 @@
+import { BlurView } from 'expo-blur';
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
-import { BackButton, Screen } from '../components/Screen';
+import { Screen } from '../components/Screen';
 import { GlassButton, GlassCard, GlassInput } from '../components/Glass';
-import { colors, radii, shadows } from '../lib/theme';
+import { colors, shadows } from '../lib/theme';
 import { ensureParticipant, supabase, useApp } from '../lib/app-context';
 
 function inviteFromValue(value: string) { const raw=value.trim().replace(/\/$/,''); const match=raw.match(/\/e\/([^/?#]+)/i); return (match?.[1]||raw).toUpperCase(); }
@@ -33,8 +34,11 @@ export default function JoinEventScreen() {
 
   if(scanning)return <View style={styles.scanner}><CameraView style={StyleSheet.absoluteFill} facing="back" barcodeScannerSettings={{barcodeTypes:['qr']}} onBarcodeScanned={({data})=>{setScanning(false);setLink(data);join(data)}}/><View style={styles.scanOverlay}><View style={styles.scanTop}><Text style={styles.scanEyebrow}>MEFIE</Text><Pressable style={styles.closeCircle} onPress={()=>setScanning(false)}><MaterialCommunityIcons name="close" size={24} color="#fff"/></Pressable></View><Text style={styles.scanTitle}>Scan to join</Text><Text style={styles.scanSub}>Point your camera at the event QR code.</Text><View style={styles.scanBox}><View style={styles.cornerTL}/><View style={styles.cornerTR}/><View style={styles.cornerBL}/><View style={styles.cornerBR}/><MaterialCommunityIcons name="scan-helper" size={28} color="rgba(255,255,255,.9)"/></View></View></View>;
 
-  return <Screen>
-    <View style={styles.topBack}><BackButton/></View>
+  return <Screen blurBackground>
+    <Pressable accessibilityRole="button" accessibilityLabel="Go back" onPress={()=>router.back()} focusable={false} android_ripple={{color:'transparent'}} style={styles.backButton}>
+      <MaterialCommunityIcons name="arrow-left" size={25} color={colors.white}/>
+    </Pressable>
+
     <View style={styles.heading}>
       <Text style={styles.title}>Join an event</Text>
       <Text style={styles.sub}>Link, code, or QR. That's it.</Text>
@@ -52,13 +56,18 @@ export default function JoinEventScreen() {
 
     <View style={styles.or}><View style={styles.orLine}/><Text style={styles.orText}>or</Text><View style={styles.orLine}/></View>
 
-    <GlassButton label="Scan QR Code" icon={<MaterialCommunityIcons name="qrcode-scan" size={21} color={colors.white}/>} onPress={startScan}/>
+    <BlurView intensity={78} tint="dark" style={styles.scanBlur}>
+      <Pressable onPress={startScan} focusable={false} android_ripple={{color:'transparent'}} style={({pressed})=>[styles.scanButton,pressed&&styles.pressed]}>
+        <MaterialCommunityIcons name="qrcode-scan" size={25} color={colors.white}/>
+        <Text style={styles.scanLabel}>Scan QR Code</Text>
+      </Pressable>
+    </BlurView>
   </Screen>;
 }
 
 const styles=StyleSheet.create({
-  topBack:{marginBottom:4},
-  heading:{marginTop:58,paddingBottom:4},
+  backButton:{width:44,height:44,alignItems:'flex-start',justifyContent:'center',marginBottom:10},
+  heading:{marginTop:34,paddingBottom:5},
   title:{color:colors.white,fontSize:29,fontWeight:'600',letterSpacing:-.7},
   sub:{color:'rgba(255,255,255,.70)',fontSize:14,marginTop:7},
   formCard:{padding:10,borderRadius:22,backgroundColor:'rgba(220,225,232,.18)',borderColor:'rgba(255,255,255,.25)',shadowOpacity:.2},
@@ -70,6 +79,9 @@ const styles=StyleSheet.create({
   orLine:{height:1,backgroundColor:'rgba(255,255,255,.30)',flex:1},
   orText:{color:'rgba(255,255,255,.78)',fontSize:14},
   error:{color:colors.danger,fontSize:13,marginHorizontal:4,marginTop:-5},
+  scanBlur:{height:76,borderRadius:20,overflow:'hidden',backgroundColor:'rgba(220,225,232,.20)',borderWidth:1,borderColor:'rgba(255,255,255,.16)',...shadows},
+  scanButton:{height:76,borderRadius:20,backgroundColor:'rgba(220,225,232,.20)',borderWidth:1,borderColor:'rgba(255,255,255,.38)',flexDirection:'row',alignItems:'center',justifyContent:'center',gap:14},
+  scanLabel:{color:colors.white,fontSize:16,fontWeight:'500'},
   scanner:{flex:1,backgroundColor:'#000'},
   scanOverlay:{...StyleSheet.absoluteFillObject,backgroundColor:'rgba(0,0,0,.16)',alignItems:'center'},
   scanTop:{position:'absolute',top:58,left:22,right:22,flexDirection:'row',justifyContent:'space-between',alignItems:'center'},
