@@ -11,7 +11,7 @@ export const supabase = SUPABASE_URL && SUPABASE_ANON_KEY
   : null;
 
 type DemoEvent = { id: string; name: string; people: number; photos: number; cover: string; };
-type AppContextValue = { displayName: string; setDisplayName: (name: string) => Promise<void>; events: DemoEvent[]; refreshEvents: () => Promise<void>; };
+type AppContextValue = { displayName: string; setDisplayName: (name: string) => Promise<void>; backgroundImage: string | null; setBackgroundImage: (uri: string | null) => Promise<void>; events: DemoEvent[]; refreshEvents: () => Promise<void>; };
 
 const Ctx = createContext<AppContextValue | null>(null);
 
@@ -47,10 +47,19 @@ export async function getParticipantId(eventId: string) {
 
 export function AppProvider({ children }: { children: React.ReactNode }) {
   const [displayName, setName] = useState('Faraz');
+  const [backgroundImage, setBackground] = useState<string | null>(null);
   const [events, setEvents] = useState<DemoEvent[]>([]);
 
-  useEffect(() => { AsyncStorage.getItem('mefie.displayName').then(v => v && setName(v)); }, []);
+  useEffect(() => {
+    AsyncStorage.getItem('mefie.displayName').then(v => v && setName(v));
+    AsyncStorage.getItem('mefie.backgroundImage').then(v => v && setBackground(v));
+  }, []);
   const setDisplayName = async (name: string) => { const value = name.trim() || 'Faraz'; setName(value); await AsyncStorage.setItem('mefie.displayName', value); };
+  const setBackgroundImage = async (uri: string | null) => {
+    setBackground(uri);
+    if (uri) await AsyncStorage.setItem('mefie.backgroundImage', uri);
+    else await AsyncStorage.removeItem('mefie.backgroundImage');
+  };
 
   const refreshEvents = async () => {
     if (!supabase) return;
@@ -68,7 +77,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   };
 
   useEffect(() => { refreshEvents(); }, []);
-  const value = useMemo(() => ({ displayName, setDisplayName, events, refreshEvents }), [displayName, events]);
+  const value = useMemo(() => ({ displayName, setDisplayName, backgroundImage, setBackgroundImage, events, refreshEvents }), [displayName, backgroundImage, events]);
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }
 export function useApp() { const value = useContext(Ctx); if (!value) throw new Error('useApp must be used inside AppProvider'); return value; }
