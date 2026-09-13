@@ -13,19 +13,58 @@ export const supabase = SUPABASE_URL && SUPABASE_ANON_KEY
 type DemoEvent = { id: string; name: string; people: number; photos: number; cover: string; };
 type AppContextValue = { displayName: string; setDisplayName: (name: string) => Promise<void>; events: DemoEvent[]; refreshEvents: () => Promise<void>; };
 
-const fallbackEvents: DemoEvent[] = [];
 const Ctx = createContext<AppContextValue | null>(null);
+
+export async function getSessionId() {
+  const key = 'mefie.sessionId';
+  let id = await AsyncStorage.getItem(key);
+  if (!id) {
+    id = `${Date.now()}-${Math.random().toString(36).slice(2, 12)}`;
+    await AsyncStorage.setItem(key, id);
+  }
+  return id;
+}
+
+export async function ensureParticipant(eventId: string, displayName: string) {
+  if (!supabase || !eventId) return null;
+  const sessionId = await getSessionId();
+  const { data: existing } = await supabase.from('participants').select('*').eq('event_id', eventId).eq('session_id', sessionId).maybeSingle();
+  if (existing) {
+    await supabase.from('participants').update({ display_name: displayName.trim() || 'Guest', last_seen_at: new Date().toISOString() }).eq('id', existing.id);
+    return existing.id;
+  }
+  const { data, error } = await supabase.from('participants').insert({ event_id: eventId, session_id: sessionId, display_name: displayName.trim() || 'Guest' }).select('id').single();
+  if (error) throw error;
+  return data.id;
+}
+
+export async function getParticipantId(eventId: string) {
+  if (!supabase) return null;
+  const sessionId = await getSessionId();
+  const { data } = await supabase.from('participants').select('id').eq('event_id', eventId).eq('session_id', sessionId).maybeSingle();
+  return data?.id ?? null;
+}
 
 export function AppProvider({ children }: { children: React.ReactNode }) {
   const [displayName, setName] = useState('Faraz');
-  const [events, setEvents] = useState<DemoEvent[]>(fallbackEvents);
+  const [events, setEvents] = useState<DemoEvent[]>([]);
 
   useEffect(() => { AsyncStorage.getItem('mefie.displayName').then(v => v && setName(v)); }, []);
   const setDisplayName = async (name: string) => { const value = name.trim() || 'Faraz'; setName(value); await AsyncStorage.setItem('mefie.displayName', value); };
+
   const refreshEvents = async () => {
     if (!supabase) return;
-    const { data } = await supabase.from('events').select('id,name').order('created_at', { ascending: false }).limit(12);
-    if (data) setEvents(data.map(e => ({ id: e.id, name: e.name, people: 0, photos: 0, cover: '' })));
+    const { data } = await supabase.from('events').select('id,name,created_at').eq('status', 'active').order('created_at', { ascending: false }).limit(20);
+    if (!data) return;
+    const enriched = await Promise.all(data.map(async e => {
+      const [{ count: people }, { count: photos }, { data: cover }] = await Promise.all([
+        supabase.from('participants').select('id', { count: 'exact', head: true }).eq('event_id', e.id),
+        supabase.from('photos').select('id', { count: 'exact', head: true }).eq('event_id', e.id),
+        supabase.from('photos').select('public_url').eq('event_id', e.id).not('public_url', 'is', null).order('created_at', { ascending: true }).limit(1).maybeSingle()
+      ]);
+      return { id: e.id, name: e.name, people: people || 0, photos: photos || 0, cover: cover?.public_url || '' };
+    }));
+    setEvents(enriched);
   };
 
   useEffect(() => { refreshEvents(); }, []);
