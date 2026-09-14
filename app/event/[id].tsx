@@ -80,10 +80,10 @@ export default function EventScreen() {
         </View>
         {error ? <Text style={styles.error}>{error}</Text> : null}
 
-        <BlurView intensity={76} tint="light" style={styles.tabs}>
+        <BlurView intensity={76} tint="dark" style={styles.tabs}>
           <View style={styles.tabsTint}>
-            <Pressable onPress={() => setTab('photos')} style={[styles.tab, tab === 'photos' && styles.activeTab]}><MaterialCommunityIcons name="image-multiple-outline" size={17} color={tab === 'photos' ? colors.black : 'rgba(255,255,255,.98)'} /><Text style={tab === 'photos' ? styles.activeTabText : styles.tabText}>Photos</Text></Pressable>
-            <Pressable onPress={() => setTab('people')} style={[styles.tab, tab === 'people' && styles.activeTab]}><MaterialCommunityIcons name="account-group-outline" size={17} color={tab === 'people' ? colors.black : 'rgba(255,255,255,.94)'} /><Text style={tab === 'people' ? styles.activeTabText : styles.tabText}>People</Text></Pressable>
+            <Pressable onPress={() => setTab('photos')} style={[styles.tab, tab === 'photos' && styles.activeTab]}><MaterialCommunityIcons name="image-multiple-outline" size={17} color={tab === 'photos' ? colors.black : 'rgba(255,255,255,.94)'} /><Text style={tab === 'photos' ? styles.activeTabText : styles.tabText}>Photos</Text></Pressable>
+            <Pressable onPress={() => setTab('people')} style={[styles.tab, tab === 'people' && styles.activeTab]}><MaterialCommunityIcons name="account-group-outline" size={17} color={tab === 'people' ? colors.black : 'rgba(255,255,255,.90)'} /><Text style={tab === 'people' ? styles.activeTabText : styles.tabText}>People</Text></Pressable>
           </View>
         </BlurView>
 
@@ -112,11 +112,11 @@ const styles = StyleSheet.create({
   inviteButton: { height: 42, paddingHorizontal: 17, borderRadius: 21, backgroundColor: 'rgba(255,255,255,.94)', flexDirection: 'row', alignItems: 'center', gap: 7, ...shadows },
   inviteText: { color: colors.black, fontSize: 14, fontWeight: '800' },
   error: { color: '#FFB4B4', paddingHorizontal: 2, paddingBottom: 8 },
-  tabs: { width: '100%', height: 51, borderRadius: 27, overflow: 'hidden', borderWidth: 1, borderColor: 'rgba(255,255,255,.82)', marginTop: 9, marginBottom: 9, ...shadows },
-  tabsTint: { flex: 1, padding: 3, backgroundColor: 'rgba(245,248,252,.42)', borderRadius: 27, flexDirection: 'row' },
+  tabs: { width: '100%', height: 51, borderRadius: 27, overflow: 'hidden', borderWidth: 1, borderColor: 'rgba(255,255,255,.30)', marginTop: 9, marginBottom: 9, ...shadows },
+  tabsTint: { flex: 1, padding: 3, backgroundColor: 'rgba(185,198,208,.17)', borderRadius: 27, flexDirection: 'row' },
   tab: { flex: 1, borderRadius: 24, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 7 },
-  activeTab: { backgroundColor: 'rgba(255,255,255,.99)', borderWidth: 1, borderColor: 'rgba(255,255,255,.96)', shadowColor: '#fff', shadowOpacity: 0.5, shadowRadius: 6, shadowOffset: { width: 0, height: 1 }, elevation: 4 },
-  tabText: { color: 'rgba(255,255,255,.96)', fontSize: 14, fontWeight: '700' },
+  activeTab: { backgroundColor: 'rgba(255,255,255,.98)', borderWidth: 1, borderColor: 'rgba(255,255,255,.90)', shadowColor: '#fff', shadowOpacity: 0.45, shadowRadius: 6, shadowOffset: { width: 0, height: 1 }, elevation: 4 },
+  tabText: { color: 'rgba(255,255,255,.90)', fontSize: 14, fontWeight: '700' },
   activeTabText: { color: colors.black, fontSize: 14, fontWeight: '800' },
   grid: { flexDirection: 'row', flexWrap: 'wrap', columnGap: 4, rowGap: 4 },
   photo: { width: '32%', aspectRatio: 1, borderRadius: 10, overflow: 'hidden', backgroundColor: '#26313b' },
