@@ -1,19 +1,24 @@
 import { BlurView } from 'expo-blur';
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import React, { useEffect, useState } from 'react';
-import { Image, Pressable, Share, StyleSheet, Text, View } from 'react-native';
-import { BackButton, Screen } from '../../components/Screen';
+import React, { useEffect, useRef, useState } from 'react';
+import { Animated, Image, Pressable, Share, StyleSheet, Text, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { BackButton } from '../../components/Screen';
 import { IconButton } from '../../components/Glass';
 import { colors, shadows } from '../../lib/theme';
 import { ensureParticipant, supabase, useApp } from '../../lib/app-context';
 
 const fallbackPhoto = 'https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=1200&q=85';
+const HERO_HEIGHT = 330;
+const TAB_HEIGHT = 51;
 
 export default function EventScreen() {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const { id } = useLocalSearchParams<{ id: string }>();
   const { displayName } = useApp();
+  const scrollY = useRef(new Animated.Value(0)).current;
   const [event, setEvent] = useState<any>(null);
   const [photos, setPhotos] = useState<any[]>([]);
   const [people, setPeople] = useState<any[]>([]);
@@ -56,49 +61,114 @@ export default function EventScreen() {
 
   const title = event?.name || 'Event';
   const visiblePeople = people.slice(0, 5);
+  const heroSource = photos[0]?.public_url || fallbackPhoto;
+
+  const heroTranslate = scrollY.interpolate({ inputRange: [0, 180], outputRange: [0, -34], extrapolate: 'clamp' });
+  const heroScale = scrollY.interpolate({ inputRange: [-80, 0, 180], outputRange: [1.06, 1, 0.98], extrapolate: 'clamp' });
+  const heroOpacity = scrollY.interpolate({ inputRange: [0, 150, 250], outputRange: [1, 0.96, 0], extrapolate: 'clamp' });
+  const heroInfoTranslate = scrollY.interpolate({ inputRange: [0, 170], outputRange: [0, -42], extrapolate: 'clamp' });
 
   return (
     <View style={styles.root}>
-      <Screen backgroundImage={photos[0]?.public_url || fallbackPhoto}>
-        <View style={styles.top}>
-          <BackButton />
-          <IconButton accessibilityLabel="More event options" onPress={invite}><MaterialCommunityIcons name="dots-horizontal" size={22} color={colors.white} /></IconButton>
-        </View>
-        <View style={styles.hero}>
-          <Text style={styles.title} numberOfLines={1}>{title}</Text>
-          <Text style={styles.meta}>{people.length} people · {photos.length} photos</Text>
-          <View style={styles.actionRow}>
-            <View style={styles.avatars}>
-              {visiblePeople.map((person, index) => {
-                const avatarUrl = person.users?.avatar_url;
-                return <View key={person.id || index} style={[styles.avatar, index > 0 && styles.avatarOverlap]}>{avatarUrl ? <Image source={{ uri: avatarUrl }} style={styles.avatarImage} /> : <Text style={styles.avatarText}>{(person.display_name || '?')[0].toUpperCase()}</Text>}</View>;
-              })}
-              {people.length > 5 ? <View style={[styles.avatar, styles.avatarOverlap, styles.moreAvatar]}><Text style={styles.moreText}>+{people.length - 5}</Text></View> : null}
+      <View pointerEvents="none" style={styles.background}>
+        <Animated.Image source={{ uri: heroSource }} style={[styles.backgroundImage, { transform: [{ translateY: heroTranslate }, { scale: heroScale }] }]} />
+        <View style={styles.heroShade} />
+      </View>
+
+      <Animated.ScrollView
+        style={styles.scroll}
+        contentContainerStyle={{ paddingBottom: insets.bottom + 110 }}
+        showsVerticalScrollIndicator={false}
+        stickyHeaderIndices={[1]}
+        scrollEventThrottle={16}
+        bounces
+        onScroll={Animated.event([{ nativeEvent: { contentOffset: { y: scrollY } } }], { useNativeDriver: true })}
+      >
+        <Animated.View style={[styles.heroContent, { paddingTop: insets.top + 16, opacity: heroOpacity }]}>
+          <View style={styles.top}>
+            <BackButton />
+            <IconButton accessibilityLabel="More event options" onPress={invite}>
+              <MaterialCommunityIcons name="dots-horizontal" size={22} color={colors.white} />
+            </IconButton>
+          </View>
+          <Animated.View style={{ transform: [{ translateY: heroInfoTranslate }] }}>
+            <View style={styles.heroInfo}>
+              <Text style={styles.title} numberOfLines={1}>{title}</Text>
+              <Text style={styles.meta}>{people.length} people · {photos.length} photos</Text>
+              <View style={styles.actionRow}>
+                <View style={styles.avatars}>
+                  {visiblePeople.map((person, index) => {
+                    const avatarUrl = person.users?.avatar_url;
+                    return <View key={person.id || index} style={[styles.avatar, index > 0 && styles.avatarOverlap]}>{avatarUrl ? <Image source={{ uri: avatarUrl }} style={styles.avatarImage} /> : <Text style={styles.avatarText}>{(person.display_name || '?')[0].toUpperCase()}</Text>}</View>;
+                  })}
+                  {people.length > 5 ? <View style={[styles.avatar, styles.avatarOverlap, styles.moreAvatar]}><Text style={styles.moreText}>+{people.length - 5}</Text></View> : null}
+                </View>
+                <Pressable accessibilityRole="button" accessibilityLabel="Invite friends" onPress={invite} style={styles.inviteButton}>
+                  <MaterialCommunityIcons name="link-variant" size={18} color={colors.black} />
+                  <Text style={styles.inviteText}>Invite</Text>
+                </Pressable>
+              </View>
             </View>
-            <Pressable accessibilityRole="button" accessibilityLabel="Invite friends" onPress={invite} style={styles.inviteButton}><MaterialCommunityIcons name="link-variant" size={18} color={colors.black} /><Text style={styles.inviteText}>Invite</Text></Pressable>
-          </View>
+          </Animated.View>
+        </Animated.View>
+
+        <View style={styles.tabsSticky}>
+          <BlurView intensity={76} tint="dark" style={styles.tabs}>
+            <View style={styles.tabsTint}>
+              <Pressable onPress={() => setTab('photos')} style={[styles.tab, tab === 'photos' && styles.activeTab]}>
+                <MaterialCommunityIcons name="image-multiple-outline" size={17} color={tab === 'photos' ? colors.black : 'rgba(255,255,255,.94)'} />
+                <Text style={tab === 'photos' ? styles.activeTabText : styles.tabText}>Photos</Text>
+              </Pressable>
+              <Pressable onPress={() => setTab('people')} style={[styles.tab, tab === 'people' && styles.activeTab]}>
+                <MaterialCommunityIcons name="account-group-outline" size={17} color={tab === 'people' ? colors.black : 'rgba(255,255,255,.90)'} />
+                <Text style={tab === 'people' ? styles.activeTabText : styles.tabText}>People</Text>
+              </Pressable>
+            </View>
+          </BlurView>
         </View>
-        {error ? <Text style={styles.error}>{error}</Text> : null}
 
-        <BlurView intensity={76} tint="dark" style={styles.tabs}>
-          <View style={styles.tabsTint}>
-            <Pressable onPress={() => setTab('photos')} style={[styles.tab, tab === 'photos' && styles.activeTab]}><MaterialCommunityIcons name="image-multiple-outline" size={17} color={tab === 'photos' ? colors.black : 'rgba(255,255,255,.94)'} /><Text style={tab === 'photos' ? styles.activeTabText : styles.tabText}>Photos</Text></Pressable>
-            <Pressable onPress={() => setTab('people')} style={[styles.tab, tab === 'people' && styles.activeTab]}><MaterialCommunityIcons name="account-group-outline" size={17} color={tab === 'people' ? colors.black : 'rgba(255,255,255,.90)'} /><Text style={tab === 'people' ? styles.activeTabText : styles.tabText}>People</Text></Pressable>
-          </View>
-        </BlurView>
+        <View style={styles.gallery}>
+          {error ? <Text style={styles.error}>{error}</Text> : null}
+          {tab === 'photos' ? (
+            photos.length ? (
+              <View style={styles.grid}>
+                {photos.map((photo, index) => <Pressable key={photo.id || index} style={styles.photo} onPress={() => router.push({ pathname: '/photo/[id]', params: { id: photo.id, eventId: id, index: String(index) } })}>
+                  {photo.public_url ? <Image source={{ uri: photo.public_url }} style={styles.photoImage} /> : <View style={styles.placeholder} />}
+                </Pressable>)}
+              </View>
+            ) : (
+              <View style={styles.empty}><Text style={styles.emptyTitle}>No photos yet.</Text><Text style={styles.emptySub}>Be the first to capture the moment.</Text></View>
+            )
+          ) : (
+            <View style={styles.peopleList}>
+              {people.map(person => {
+                const avatarUrl = person.users?.avatar_url;
+                return <View key={person.id} style={styles.person}>
+                  <View style={styles.personAvatar}>{avatarUrl ? <Image source={{ uri: avatarUrl }} style={styles.personAvatarImage} /> : <Text style={styles.avatarText}>{(person.display_name || '?')[0].toUpperCase()}</Text>}</View>
+                  <View><Text style={styles.personName}>{person.display_name}</Text><Text style={styles.personMeta}>Joined {new Date(person.joined_at).toLocaleDateString()}</Text></View>
+                </View>;
+              })}
+            </View>
+          )}
+        </View>
+      </Animated.ScrollView>
 
-        {tab === 'photos' ? (photos.length ? <View style={styles.grid}>{photos.map((photo, index) => <Pressable key={photo.id || index} style={styles.photo} onPress={() => router.push({ pathname: '/photo/[id]', params: { id: photo.id, eventId: id, index: String(index) } })}>{photo.public_url ? <Image source={{ uri: photo.public_url }} style={styles.photoImage} /> : <View style={styles.placeholder} />}</Pressable>)}</View> : <View style={styles.empty}><Text style={styles.emptyTitle}>No photos yet.</Text><Text style={styles.emptySub}>Be the first to capture the moment.</Text></View>) : <View style={styles.peopleList}>{people.map(person => { const avatarUrl = person.users?.avatar_url; return <View key={person.id} style={styles.person}><View style={styles.personAvatar}>{avatarUrl ? <Image source={{ uri: avatarUrl }} style={styles.personAvatarImage} /> : <Text style={styles.avatarText}>{(person.display_name || '?')[0].toUpperCase()}</Text>}</View><View><Text style={styles.personName}>{person.display_name}</Text><Text style={styles.personMeta}>Joined {new Date(person.joined_at).toLocaleDateString()}</Text></View></View>; })}</View>}
-        <View style={{ height: 88 }} />
-      </Screen>
-      <Pressable accessibilityRole="button" accessibilityLabel="Take a photo" onPress={() => router.push({ pathname: '/camera/[eventId]', params: { eventId: id } })} style={styles.camera}><MaterialCommunityIcons name="camera-outline" size={27} color={colors.black} /></Pressable>
+      <Pressable accessibilityRole="button" accessibilityLabel="Take a photo" onPress={() => router.push({ pathname: '/camera/[eventId]', params: { eventId: id } })} style={[styles.camera, { bottom: Math.max(insets.bottom + 18, 26) }]}>
+        <MaterialCommunityIcons name="camera-outline" size={27} color={colors.black} />
+      </Pressable>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: '#081017' },
+  scroll: { flex: 1 },
+  background: { position: 'absolute', top: 0, left: 0, right: 0, height: HERO_HEIGHT + 40, overflow: 'hidden' },
+  backgroundImage: { position: 'absolute', top: -18, left: -10, right: -10, height: HERO_HEIGHT + 80, resizeMode: 'cover' },
+  heroShade: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(4,9,14,.12)' },
+  heroContent: { minHeight: HERO_HEIGHT, paddingHorizontal: 20 },
   top: { flexDirection: 'row', justifyContent: 'space-between' },
-  hero: { paddingTop: 30, paddingBottom: 8 },
+  heroInfo: { paddingTop: 30, paddingBottom: 14 },
   title: { color: colors.white, fontSize: 29, lineHeight: 35, fontWeight: '800', letterSpacing: -0.7 },
   meta: { color: 'rgba(255,255,255,.78)', fontSize: 14, marginTop: 1 },
   actionRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 13 },
@@ -111,15 +181,17 @@ const styles = StyleSheet.create({
   moreText: { color: colors.white, fontSize: 13, fontWeight: '800' },
   inviteButton: { height: 42, paddingHorizontal: 17, borderRadius: 21, backgroundColor: 'rgba(255,255,255,.94)', flexDirection: 'row', alignItems: 'center', gap: 7, ...shadows },
   inviteText: { color: colors.black, fontSize: 14, fontWeight: '800' },
-  error: { color: '#FFB4B4', paddingHorizontal: 2, paddingBottom: 8 },
-  tabs: { width: '100%', height: 51, borderRadius: 27, overflow: 'hidden', borderWidth: 1, borderColor: 'rgba(255,255,255,.30)', marginTop: 9, marginBottom: 9, ...shadows },
+  error: { color: '#FFB4B4', paddingBottom: 8 },
+  tabsSticky: { height: TAB_HEIGHT + 18, paddingHorizontal: 20, paddingTop: 9, paddingBottom: 9, backgroundColor: 'rgba(8,16,23,.72)', zIndex: 10 },
+  tabs: { width: '100%', height: TAB_HEIGHT, borderRadius: 27, overflow: 'hidden', borderWidth: 1, borderColor: 'rgba(255,255,255,.30)', ...shadows },
   tabsTint: { flex: 1, padding: 3, backgroundColor: 'rgba(185,198,208,.17)', borderRadius: 27, flexDirection: 'row' },
   tab: { flex: 1, borderRadius: 24, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 7 },
   activeTab: { backgroundColor: 'rgba(255,255,255,.98)', borderWidth: 1, borderColor: 'rgba(255,255,255,.90)', shadowColor: '#fff', shadowOpacity: 0.45, shadowRadius: 6, shadowOffset: { width: 0, height: 1 }, elevation: 4 },
   tabText: { color: 'rgba(255,255,255,.90)', fontSize: 14, fontWeight: '700' },
   activeTabText: { color: colors.black, fontSize: 14, fontWeight: '800' },
-  grid: { flexDirection: 'row', flexWrap: 'wrap', columnGap: 4, rowGap: 4 },
-  photo: { width: '32%', aspectRatio: 1, borderRadius: 10, overflow: 'hidden', backgroundColor: '#26313b' },
+  gallery: { paddingHorizontal: 20, paddingTop: 0, backgroundColor: 'rgba(8,16,23,.18)', minHeight: 620 },
+  grid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', rowGap: 4 },
+  photo: { width: '32.1%', aspectRatio: 1, borderRadius: 10, overflow: 'hidden', backgroundColor: '#26313b' },
   photoImage: { width: '100%', height: '100%' },
   placeholder: { flex: 1, backgroundColor: '#26313b' },
   empty: { padding: 26, alignItems: 'center' },
@@ -131,5 +203,5 @@ const styles = StyleSheet.create({
   personAvatarImage: { width: '100%', height: '100%' },
   personName: { color: colors.white, fontWeight: '800', fontSize: 15 },
   personMeta: { color: colors.muted, fontSize: 12, marginTop: 3 },
-  camera: { position: 'absolute', bottom: 26, alignSelf: 'center', width: 64, height: 64, borderRadius: 32, backgroundColor: '#fff', alignItems: 'center', justifyContent: 'center', borderWidth: 4, borderColor: 'rgba(255,255,255,.32)', ...shadows },
+  camera: { position: 'absolute', alignSelf: 'center', width: 64, height: 64, borderRadius: 32, backgroundColor: '#fff', alignItems: 'center', justifyContent: 'center', borderWidth: 4, borderColor: 'rgba(255,255,255,.32)', ...shadows },
 });
