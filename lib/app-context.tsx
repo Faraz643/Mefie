@@ -1,5 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import React, { createContext, useContext, useEffect, useMemo, useState } from 'react';
+import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { createClient } from '@supabase/supabase-js';
 import { View, Text } from 'react-native';
 
@@ -61,7 +61,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     else await AsyncStorage.removeItem('mefie.backgroundImage');
   };
 
-  const refreshEvents = async () => {
+  const refreshEvents = useCallback(async () => {
     if (!supabase) return;
     const { data } = await supabase.from('events').select('id,name,created_at').eq('status', 'active').order('created_at', { ascending: false }).limit(20);
     if (!data) return;
@@ -74,10 +74,10 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       return { id: e.id, name: e.name, people: people || 0, photos: photos || 0, cover: cover?.public_url || '' };
     }));
     setEvents(enriched);
-  };
+  }, []);
 
-  useEffect(() => { refreshEvents(); }, []);
-  const value = useMemo(() => ({ displayName, setDisplayName, backgroundImage, setBackgroundImage, events, refreshEvents }), [displayName, backgroundImage, events]);
+  useEffect(() => { refreshEvents(); }, [refreshEvents]);
+  const value = useMemo(() => ({ displayName, setDisplayName, backgroundImage, setBackgroundImage, events, refreshEvents }), [displayName, backgroundImage, events, refreshEvents]);
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }
 export function useApp() { const value = useContext(Ctx); if (!value) throw new Error('useApp must be used inside AppProvider'); return value; }
