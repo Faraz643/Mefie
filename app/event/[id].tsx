@@ -1,4 +1,3 @@
-import { BlurView } from 'expo-blur';
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
@@ -22,7 +21,6 @@ export default function EventScreen() {
 
   useEffect(() => {
     let active = true;
-
     (async () => {
       if (!supabase) return;
       try {
@@ -32,11 +30,7 @@ export default function EventScreen() {
           supabase.from('photos').select('*').eq('event_id', id).order('created_at', { ascending: false }).limit(200),
           supabase.from('participants').select('*, users(avatar_url)').eq('event_id', id).order('joined_at', { ascending: true }),
         ]);
-        if (active) {
-          setEvent(e);
-          setPhotos(p || []);
-          setPeople(pt || []);
-        }
+        if (active) { setEvent(e); setPhotos(p || []); setPeople(pt || []); }
       } catch (e: any) {
         if (active) setError(e?.message || 'Could not load event.');
       }
@@ -49,30 +43,19 @@ export default function EventScreen() {
           setPhotos(curr => curr.some(x => x.id === payload.new.id) ? curr : [payload.new, ...curr])
         )
         .on('postgres_changes', { event: '*', schema: 'public', table: 'participants', filter: `event_id=eq.${id}` }, payload => {
-          if (payload.eventType === 'INSERT') {
-            setPeople(curr => curr.some(x => x.id === payload.new.id) ? curr : [...curr, payload.new]);
-          } else if (payload.eventType === 'DELETE') {
-            setPeople(curr => curr.filter(x => x.id !== payload.old.id));
-          } else {
-            setPeople(curr => curr.map(x => x.id === payload.new.id ? { ...x, ...payload.new } : x));
-          }
+          if (payload.eventType === 'INSERT') setPeople(curr => curr.some(x => x.id === payload.new.id) ? curr : [...curr, payload.new]);
+          else if (payload.eventType === 'DELETE') setPeople(curr => curr.filter(x => x.id !== payload.old.id));
+          else setPeople(curr => curr.map(x => x.id === payload.new.id ? { ...x, ...payload.new } : x));
         })
         .subscribe();
-
-      return () => {
-        active = false;
-        supabase.removeChannel(ch);
-      };
+      return () => { active = false; supabase.removeChannel(ch); };
     }
-
     return () => { active = false; };
   }, [id, displayName]);
 
   const invite = async () => {
     const link = `https://mefie.app/e/${event?.invite_code || ''}`;
-    await Share.share({
-      message: `Join ${event?.name || 'our Mefie event'} 📸\nEveryone's photos go into one shared album.\n\n${link}`,
-    });
+    await Share.share({ message: `Join ${event?.name || 'our Mefie event'} 📸\nEveryone's photos go into one shared album.\n\n${link}` });
   };
 
   const title = event?.name || 'Event';
@@ -91,28 +74,18 @@ export default function EventScreen() {
         <View style={styles.hero}>
           <Text style={styles.title} numberOfLines={1}>{title}</Text>
           <Text style={styles.meta}>{people.length} people · {photos.length} photos</Text>
-
           <View style={styles.actionRow}>
             <View style={styles.avatars}>
               {visiblePeople.map((person, index) => {
                 const avatarUrl = person.users?.avatar_url;
                 return (
                   <View key={person.id || index} style={[styles.avatar, index > 0 && styles.avatarOverlap]}>
-                    {avatarUrl ? (
-                      <Image source={{ uri: avatarUrl }} style={styles.avatarImage} />
-                    ) : (
-                      <Text style={styles.avatarText}>{(person.display_name || '?')[0].toUpperCase()}</Text>
-                    )}
+                    {avatarUrl ? <Image source={{ uri: avatarUrl }} style={styles.avatarImage} /> : <Text style={styles.avatarText}>{(person.display_name || '?')[0].toUpperCase()}</Text>}
                   </View>
                 );
               })}
-              {people.length > 5 ? (
-                <View style={[styles.avatar, styles.avatarOverlap, styles.moreAvatar]}>
-                  <Text style={styles.moreText}>+{people.length - 5}</Text>
-                </View>
-              ) : null}
+              {people.length > 5 ? <View style={[styles.avatar, styles.avatarOverlap, styles.moreAvatar]}><Text style={styles.moreText}>+{people.length - 5}</Text></View> : null}
             </View>
-
             <Pressable accessibilityRole="button" accessibilityLabel="Invite friends" onPress={invite} style={styles.inviteButton}>
               <MaterialCommunityIcons name="link-variant" size={18} color={colors.black} />
               <Text style={styles.inviteText}>Invite</Text>
@@ -124,11 +97,11 @@ export default function EventScreen() {
 
         <View style={styles.tabs}>
           <Pressable onPress={() => setTab('photos')} style={[styles.tab, tab === 'photos' && styles.activeTab]}>
-            <MaterialCommunityIcons name="image-multiple-outline" size={16} color={tab === 'photos' ? colors.black : colors.white} />
+            <MaterialCommunityIcons name="image-multiple-outline" size={17} color={tab === 'photos' ? colors.black : colors.white} />
             <Text style={tab === 'photos' ? styles.activeTabText : styles.tabText}>Photos</Text>
           </Pressable>
           <Pressable onPress={() => setTab('people')} style={[styles.tab, tab === 'people' && styles.activeTab]}>
-            <MaterialCommunityIcons name="account-group-outline" size={16} color={tab === 'people' ? colors.black : 'rgba(255,255,255,.70)'} />
+            <MaterialCommunityIcons name="account-group-outline" size={17} color={tab === 'people' ? colors.black : 'rgba(255,255,255,.70)'} />
             <Text style={tab === 'people' ? styles.activeTabText : styles.tabText}>People</Text>
           </Pressable>
         </View>
@@ -137,49 +110,26 @@ export default function EventScreen() {
           photos.length ? (
             <View style={styles.grid}>
               {photos.map((photo, index) => (
-                <Pressable
-                  key={photo.id || index}
-                  style={styles.photo}
-                  onPress={() => router.push({ pathname: '/photo/[id]', params: { id: photo.id, eventId: id, index: String(index) } })}
-                >
+                <Pressable key={photo.id || index} style={styles.photo} onPress={() => router.push({ pathname: '/photo/[id]', params: { id: photo.id, eventId: id, index: String(index) } })}>
                   {photo.public_url ? <Image source={{ uri: photo.public_url }} style={styles.photoImage} /> : <View style={styles.placeholder} />}
                 </Pressable>
               ))}
             </View>
           ) : (
-            <View style={styles.empty}>
-              <Text style={styles.emptyTitle}>No photos yet.</Text>
-              <Text style={styles.emptySub}>Be the first to capture the moment.</Text>
-            </View>
+            <View style={styles.empty}><Text style={styles.emptyTitle}>No photos yet.</Text><Text style={styles.emptySub}>Be the first to capture the moment.</Text></View>
           )
         ) : (
           <View style={styles.peopleList}>
             {people.map(person => {
               const avatarUrl = person.users?.avatar_url;
-              return (
-                <View key={person.id} style={styles.person}>
-                  <View style={styles.personAvatar}>
-                    {avatarUrl ? <Image source={{ uri: avatarUrl }} style={styles.personAvatarImage} /> : <Text style={styles.avatarText}>{(person.display_name || '?')[0].toUpperCase()}</Text>}
-                  </View>
-                  <View>
-                    <Text style={styles.personName}>{person.display_name}</Text>
-                    <Text style={styles.personMeta}>Joined {new Date(person.joined_at).toLocaleDateString()}</Text>
-                  </View>
-                </View>
-              );
+              return <View key={person.id} style={styles.person}><View style={styles.personAvatar}>{avatarUrl ? <Image source={{ uri: avatarUrl }} style={styles.personAvatarImage} /> : <Text style={styles.avatarText}>{(person.display_name || '?')[0].toUpperCase()}</Text>}</View><View><Text style={styles.personName}>{person.display_name}</Text><Text style={styles.personMeta}>Joined {new Date(person.joined_at).toLocaleDateString()}</Text></View></View>;
             })}
           </View>
         )}
-
         <View style={{ height: 88 }} />
       </Screen>
 
-      <Pressable
-        accessibilityRole="button"
-        accessibilityLabel="Take a photo"
-        onPress={() => router.push({ pathname: '/camera/[eventId]', params: { eventId: id } })}
-        style={styles.camera}
-      >
+      <Pressable accessibilityRole="button" accessibilityLabel="Take a photo" onPress={() => router.push({ pathname: '/camera/[eventId]', params: { eventId: id } })} style={styles.camera}>
         <MaterialCommunityIcons name="camera-outline" size={27} color={colors.black} />
       </Pressable>
     </View>
@@ -203,12 +153,12 @@ const styles = StyleSheet.create({
   inviteButton: { height: 42, paddingHorizontal: 17, borderRadius: 21, backgroundColor: 'rgba(255,255,255,.94)', flexDirection: 'row', alignItems: 'center', gap: 7, ...shadows },
   inviteText: { color: colors.black, fontSize: 14, fontWeight: '800' },
   error: { color: '#FFB4B4', paddingHorizontal: 2, paddingBottom: 8 },
-  tabs: { width: '100%', height: 43, padding: 2, borderRadius: 23, backgroundColor: 'rgba(70,78,88,.58)', borderWidth: 1, borderColor: 'rgba(255,255,255,.12)', flexDirection: 'row', marginTop: 9, marginBottom: 8 },
-  tab: { flex: 1, borderRadius: 21, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6 },
-  activeTab: { backgroundColor: 'rgba(255,255,255,.96)' },
-  tabText: { color: 'rgba(255,255,255,.72)', fontSize: 13, fontWeight: '700' },
-  activeTabText: { color: colors.black, fontSize: 13, fontWeight: '800' },
-  grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 4 },
+  tabs: { width: '100%', height: 51, padding: 3, borderRadius: 27, backgroundColor: 'rgba(70,78,88,.58)', borderWidth: 1, borderColor: 'rgba(255,255,255,.13)', flexDirection: 'row', marginTop: 9, marginBottom: 9 },
+  tab: { flex: 1, borderRadius: 24, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 7 },
+  activeTab: { backgroundColor: 'rgba(255,255,255,.97)' },
+  tabText: { color: 'rgba(255,255,255,.72)', fontSize: 14, fontWeight: '700' },
+  activeTabText: { color: colors.black, fontSize: 14, fontWeight: '800' },
+  grid: { flexDirection: 'row', flexWrap: 'wrap', columnGap: 4, rowGap: 4 },
   photo: { width: '32%', aspectRatio: 1, borderRadius: 10, overflow: 'hidden', backgroundColor: '#26313b' },
   photoImage: { width: '100%', height: '100%' },
   placeholder: { flex: 1, backgroundColor: '#26313b' },
