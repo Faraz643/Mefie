@@ -1,7 +1,6 @@
-import { useFocusEffect } from 'expo-router';
 import { BlurView } from 'expo-blur';
+import { useFocusEffect, useRouter } from 'expo-router';
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
-import { useRouter } from 'expo-router';
 import React, { useCallback } from 'react';
 import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
 import { BottomNav, Header, Screen } from '../components/Screen';
