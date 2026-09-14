@@ -88,7 +88,7 @@ export default function EventScreen() {
           <View style={styles.top}>
             <BackButton />
             <IconButton accessibilityLabel="Invite friends" onPress={invite}>
-              <MaterialCommunityIcons name="link-variant" size={22} color={colors.white} />
+              <MaterialCommunityIcons name="link-variant" size={21} color={colors.white} />
             </IconButton>
           </View>
           <Animated.View style={{ transform: [{ translateY: heroInfoTranslate }] }}>
@@ -164,7 +164,7 @@ const styles = StyleSheet.create({
   heroShade: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(4,9,14,.12)' },
   heroContent: { minHeight: HERO_HEIGHT, paddingHorizontal: 20 },
   top: { flexDirection: 'row', justifyContent: 'space-between' },
-  heroInfo: { paddingTop: 30, paddingBottom: 14 },
+  heroInfo: { paddingTop: 30, paddingBottom: 0 },
   title: { color: colors.white, fontSize: 29, lineHeight: 35, fontWeight: '800', letterSpacing: -0.7 },
   meta: { color: 'rgba(255,255,255,.78)', fontSize: 14, marginTop: 1 },
   actionRow: { flexDirection: 'row', alignItems: 'center', marginTop: 13 },
@@ -175,8 +175,10 @@ const styles = StyleSheet.create({
   avatarText: { color: colors.white, fontSize: 14, fontWeight: '800' },
   moreAvatar: { backgroundColor: 'rgba(26,34,42,.82)' },
   moreText: { color: colors.white, fontSize: 13, fontWeight: '800' },
+  inviteButton: { height: 42, paddingHorizontal: 17, borderRadius: 21, backgroundColor: 'rgba(255,255,255,.94)', flexDirection: 'row', alignItems: 'center', gap: 7, ...shadows },
+  inviteText: { color: colors.black, fontSize: 14, fontWeight: '800' },
   error: { color: '#FFB4B4', paddingBottom: 8 },
-  tabsSticky: { height: TAB_HEIGHT + 18, paddingHorizontal: 20, paddingTop: 9, paddingBottom: 9, backgroundColor: 'rgba(8,16,23,.72)', zIndex: 10 },
+  tabsSticky: { height: TAB_HEIGHT + 10, paddingHorizontal: 20, paddingTop: 5, paddingBottom: 5, backgroundColor: 'rgba(8,16,23,.72)', zIndex: 10 },
   tabs: { width: '100%', height: TAB_HEIGHT, borderRadius: 27, overflow: 'hidden', borderWidth: 1, borderColor: 'rgba(255,255,255,.30)', ...shadows },
   tabsTint: { flex: 1, padding: 3, backgroundColor: 'rgba(185,198,208,.17)', borderRadius: 27, flexDirection: 'row' },
   tab: { flex: 1, borderRadius: 24, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 7 },
