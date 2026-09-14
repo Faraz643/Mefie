@@ -87,8 +87,8 @@ export default function EventScreen() {
         <Animated.View style={[styles.heroContent, { paddingTop: insets.top + 16, opacity: heroOpacity }]}>
           <View style={styles.top}>
             <BackButton />
-            <IconButton accessibilityLabel="More event options" onPress={invite}>
-              <MaterialCommunityIcons name="dots-horizontal" size={22} color={colors.white} />
+            <IconButton accessibilityLabel="Invite friends" onPress={invite}>
+              <MaterialCommunityIcons name="link-variant" size={22} color={colors.white} />
             </IconButton>
           </View>
           <Animated.View style={{ transform: [{ translateY: heroInfoTranslate }] }}>
@@ -103,10 +103,6 @@ export default function EventScreen() {
                   })}
                   {people.length > 5 ? <View style={[styles.avatar, styles.avatarOverlap, styles.moreAvatar]}><Text style={styles.moreText}>+{people.length - 5}</Text></View> : null}
                 </View>
-                <Pressable accessibilityRole="button" accessibilityLabel="Invite friends" onPress={invite} style={styles.inviteButton}>
-                  <MaterialCommunityIcons name="link-variant" size={18} color={colors.black} />
-                  <Text style={styles.inviteText}>Invite</Text>
-                </Pressable>
               </View>
             </View>
           </Animated.View>
@@ -171,7 +167,7 @@ const styles = StyleSheet.create({
   heroInfo: { paddingTop: 30, paddingBottom: 14 },
   title: { color: colors.white, fontSize: 29, lineHeight: 35, fontWeight: '800', letterSpacing: -0.7 },
   meta: { color: 'rgba(255,255,255,.78)', fontSize: 14, marginTop: 1 },
-  actionRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 13 },
+  actionRow: { flexDirection: 'row', alignItems: 'center', marginTop: 13 },
   avatars: { flexDirection: 'row', alignItems: 'center', minHeight: 38, paddingLeft: 1 },
   avatar: { width: 36, height: 36, borderRadius: 18, backgroundColor: 'rgba(255,255,255,.24)', borderWidth: 2, borderColor: '#10171e', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' },
   avatarOverlap: { marginLeft: -7 },
@@ -179,8 +175,6 @@ const styles = StyleSheet.create({
   avatarText: { color: colors.white, fontSize: 14, fontWeight: '800' },
   moreAvatar: { backgroundColor: 'rgba(26,34,42,.82)' },
   moreText: { color: colors.white, fontSize: 13, fontWeight: '800' },
-  inviteButton: { height: 42, paddingHorizontal: 17, borderRadius: 21, backgroundColor: 'rgba(255,255,255,.94)', flexDirection: 'row', alignItems: 'center', gap: 7, ...shadows },
-  inviteText: { color: colors.black, fontSize: 14, fontWeight: '800' },
   error: { color: '#FFB4B4', paddingBottom: 8 },
   tabsSticky: { height: TAB_HEIGHT + 18, paddingHorizontal: 20, paddingTop: 9, paddingBottom: 9, backgroundColor: 'rgba(8,16,23,.72)', zIndex: 10 },
   tabs: { width: '100%', height: TAB_HEIGHT, borderRadius: 27, overflow: 'hidden', borderWidth: 1, borderColor: 'rgba(255,255,255,.30)', ...shadows },
