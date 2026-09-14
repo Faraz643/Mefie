@@ -189,7 +189,7 @@ const styles = StyleSheet.create({
   activeTab: { backgroundColor: 'rgba(255,255,255,.98)', borderWidth: 1, borderColor: 'rgba(255,255,255,.90)', shadowColor: '#fff', shadowOpacity: 0.45, shadowRadius: 6, shadowOffset: { width: 0, height: 1 }, elevation: 4 },
   tabText: { color: 'rgba(255,255,255,.90)', fontSize: 14, fontWeight: '700' },
   activeTabText: { color: colors.black, fontSize: 14, fontWeight: '800' },
-  gallery: { paddingHorizontal: 20, paddingTop: 0, backgroundColor: 'rgba(8,16,23,.18)', minHeight: 620 },
+  gallery: { paddingHorizontal: 10, paddingTop: 0, backgroundColor: 'rgba(8,16,23,.18)', minHeight: 620 },
   grid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', rowGap: 4 },
   photo: { width: '32.1%', aspectRatio: 1, borderRadius: 10, overflow: 'hidden', backgroundColor: '#26313b' },
   photoImage: { width: '100%', height: '100%' },
