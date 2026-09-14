@@ -98,7 +98,6 @@ export default function EventScreen() {
 
   return (
     <View style={styles.root}>
-      {/* Fixed backdrop: it never translates with the scroll content, so the gallery always has the event image behind it. */}
       <View pointerEvents="none" style={styles.background}>
         <Image source={{ uri: heroSource }} style={styles.backgroundImage} />
         <LinearGradient
@@ -164,6 +163,8 @@ export default function EventScreen() {
         </Animated.View>
 
         <View style={styles.gallery}>
+          <BlurView intensity={38} tint="dark" style={StyleSheet.absoluteFillObject} pointerEvents="none" />
+          <View style={styles.galleryTint} pointerEvents="none" />
           {error ? <Text style={styles.error}>{error}</Text> : null}
           {tab === 'photos' ? (
             <View style={styles.grid}>
@@ -235,7 +236,8 @@ const styles = StyleSheet.create({
   activeTab: { backgroundColor: 'rgba(255,255,255,.98)', borderWidth: 1, borderColor: 'rgba(255,255,255,.94)', shadowColor: '#fff', shadowOpacity: 0.34, shadowRadius: 7, shadowOffset: { width: 0, height: 1 }, elevation: 4 },
   tabText: { color: 'rgba(255,255,255,.90)', fontSize: 14, fontWeight: '700' },
   activeTabText: { color: colors.black, fontSize: 14, fontWeight: '800' },
-  gallery: { paddingHorizontal: 10, paddingTop: 0, backgroundColor: 'rgba(8,16,23,.20)', minHeight: 900 },
+  gallery: { position: 'relative', paddingHorizontal: 10, paddingTop: 0, backgroundColor: 'transparent', minHeight: 900 },
+  galleryTint: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(8,16,23,.24)' },
   grid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', rowGap: 4 },
   photo: { width: '32.1%', aspectRatio: 1, borderRadius: 10, overflow: 'hidden', backgroundColor: '#26313b' },
   photoImage: { width: '100%', height: '100%' },
