@@ -65,9 +65,12 @@ export default function EventScreen() {
         if (active) setError(e?.message || 'Could not load event.');
       }
     })();
+
     if (supabase) {
       const ch = supabase.channel(`event-${id}`)
-        .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'photos', filter: `event_id=eq.${id}` }, payload => setPhotos(curr => curr.some(x => x.id === payload.new.id) ? curr : [payload.new, ...curr]))
+        .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'photos', filter: `event_id=eq.${id}` }, payload =>
+          setPhotos(curr => curr.some(x => x.id === payload.new.id) ? curr : [payload.new, ...curr])
+        )
         .on('postgres_changes', { event: '*', schema: 'public', table: 'participants', filter: `event_id=eq.${id}` }, payload => {
           if (payload.eventType === 'INSERT') setPeople(curr => curr.some(x => x.id === payload.new.id) ? curr : [...curr, payload.new]);
           else if (payload.eventType === 'DELETE') setPeople(curr => curr.filter(x => x.id !== payload.old.id));
@@ -86,19 +89,23 @@ export default function EventScreen() {
   const title = event?.name || 'Event';
   const visiblePeople = people.slice(0, 5);
   const heroSource = photos[0]?.public_url || fallbackPhoto;
-  const galleryPhotos = photos.length ? photos : PLACEHOLDER_PHOTOS.map((url, index) => ({ id: `placeholder-${index}`, public_url: url, placeholder: true }));
+  const galleryPhotos = photos.length
+    ? photos
+    : PLACEHOLDER_PHOTOS.map((url, index) => ({ id: `placeholder-${index}`, public_url: url, placeholder: true }));
 
-  const heroTranslate = scrollY.interpolate({ inputRange: [0, 180], outputRange: [0, -34], extrapolate: 'clamp' });
-  const heroScale = scrollY.interpolate({ inputRange: [-80, 0, 180], outputRange: [1.06, 1, 0.98], extrapolate: 'clamp' });
   const heroOpacity = scrollY.interpolate({ inputRange: [0, 130, 220], outputRange: [1, 0.98, 0], extrapolate: 'clamp' });
   const heroInfoTranslate = scrollY.interpolate({ inputRange: [0, 170], outputRange: [0, -42], extrapolate: 'clamp' });
-  const tabsLift = scrollY.interpolate({ inputRange: [0, 170], outputRange: [0, -2], extrapolate: 'clamp' });
 
   return (
     <View style={styles.root}>
+      {/* Fixed backdrop: it never translates with the scroll content, so the gallery always has the event image behind it. */}
       <View pointerEvents="none" style={styles.background}>
-        <Animated.Image source={{ uri: heroSource }} style={[styles.backgroundImage, { transform: [{ translateY: heroTranslate }, { scale: heroScale }] }]} />
-        <LinearGradient colors={['rgba(4,9,14,.02)', 'rgba(4,9,14,.05)', 'rgba(8,16,23,.96)']} locations={[0, 0.48, 1]} style={StyleSheet.absoluteFillObject} />
+        <Image source={{ uri: heroSource }} style={styles.backgroundImage} />
+        <LinearGradient
+          colors={['rgba(4,9,14,.02)', 'rgba(4,9,14,.08)', 'rgba(8,16,23,.72)']}
+          locations={[0, 0.48, 1]}
+          style={StyleSheet.absoluteFillObject}
+        />
       </View>
 
       <Animated.ScrollView
@@ -117,6 +124,7 @@ export default function EventScreen() {
               <MaterialCommunityIcons name="link-variant" size={21} color={colors.white} />
             </IconButton>
           </View>
+
           <Animated.View style={{ transform: [{ translateY: heroInfoTranslate }] }}>
             <View style={styles.heroInfo}>
               <Text style={styles.title} numberOfLines={1}>{title}</Text>
@@ -124,15 +132,23 @@ export default function EventScreen() {
               <View style={styles.avatars}>
                 {visiblePeople.map((person, index) => {
                   const avatarUrl = person.users?.avatar_url;
-                  return <View key={person.id || index} style={[styles.avatar, index > 0 && styles.avatarOverlap]}>{avatarUrl ? <Image source={{ uri: avatarUrl }} style={styles.avatarImage} /> : <Text style={styles.avatarText}>{(person.display_name || '?')[0].toUpperCase()}</Text>}</View>;
+                  return (
+                    <View key={person.id || index} style={[styles.avatar, index > 0 && styles.avatarOverlap]}>
+                      {avatarUrl ? <Image source={{ uri: avatarUrl }} style={styles.avatarImage} /> : <Text style={styles.avatarText}>{(person.display_name || '?')[0].toUpperCase()}</Text>}
+                    </View>
+                  );
                 })}
-                {people.length > 5 ? <View style={[styles.avatar, styles.avatarOverlap, styles.moreAvatar]}><Text style={styles.moreText}>+{people.length - 5}</Text></View> : null}
+                {people.length > 5 ? (
+                  <View style={[styles.avatar, styles.avatarOverlap, styles.moreAvatar]}>
+                    <Text style={styles.moreText}>+{people.length - 5}</Text>
+                  </View>
+                ) : null}
               </View>
             </View>
           </Animated.View>
         </Animated.View>
 
-        <Animated.View style={[styles.tabsSticky, { transform: [{ translateY: tabsLift }] }]}>
+        <Animated.View style={styles.tabsSticky}>
           <BlurView intensity={82} tint="dark" style={styles.tabs}>
             <View style={styles.tabsTint}>
               <Pressable onPress={() => setTab('photos')} style={[styles.tab, tab === 'photos' && styles.activeTab]}>
@@ -151,30 +167,44 @@ export default function EventScreen() {
           {error ? <Text style={styles.error}>{error}</Text> : null}
           {tab === 'photos' ? (
             <View style={styles.grid}>
-              {galleryPhotos.map((photo, index) => <Pressable
-                key={photo.id || index}
-                disabled={photo.placeholder}
-                style={styles.photo}
-                onPress={() => router.push({ pathname: '/photo/[id]', params: { id: photo.id, eventId: id, index: String(index) } })}
-              >
-                <Image source={{ uri: photo.public_url }} style={styles.photoImage} />
-              </Pressable>)}
+              {galleryPhotos.map((photo, index) => (
+                <Pressable
+                  key={photo.id || index}
+                  disabled={photo.placeholder}
+                  style={styles.photo}
+                  onPress={() => router.push({ pathname: '/photo/[id]', params: { id: photo.id, eventId: id, index: String(index) } })}
+                >
+                  <Image source={{ uri: photo.public_url }} style={styles.photoImage} />
+                </Pressable>
+              ))}
             </View>
           ) : (
             <View style={styles.peopleList}>
               {people.map(person => {
                 const avatarUrl = person.users?.avatar_url;
-                return <View key={person.id} style={styles.person}>
-                  <View style={styles.personAvatar}>{avatarUrl ? <Image source={{ uri: avatarUrl }} style={styles.personAvatarImage} /> : <Text style={styles.avatarText}>{(person.display_name || '?')[0].toUpperCase()}</Text>}</View>
-                  <View><Text style={styles.personName}>{person.display_name}</Text><Text style={styles.personMeta}>Joined {new Date(person.joined_at).toLocaleDateString()}</Text></View>
-                </View>;
+                return (
+                  <View key={person.id} style={styles.person}>
+                    <View style={styles.personAvatar}>
+                      {avatarUrl ? <Image source={{ uri: avatarUrl }} style={styles.personAvatarImage} /> : <Text style={styles.avatarText}>{(person.display_name || '?')[0].toUpperCase()}</Text>}
+                    </View>
+                    <View>
+                      <Text style={styles.personName}>{person.display_name}</Text>
+                      <Text style={styles.personMeta}>Joined {new Date(person.joined_at).toLocaleDateString()}</Text>
+                    </View>
+                  </View>
+                );
               })}
             </View>
           )}
         </View>
       </Animated.ScrollView>
 
-      <Pressable accessibilityRole="button" accessibilityLabel="Take a photo" onPress={() => router.push({ pathname: '/camera/[eventId]', params: { eventId: id } })} style={[styles.camera, { bottom: Math.max(insets.bottom + 18, 24) }]}>
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel="Take a photo"
+        onPress={() => router.push({ pathname: '/camera/[eventId]', params: { eventId: id } })}
+        style={[styles.camera, { bottom: Math.max(insets.bottom + 18, 24) }]}
+      >
         <MaterialCommunityIcons name="camera-outline" size={27} color={colors.black} />
       </Pressable>
     </View>
@@ -184,8 +214,8 @@ export default function EventScreen() {
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: '#081017' },
   scroll: { flex: 1 },
-  background: { position: 'absolute', top: 0, left: 0, right: 0, height: HERO_HEIGHT + 70, overflow: 'hidden' },
-  backgroundImage: { position: 'absolute', top: -20, left: -10, right: -10, height: HERO_HEIGHT + 105, resizeMode: 'cover' },
+  background: { ...StyleSheet.absoluteFillObject, overflow: 'hidden' },
+  backgroundImage: { ...StyleSheet.absoluteFillObject, resizeMode: 'cover' },
   heroContent: { minHeight: HERO_HEIGHT, paddingHorizontal: 20 },
   top: { flexDirection: 'row', justifyContent: 'space-between' },
   heroInfo: { paddingTop: 29, paddingBottom: 2 },
@@ -198,23 +228,23 @@ const styles = StyleSheet.create({
   avatarText: { color: colors.white, fontSize: 14, fontWeight: '800' },
   moreAvatar: { backgroundColor: 'rgba(25,33,42,.88)' },
   moreText: { color: colors.white, fontSize: 13, fontWeight: '800' },
-  tabsSticky: { height: TAB_HEIGHT + 8, paddingHorizontal: 20, paddingTop: 4, paddingBottom: 4, backgroundColor: 'rgba(8,16,23,.42)', zIndex: 10 },
+  tabsSticky: { height: TAB_HEIGHT + 8, paddingHorizontal: 20, paddingTop: 4, paddingBottom: 4, backgroundColor: 'rgba(8,16,23,.28)', zIndex: 10 },
   tabs: { width: '100%', height: TAB_HEIGHT, borderRadius: 27, overflow: 'hidden', borderWidth: 1, borderColor: 'rgba(255,255,255,.26)', ...shadows },
   tabsTint: { flex: 1, padding: 3, backgroundColor: 'rgba(150,164,176,.18)', borderRadius: 27, flexDirection: 'row' },
   tab: { flex: 1, borderRadius: 24, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 7 },
   activeTab: { backgroundColor: 'rgba(255,255,255,.98)', borderWidth: 1, borderColor: 'rgba(255,255,255,.94)', shadowColor: '#fff', shadowOpacity: 0.34, shadowRadius: 7, shadowOffset: { width: 0, height: 1 }, elevation: 4 },
   tabText: { color: 'rgba(255,255,255,.90)', fontSize: 14, fontWeight: '700' },
   activeTabText: { color: colors.black, fontSize: 14, fontWeight: '800' },
-  gallery: { paddingHorizontal: 10, paddingTop: 2, paddingBottom: 18, backgroundColor: '#081017', minHeight: 620 },
-  grid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', rowGap: 5 },
-  photo: { width: '32.15%', aspectRatio: 1, borderRadius: 11, overflow: 'hidden', backgroundColor: '#1b2731' },
+  gallery: { paddingHorizontal: 10, paddingTop: 0, backgroundColor: 'rgba(8,16,23,.20)', minHeight: 900 },
+  grid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', rowGap: 4 },
+  photo: { width: '32.1%', aspectRatio: 1, borderRadius: 10, overflow: 'hidden', backgroundColor: '#26313b' },
   photoImage: { width: '100%', height: '100%' },
   error: { color: '#FFB4B4', paddingBottom: 8 },
-  peopleList: { paddingTop: 4 },
+  peopleList: { paddingTop: 3 },
   person: { flexDirection: 'row', alignItems: 'center', paddingVertical: 9 },
   personAvatar: { width: 44, height: 44, borderRadius: 22, backgroundColor: 'rgba(255,255,255,.16)', alignItems: 'center', justifyContent: 'center', marginRight: 12, overflow: 'hidden' },
   personAvatarImage: { width: '100%', height: '100%' },
   personName: { color: colors.white, fontWeight: '800', fontSize: 15 },
   personMeta: { color: colors.muted, fontSize: 12, marginTop: 3 },
-  camera: { position: 'absolute', alignSelf: 'center', width: 62, height: 62, borderRadius: 31, backgroundColor: '#fff', alignItems: 'center', justifyContent: 'center', borderWidth: 3, borderColor: 'rgba(255,255,255,.62)', ...shadows },
+  camera: { position: 'absolute', alignSelf: 'center', width: 64, height: 64, borderRadius: 32, backgroundColor: '#fff', alignItems: 'center', justifyContent: 'center', borderWidth: 4, borderColor: 'rgba(255,255,255,.32)', ...shadows },
 });
