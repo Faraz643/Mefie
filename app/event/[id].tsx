@@ -13,6 +13,29 @@ const fallbackPhoto = 'https://images.unsplash.com/photo-1500530855697-b586d89ba
 const HERO_HEIGHT = 245;
 const TAB_HEIGHT = 51;
 
+const PLACEHOLDER_PHOTOS = [
+  'https://images.unsplash.com/photo-1500534623283-312aade485b7?auto=format&fit=crop&w=700&q=85',
+  'https://images.unsplash.com/photo-1511497584788-876760111969?auto=format&fit=crop&w=700&q=85',
+  'https://images.unsplash.com/photo-1501785888041-af3ef285b470?auto=format&fit=crop&w=700&q=85',
+  'https://images.unsplash.com/photo-1519681393784-d120267933ba?auto=format&fit=crop&w=700&q=85',
+  'https://images.unsplash.com/photo-1493246507139-91e8fad9978e?auto=format&fit=crop&w=700&q=85',
+  'https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=700&q=85',
+  'https://images.unsplash.com/photo-1497435334941-8c899ee9e8e9?auto=format&fit=crop&w=700&q=85',
+  'https://images.unsplash.com/photo-1470770841072-f978cf4d019e?auto=format&fit=crop&w=700&q=85',
+  'https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&w=700&q=85',
+  'https://images.unsplash.com/photo-1495567720989-cebdbdd97913?auto=format&fit=crop&w=700&q=85',
+  'https://images.unsplash.com/photo-1500534314209-a25ddb2bd429?auto=format&fit=crop&w=700&q=85',
+  'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?auto=format&fit=crop&w=700&q=85',
+  'https://images.unsplash.com/photo-1526481280695-3c687fd5432c?auto=format&fit=crop&w=700&q=85',
+  'https://images.unsplash.com/photo-1521292270410-a8c4d716d518?auto=format&fit=crop&w=700&q=85',
+  'https://images.unsplash.com/photo-1526772662000-3f88f10405ff?auto=format&fit=crop&w=700&q=85',
+  'https://images.unsplash.com/photo-1530789253388-582c481c54b0?auto=format&fit=crop&w=700&q=85',
+  'https://images.unsplash.com/photo-1500534623283-312aade485b7?auto=format&fit=crop&w=700&q=85&sat=-15',
+  'https://images.unsplash.com/photo-1519681393784-d120267933ba?auto=format&fit=crop&w=700&q=85&sat=10',
+  'https://images.unsplash.com/photo-1501785888041-af3ef285b470?auto=format&fit=crop&w=700&q=85&sat=-10',
+  'https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&w=700&q=85&sat=10',
+];
+
 export default function EventScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
@@ -62,6 +85,7 @@ export default function EventScreen() {
   const title = event?.name || 'Event';
   const visiblePeople = people.slice(0, 5);
   const heroSource = photos[0]?.public_url || fallbackPhoto;
+  const galleryPhotos = photos.length ? photos : PLACEHOLDER_PHOTOS.map((url, index) => ({ id: `placeholder-${index}`, public_url: url, placeholder: true }));
 
   const heroTranslate = scrollY.interpolate({ inputRange: [0, 180], outputRange: [0, -34], extrapolate: 'clamp' });
   const heroScale = scrollY.interpolate({ inputRange: [-80, 0, 180], outputRange: [1.06, 1, 0.98], extrapolate: 'clamp' });
@@ -126,15 +150,16 @@ export default function EventScreen() {
         <View style={styles.gallery}>
           {error ? <Text style={styles.error}>{error}</Text> : null}
           {tab === 'photos' ? (
-            photos.length ? (
-              <View style={styles.grid}>
-                {photos.map((photo, index) => <Pressable key={photo.id || index} style={styles.photo} onPress={() => router.push({ pathname: '/photo/[id]', params: { id: photo.id, eventId: id, index: String(index) } })}>
-                  {photo.public_url ? <Image source={{ uri: photo.public_url }} style={styles.photoImage} /> : <View style={styles.placeholder} />}
-                </Pressable>)}
-              </View>
-            ) : (
-              <View style={styles.empty}><Text style={styles.emptyTitle}>No photos yet.</Text><Text style={styles.emptySub}>Be the first to capture the moment.</Text></View>
-            )
+            <View style={styles.grid}>
+              {galleryPhotos.map((photo, index) => <Pressable
+                key={photo.id || index}
+                disabled={photo.placeholder}
+                style={styles.photo}
+                onPress={() => router.push({ pathname: '/photo/[id]', params: { id: photo.id, eventId: id, index: String(index) } })}
+              >
+                <Image source={{ uri: photo.public_url }} style={styles.photoImage} />
+              </Pressable>)}
+            </View>
           ) : (
             <View style={styles.peopleList}>
               {people.map(person => {
