@@ -1,6 +1,7 @@
 import { BlurView } from 'expo-blur';
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
+import { LinearGradient } from 'expo-linear-gradient';
 import React, { useEffect, useRef, useState } from 'react';
 import { Animated, Image, Pressable, Share, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -10,30 +11,30 @@ import { colors, shadows } from '../../lib/theme';
 import { ensureParticipant, supabase, useApp } from '../../lib/app-context';
 
 const fallbackPhoto = 'https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=1200&q=85';
-const HERO_HEIGHT = 245;
-const TAB_HEIGHT = 51;
+const HERO_HEIGHT = 250;
+const TAB_HEIGHT = 52;
 
 const PLACEHOLDER_PHOTOS = [
-  'https://images.unsplash.com/photo-1500534623283-312aade485b7?auto=format&fit=crop&w=700&q=85',
-  'https://images.unsplash.com/photo-1511497584788-876760111969?auto=format&fit=crop&w=700&q=85',
-  'https://images.unsplash.com/photo-1501785888041-af3ef285b470?auto=format&fit=crop&w=700&q=85',
-  'https://images.unsplash.com/photo-1519681393784-d120267933ba?auto=format&fit=crop&w=700&q=85',
-  'https://images.unsplash.com/photo-1493246507139-91e8fad9978e?auto=format&fit=crop&w=700&q=85',
-  'https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=700&q=85',
-  'https://images.unsplash.com/photo-1497435334941-8c899ee9e8e9?auto=format&fit=crop&w=700&q=85',
-  'https://images.unsplash.com/photo-1470770841072-f978cf4d019e?auto=format&fit=crop&w=700&q=85',
-  'https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&w=700&q=85',
-  'https://images.unsplash.com/photo-1495567720989-cebdbdd97913?auto=format&fit=crop&w=700&q=85',
-  'https://images.unsplash.com/photo-1500534314209-a25ddb2bd429?auto=format&fit=crop&w=700&q=85',
-  'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?auto=format&fit=crop&w=700&q=85',
-  'https://images.unsplash.com/photo-1526481280695-3c687fd5432c?auto=format&fit=crop&w=700&q=85',
-  'https://images.unsplash.com/photo-1521292270410-a8c4d716d518?auto=format&fit=crop&w=700&q=85',
-  'https://images.unsplash.com/photo-1526772662000-3f88f10405ff?auto=format&fit=crop&w=700&q=85',
-  'https://images.unsplash.com/photo-1530789253388-582c481c54b0?auto=format&fit=crop&w=700&q=85',
-  'https://images.unsplash.com/photo-1500534623283-312aade485b7?auto=format&fit=crop&w=700&q=85&sat=-15',
-  'https://images.unsplash.com/photo-1519681393784-d120267933ba?auto=format&fit=crop&w=700&q=85&sat=10',
-  'https://images.unsplash.com/photo-1501785888041-af3ef285b470?auto=format&fit=crop&w=700&q=85&sat=-10',
-  'https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&w=700&q=85&sat=10',
+  'https://images.unsplash.com/photo-1500534623283-312aade485b7?auto=format&fit=crop&w=700&q=88',
+  'https://images.unsplash.com/photo-1511497584788-876760111969?auto=format&fit=crop&w=700&q=88',
+  'https://images.unsplash.com/photo-1501785888041-af3ef285b470?auto=format&fit=crop&w=700&q=88',
+  'https://images.unsplash.com/photo-1519681393784-d120267933ba?auto=format&fit=crop&w=700&q=88',
+  'https://images.unsplash.com/photo-1493246507139-91e8fad9978e?auto=format&fit=crop&w=700&q=88',
+  'https://images.unsplash.com/photo-1470770841072-f978cf4d019e?auto=format&fit=crop&w=700&q=88',
+  'https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&w=700&q=88',
+  'https://images.unsplash.com/photo-1495567720989-cebdbdd97913?auto=format&fit=crop&w=700&q=88',
+  'https://images.unsplash.com/photo-1500534314209-a25ddb2bd429?auto=format&fit=crop&w=700&q=88',
+  'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?auto=format&fit=crop&w=700&q=88',
+  'https://images.unsplash.com/photo-1526481280695-3c687fd5432c?auto=format&fit=crop&w=700&q=88',
+  'https://images.unsplash.com/photo-1521292270410-a8c4d716d518?auto=format&fit=crop&w=700&q=88',
+  'https://images.unsplash.com/photo-1526772662000-3f88f10405ff?auto=format&fit=crop&w=700&q=88',
+  'https://images.unsplash.com/photo-1530789253388-582c481c54b0?auto=format&fit=crop&w=700&q=88',
+  'https://images.unsplash.com/photo-1500534623283-312aade485b7?auto=format&fit=crop&w=700&q=82&sat=-12',
+  'https://images.unsplash.com/photo-1519681393784-d120267933ba?auto=format&fit=crop&w=700&q=82&sat=12',
+  'https://images.unsplash.com/photo-1501785888041-af3ef285b470?auto=format&fit=crop&w=700&q=82&sat=-8',
+  'https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&w=700&q=82&sat=8',
+  'https://images.unsplash.com/photo-1470770841072-f978cf4d019e?auto=format&fit=crop&w=700&q=82&sat=-10',
+  'https://images.unsplash.com/photo-1493246507139-91e8fad9978e?auto=format&fit=crop&w=700&q=82&sat=10',
 ];
 
 export default function EventScreen() {
@@ -89,26 +90,27 @@ export default function EventScreen() {
 
   const heroTranslate = scrollY.interpolate({ inputRange: [0, 180], outputRange: [0, -34], extrapolate: 'clamp' });
   const heroScale = scrollY.interpolate({ inputRange: [-80, 0, 180], outputRange: [1.06, 1, 0.98], extrapolate: 'clamp' });
-  const heroOpacity = scrollY.interpolate({ inputRange: [0, 150, 250], outputRange: [1, 0.96, 0], extrapolate: 'clamp' });
+  const heroOpacity = scrollY.interpolate({ inputRange: [0, 130, 220], outputRange: [1, 0.98, 0], extrapolate: 'clamp' });
   const heroInfoTranslate = scrollY.interpolate({ inputRange: [0, 170], outputRange: [0, -42], extrapolate: 'clamp' });
+  const tabsLift = scrollY.interpolate({ inputRange: [0, 170], outputRange: [0, -2], extrapolate: 'clamp' });
 
   return (
     <View style={styles.root}>
       <View pointerEvents="none" style={styles.background}>
         <Animated.Image source={{ uri: heroSource }} style={[styles.backgroundImage, { transform: [{ translateY: heroTranslate }, { scale: heroScale }] }]} />
-        <View style={styles.heroShade} />
+        <LinearGradient colors={['rgba(4,9,14,.02)', 'rgba(4,9,14,.05)', 'rgba(8,16,23,.96)']} locations={[0, 0.48, 1]} style={StyleSheet.absoluteFillObject} />
       </View>
 
       <Animated.ScrollView
         style={styles.scroll}
-        contentContainerStyle={{ paddingBottom: insets.bottom + 110 }}
+        contentContainerStyle={{ paddingBottom: insets.bottom + 112 }}
         showsVerticalScrollIndicator={false}
         stickyHeaderIndices={[1]}
         scrollEventThrottle={16}
         bounces
         onScroll={Animated.event([{ nativeEvent: { contentOffset: { y: scrollY } } }], { useNativeDriver: true })}
       >
-        <Animated.View style={[styles.heroContent, { paddingTop: insets.top + 16, opacity: heroOpacity }]}>
+        <Animated.View style={[styles.heroContent, { paddingTop: insets.top + 15, opacity: heroOpacity }]}>
           <View style={styles.top}>
             <BackButton />
             <IconButton accessibilityLabel="Invite friends" onPress={invite}>
@@ -119,33 +121,31 @@ export default function EventScreen() {
             <View style={styles.heroInfo}>
               <Text style={styles.title} numberOfLines={1}>{title}</Text>
               <Text style={styles.meta}>{people.length} people · {photos.length} photos</Text>
-              <View style={styles.actionRow}>
-                <View style={styles.avatars}>
-                  {visiblePeople.map((person, index) => {
-                    const avatarUrl = person.users?.avatar_url;
-                    return <View key={person.id || index} style={[styles.avatar, index > 0 && styles.avatarOverlap]}>{avatarUrl ? <Image source={{ uri: avatarUrl }} style={styles.avatarImage} /> : <Text style={styles.avatarText}>{(person.display_name || '?')[0].toUpperCase()}</Text>}</View>;
-                  })}
-                  {people.length > 5 ? <View style={[styles.avatar, styles.avatarOverlap, styles.moreAvatar]}><Text style={styles.moreText}>+{people.length - 5}</Text></View> : null}
-                </View>
+              <View style={styles.avatars}>
+                {visiblePeople.map((person, index) => {
+                  const avatarUrl = person.users?.avatar_url;
+                  return <View key={person.id || index} style={[styles.avatar, index > 0 && styles.avatarOverlap]}>{avatarUrl ? <Image source={{ uri: avatarUrl }} style={styles.avatarImage} /> : <Text style={styles.avatarText}>{(person.display_name || '?')[0].toUpperCase()}</Text>}</View>;
+                })}
+                {people.length > 5 ? <View style={[styles.avatar, styles.avatarOverlap, styles.moreAvatar]}><Text style={styles.moreText}>+{people.length - 5}</Text></View> : null}
               </View>
             </View>
           </Animated.View>
         </Animated.View>
 
-        <View style={styles.tabsSticky}>
-          <BlurView intensity={76} tint="dark" style={styles.tabs}>
+        <Animated.View style={[styles.tabsSticky, { transform: [{ translateY: tabsLift }] }]}>
+          <BlurView intensity={82} tint="dark" style={styles.tabs}>
             <View style={styles.tabsTint}>
               <Pressable onPress={() => setTab('photos')} style={[styles.tab, tab === 'photos' && styles.activeTab]}>
-                <MaterialCommunityIcons name="image-multiple-outline" size={17} color={tab === 'photos' ? colors.black : 'rgba(255,255,255,.94)'} />
+                <MaterialCommunityIcons name="image-multiple-outline" size={17} color={tab === 'photos' ? colors.black : 'rgba(255,255,255,.92)'} />
                 <Text style={tab === 'photos' ? styles.activeTabText : styles.tabText}>Photos</Text>
               </Pressable>
               <Pressable onPress={() => setTab('people')} style={[styles.tab, tab === 'people' && styles.activeTab]}>
-                <MaterialCommunityIcons name="account-group-outline" size={17} color={tab === 'people' ? colors.black : 'rgba(255,255,255,.90)'} />
+                <MaterialCommunityIcons name="account-group-outline" size={17} color={tab === 'people' ? colors.black : 'rgba(255,255,255,.88)'} />
                 <Text style={tab === 'people' ? styles.activeTabText : styles.tabText}>People</Text>
               </Pressable>
             </View>
           </BlurView>
-        </View>
+        </Animated.View>
 
         <View style={styles.gallery}>
           {error ? <Text style={styles.error}>{error}</Text> : null}
@@ -174,7 +174,7 @@ export default function EventScreen() {
         </View>
       </Animated.ScrollView>
 
-      <Pressable accessibilityRole="button" accessibilityLabel="Take a photo" onPress={() => router.push({ pathname: '/camera/[eventId]', params: { eventId: id } })} style={[styles.camera, { bottom: Math.max(insets.bottom + 18, 26) }]}>
+      <Pressable accessibilityRole="button" accessibilityLabel="Take a photo" onPress={() => router.push({ pathname: '/camera/[eventId]', params: { eventId: id } })} style={[styles.camera, { bottom: Math.max(insets.bottom + 18, 24) }]}>
         <MaterialCommunityIcons name="camera-outline" size={27} color={colors.black} />
       </Pressable>
     </View>
@@ -184,45 +184,37 @@ export default function EventScreen() {
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: '#081017' },
   scroll: { flex: 1 },
-  background: { position: 'absolute', top: 0, left: 0, right: 0, height: HERO_HEIGHT + 40, overflow: 'hidden' },
-  backgroundImage: { position: 'absolute', top: -18, left: -10, right: -10, height: HERO_HEIGHT + 80, resizeMode: 'cover' },
-  heroShade: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(4,9,14,.12)' },
+  background: { position: 'absolute', top: 0, left: 0, right: 0, height: HERO_HEIGHT + 70, overflow: 'hidden' },
+  backgroundImage: { position: 'absolute', top: -20, left: -10, right: -10, height: HERO_HEIGHT + 105, resizeMode: 'cover' },
   heroContent: { minHeight: HERO_HEIGHT, paddingHorizontal: 20 },
   top: { flexDirection: 'row', justifyContent: 'space-between' },
-  heroInfo: { paddingTop: 30, paddingBottom: 0 },
+  heroInfo: { paddingTop: 29, paddingBottom: 2 },
   title: { color: colors.white, fontSize: 29, lineHeight: 35, fontWeight: '800', letterSpacing: -0.7 },
-  meta: { color: 'rgba(255,255,255,.78)', fontSize: 14, marginTop: 1 },
-  actionRow: { flexDirection: 'row', alignItems: 'center', marginTop: 13 },
-  avatars: { flexDirection: 'row', alignItems: 'center', minHeight: 38, paddingLeft: 1 },
-  avatar: { width: 36, height: 36, borderRadius: 18, backgroundColor: 'rgba(255,255,255,.24)', borderWidth: 2, borderColor: '#10171e', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' },
+  meta: { color: 'rgba(255,255,255,.80)', fontSize: 14, marginTop: 1 },
+  avatars: { flexDirection: 'row', alignItems: 'center', minHeight: 38, marginTop: 10, paddingLeft: 1 },
+  avatar: { width: 36, height: 36, borderRadius: 18, backgroundColor: 'rgba(255,255,255,.22)', borderWidth: 2, borderColor: 'rgba(8,16,23,.92)', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' },
   avatarOverlap: { marginLeft: -7 },
   avatarImage: { width: '100%', height: '100%' },
   avatarText: { color: colors.white, fontSize: 14, fontWeight: '800' },
-  moreAvatar: { backgroundColor: 'rgba(26,34,42,.82)' },
+  moreAvatar: { backgroundColor: 'rgba(25,33,42,.88)' },
   moreText: { color: colors.white, fontSize: 13, fontWeight: '800' },
-  inviteButton: { height: 42, paddingHorizontal: 17, borderRadius: 21, backgroundColor: 'rgba(255,255,255,.94)', flexDirection: 'row', alignItems: 'center', gap: 7, ...shadows },
-  inviteText: { color: colors.black, fontSize: 14, fontWeight: '800' },
-  error: { color: '#FFB4B4', paddingBottom: 8 },
-  tabsSticky: { height: TAB_HEIGHT + 10, paddingHorizontal: 20, paddingTop: 5, paddingBottom: 5, backgroundColor: 'rgba(8,16,23,.72)', zIndex: 10 },
-  tabs: { width: '100%', height: TAB_HEIGHT, borderRadius: 27, overflow: 'hidden', borderWidth: 1, borderColor: 'rgba(255,255,255,.30)', ...shadows },
-  tabsTint: { flex: 1, padding: 3, backgroundColor: 'rgba(185,198,208,.17)', borderRadius: 27, flexDirection: 'row' },
+  tabsSticky: { height: TAB_HEIGHT + 8, paddingHorizontal: 20, paddingTop: 4, paddingBottom: 4, backgroundColor: 'rgba(8,16,23,.42)', zIndex: 10 },
+  tabs: { width: '100%', height: TAB_HEIGHT, borderRadius: 27, overflow: 'hidden', borderWidth: 1, borderColor: 'rgba(255,255,255,.26)', ...shadows },
+  tabsTint: { flex: 1, padding: 3, backgroundColor: 'rgba(150,164,176,.18)', borderRadius: 27, flexDirection: 'row' },
   tab: { flex: 1, borderRadius: 24, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 7 },
-  activeTab: { backgroundColor: 'rgba(255,255,255,.98)', borderWidth: 1, borderColor: 'rgba(255,255,255,.90)', shadowColor: '#fff', shadowOpacity: 0.45, shadowRadius: 6, shadowOffset: { width: 0, height: 1 }, elevation: 4 },
+  activeTab: { backgroundColor: 'rgba(255,255,255,.98)', borderWidth: 1, borderColor: 'rgba(255,255,255,.94)', shadowColor: '#fff', shadowOpacity: 0.34, shadowRadius: 7, shadowOffset: { width: 0, height: 1 }, elevation: 4 },
   tabText: { color: 'rgba(255,255,255,.90)', fontSize: 14, fontWeight: '700' },
   activeTabText: { color: colors.black, fontSize: 14, fontWeight: '800' },
-  gallery: { paddingHorizontal: 10, paddingTop: 0, backgroundColor: 'rgba(8,16,23,.18)', minHeight: 620 },
-  grid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', rowGap: 4 },
-  photo: { width: '32.1%', aspectRatio: 1, borderRadius: 10, overflow: 'hidden', backgroundColor: '#26313b' },
+  gallery: { paddingHorizontal: 10, paddingTop: 2, paddingBottom: 18, backgroundColor: '#081017', minHeight: 620 },
+  grid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', rowGap: 5 },
+  photo: { width: '32.15%', aspectRatio: 1, borderRadius: 11, overflow: 'hidden', backgroundColor: '#1b2731' },
   photoImage: { width: '100%', height: '100%' },
-  placeholder: { flex: 1, backgroundColor: '#26313b' },
-  empty: { padding: 26, alignItems: 'center' },
-  emptyTitle: { color: colors.white, fontWeight: '800' },
-  emptySub: { color: colors.muted, marginTop: 5 },
-  peopleList: { paddingTop: 3 },
+  error: { color: '#FFB4B4', paddingBottom: 8 },
+  peopleList: { paddingTop: 4 },
   person: { flexDirection: 'row', alignItems: 'center', paddingVertical: 9 },
   personAvatar: { width: 44, height: 44, borderRadius: 22, backgroundColor: 'rgba(255,255,255,.16)', alignItems: 'center', justifyContent: 'center', marginRight: 12, overflow: 'hidden' },
   personAvatarImage: { width: '100%', height: '100%' },
   personName: { color: colors.white, fontWeight: '800', fontSize: 15 },
   personMeta: { color: colors.muted, fontSize: 12, marginTop: 3 },
-  camera: { position: 'absolute', alignSelf: 'center', width: 64, height: 64, borderRadius: 32, backgroundColor: '#fff', alignItems: 'center', justifyContent: 'center', borderWidth: 4, borderColor: 'rgba(255,255,255,.32)', ...shadows },
+  camera: { position: 'absolute', alignSelf: 'center', width: 62, height: 62, borderRadius: 31, backgroundColor: '#fff', alignItems: 'center', justifyContent: 'center', borderWidth: 3, borderColor: 'rgba(255,255,255,.62)', ...shadows },
 });
