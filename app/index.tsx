@@ -38,7 +38,7 @@ const styles=StyleSheet.create({
   eventCard:{width:'48%',height:170,borderRadius:radii.card,overflow:'hidden',backgroundColor:'#26313F',...shadows},
   cover:{flex:1,position:'relative',justifyContent:'flex-end'},
   coverImage:{...StyleSheet.absoluteFillObject,width:'100%',height:'100%'},
-  eventInfo:{paddingHorizontal:13,paddingTop:16,paddingBottom:13,backgroundColor:'rgba(14,20,27,0.52)',borderTopWidth:1,borderTopColor:'rgba(255,255,255,0.08)'},
+  eventInfo:{paddingHorizontal:13,paddingTop:16,paddingBottom:13,backgroundColor:'rgba(14,20,27,0.24)',borderTopWidth:1,borderTopColor:'rgba(255,255,255,0.08)'},
   eventName:{color:colors.white,fontSize:16,fontWeight:'800',letterSpacing:-.2},
   eventMeta:{color:'rgba(255,255,255,0.72)',fontSize:11,marginTop:4},
   emptyTitle:{color:colors.white,fontSize:16,fontWeight:'700'},
