@@ -4,7 +4,7 @@ import { Pressable, StyleSheet, Text, TextInput, View, ViewStyle } from 'react-n
 import { colors, radii, shadows } from '../lib/theme';
 
 export function GlassCard({ children, style }: { children: React.ReactNode; style?: ViewStyle }) {
-  return <BlurView intensity={42} tint="dark" experimentalBlurMethod="dimezisBlurView" style={[styles.card, style]}>{children}</BlurView>;
+  return <BlurView intensity={42} tint="dark" style={[styles.card, style]}>{children}</BlurView>;
 }
 
 export function GlassButton({ label, onPress, primary = false, icon, disabled = false }: { label: string; onPress?: () => void; primary?: boolean; icon?: React.ReactNode; disabled?: boolean }) {
@@ -34,12 +34,12 @@ export function GlassAction({ label, subtitle, onPress, primary = false, icon }:
 
   if (primary) return content;
 
-  return <BlurView intensity={78} tint="dark" experimentalBlurMethod="dimezisBlurView" style={styles.actionBlur}>{content}</BlurView>;
+  return <BlurView intensity={78} tint="dark" style={styles.actionBlur}>{content}</BlurView>;
 }
 
 export function IconButton({ children, onPress, accessibilityLabel }: { children: React.ReactNode; onPress?: () => void; accessibilityLabel: string }) {
   return <Pressable accessibilityRole="button" accessibilityLabel={accessibilityLabel} onPress={onPress} focusable={false} android_ripple={{ color: 'transparent' }} style={({ pressed }) => [styles.iconButtonOuter, pressed && styles.pressed]}>
-    <BlurView intensity={34} tint="light" experimentalBlurMethod="dimezisBlurView" style={styles.iconButton}>{children}</BlurView>
+    <BlurView intensity={34} tint="light" style={styles.iconButton}>{children}</BlurView>
   </Pressable>;
 }
 
