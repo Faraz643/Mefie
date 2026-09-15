@@ -10,6 +10,8 @@ import { useApp } from '../lib/app-context';
 import { IconButton } from './Glass';
 
 const hero = require('../assets/hero-background.jpg');
+type NavPath = '/' | '/events' | '/you';
+type NavItem = { key: 'home' | 'events' | 'you'; label: string; icon: 'home' | 'image-outline' | 'account-outline'; path: NavPath };
 
 export function Screen({ children, backgroundImage, blurBackground = false }: { children: React.ReactNode; backgroundImage?: any; blurBackground?: boolean }) {
   const insets = useSafeAreaInsets();
@@ -38,10 +40,10 @@ export function BottomNav({ active = 'home' }: { active?: 'home' | 'events' | 'y
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { width } = useWindowDimensions();
-  const items = [
-    { key: 'home' as const, label: 'Home', icon: 'home' as const, path: '/' },
-    { key: 'events' as const, label: 'Events', icon: 'image-outline' as const, path: '/events' },
-    { key: 'you' as const, label: 'You', icon: 'account-outline' as const, path: '/you' },
+  const items: NavItem[] = [
+    { key: 'home', label: 'Home', icon: 'home', path: '/' },
+    { key: 'events', label: 'Events', icon: 'image-outline', path: '/events' },
+    { key: 'you', label: 'You', icon: 'account-outline', path: '/you' },
   ];
   const activeIndex = items.findIndex(item => item.key === active);
   const itemWidth = Math.max((width - 36 - 12) / items.length, 0);
@@ -51,7 +53,7 @@ export function BottomNav({ active = 'home' }: { active?: 'home' | 'events' | 'y
     indicatorX.setValue(Math.max(activeIndex, 0) * itemWidth);
   }, [activeIndex, itemWidth, indicatorX]);
 
-  const navigate = (index: number, path: '/' | '/events' | '/you') => {
+  const navigate = (index: number, path: NavPath) => {
     Animated.timing(indicatorX, {
       toValue: index * itemWidth,
       duration: 260,
@@ -68,7 +70,7 @@ export function BottomNav({ active = 'home' }: { active?: 'home' | 'events' | 'y
         {items.map(({ key, label, icon, path }, index) => (
           <Pressable key={key} onPress={() => navigate(index, path)} style={styles.navItem} android_ripple={{ color: 'rgba(255,255,255,0.08)', borderless: true }}>
             <MaterialCommunityIcons name={icon} size={25} color={active === key ? '#FFFFFF' : 'rgba(255,255,255,0.62)'} />
-            <Text style={[styles.navText, active === key && styles.navTextSelected]}>{label}</Text>
+            <Text style={[styles.navText, active === key ? styles.navTextSelected : null]}>{label}</Text>
           </Pressable>
         ))}
       </View>
