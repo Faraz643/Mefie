@@ -69,7 +69,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       const [{ count: people }, { count: photos }, { data: cover }] = await Promise.all([
         supabase.from('participants').select('id', { count: 'exact', head: true }).eq('event_id', e.id),
         supabase.from('photos').select('id', { count: 'exact', head: true }).eq('event_id', e.id),
-        supabase.from('photos').select('public_url').eq('event_id', e.id).not('public_url', 'is', null).order('created_at', { ascending: true }).limit(1).maybeSingle()
+        supabase.from('photos').select('public_url').eq('event_id', e.id).not('public_url', 'is', null).order('created_at', { ascending: false }).limit(1).maybeSingle()
       ]);
       return { id: e.id, name: e.name, people: people || 0, photos: photos || 0, cover: cover?.public_url || '' };
     }));
