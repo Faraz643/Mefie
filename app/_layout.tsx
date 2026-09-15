@@ -18,9 +18,7 @@ export default function RootLayout() {
               contentStyle: { backgroundColor: '#0A0F15' },
             }}
           >
-            <Stack.Screen name="index" options={{ animation: 'none' }} />
-            <Stack.Screen name="events" options={{ animation: 'none' }} />
-            <Stack.Screen name="you" options={{ animation: 'none' }} />
+            <Stack.Screen name="(tabs)" options={{ animation: 'none' }} />
           </Stack>
         </AppProvider>
       </GestureHandlerRootView>
