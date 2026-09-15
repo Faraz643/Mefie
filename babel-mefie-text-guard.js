@@ -2,15 +2,9 @@ module.exports = function mefieTextGuard({ types: t }) {
   return {
     name: 'mefie-text-guard',
     visitor: {
-      JSXAttribute(path, state) {
+      JSXAttribute(path) {
         const name = path.node.name;
-        if (name && name.type === 'JSXIdentifier' && name.name === 'experimentalBlurMethod') {
-          const loc = path.node.loc?.start;
-          const location = loc ? `${loc.line}:${loc.column + 1}` : 'unknown';
-          const filename = state?.filename || 'unknown file';
-          if (process.env.MEFIE_TEXT_GUARD_DEBUG === '1') {
-            console.log(`[MEFIE TEXT GUARD] stripped experimentalBlurMethod ${filename}:${location}`);
-          }
+        if (name?.type === 'JSXIdentifier' && name.name === 'experimentalBlurMethod') {
           path.remove();
         }
       },
@@ -19,7 +13,7 @@ module.exports = function mefieTextGuard({ types: t }) {
         const value = path.node.value.replace(/\s+/g, ' ').trim();
         if (!value) return;
 
-        const parent = path.parentPath;
+        const parent = path.parentPath?.parentPath;
         const parentName = parent?.isJSXElement()
           ? parent.node.openingElement.name.type === 'JSXIdentifier'
             ? parent.node.openingElement.name.name
@@ -31,9 +25,7 @@ module.exports = function mefieTextGuard({ types: t }) {
         const loc = path.node.loc?.start;
         const location = loc ? `${loc.line}:${loc.column + 1}` : 'unknown';
         const filename = state?.filename || 'unknown file';
-        console.error(
-          `[MEFIE TEXT GUARD] RAW JSX TEXT ${filename}:${location} | parent=${parentName} | value=${JSON.stringify(value)}`
-        );
+        console.error(`[MEFIE TEXT GUARD] RAW JSX TEXT ${filename}:${location} | parent=${parentName} | value=${JSON.stringify(value)}`);
       },
 
       JSXExpressionContainer(path, state) {
@@ -53,9 +45,7 @@ module.exports = function mefieTextGuard({ types: t }) {
             const loc = expression.loc?.start;
             const location = loc ? `${loc.line}:${loc.column + 1}` : 'unknown';
             const filename = state?.filename || 'unknown file';
-            console.error(
-              `[MEFIE TEXT GUARD] RAW STRING EXPRESSION ${filename}:${location} | parent=${parentName} | value=${JSON.stringify(value)}`
-            );
+            console.error(`[MEFIE TEXT GUARD] RAW STRING EXPRESSION ${filename}:${location} | parent=${parentName} | value=${JSON.stringify(value)}`);
           }
           return;
         }
