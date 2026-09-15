@@ -28,7 +28,7 @@ export function GlassAction({ label, subtitle, onPress, primary = false, icon }:
         <Text style={[styles.actionTitle, primary && styles.actionTitlePrimary]}>{label}</Text>
         {subtitle ? <Text style={[styles.actionSubtitle, primary && styles.actionSubtitlePrimary]}>{subtitle}</Text> : null}
       </View>
-      <MaterialCommunityIcons name="chevron-right" size={22} color={primary ? colors.black : colors.white} />
+      <MaterialCommunityIcons name="chevron-right" size={19} color={primary ? colors.black : colors.white} />
     </Pressable>
   );
 
@@ -51,17 +51,17 @@ export function SectionTitle({ children }: { children: React.ReactNode }) { retu
 
 const styles = StyleSheet.create({
   card: { overflow: 'hidden', backgroundColor: colors.glass, borderColor: 'rgba(255,255,255,0.18)', borderWidth: 1, borderRadius: radii.card, padding: 18, ...shadows },
-  actionBlur: { height: 80, borderRadius: 20, overflow: 'hidden', ...shadows },
-  action: { height: 80, borderRadius: 20, borderWidth: 1, borderColor: 'rgba(255,255,255,0.18)', flexDirection: 'row', alignItems: 'center', paddingHorizontal: 14, overflow: 'hidden' },
+  actionBlur: { height: 66, borderRadius: 19, overflow: 'hidden', ...shadows },
+  action: { height: 66, borderRadius: 19, borderWidth: 1, borderColor: 'rgba(255,255,255,0.18)', flexDirection: 'row', alignItems: 'center', paddingHorizontal: 11, overflow: 'hidden' },
   actionPrimary: { backgroundColor: 'rgba(250,252,255,0.97)', borderColor: 'rgba(255,255,255,0.82)' },
   actionGlass: { backgroundColor: 'rgba(220,225,232,0.20)', borderColor: 'rgba(255,255,255,0.38)' },
-  actionIcon: { width: 48, height: 48, borderRadius: 24, alignItems: 'center', justifyContent: 'center' },
+  actionIcon: { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center' },
   actionIconPrimary: { backgroundColor: 'rgba(255,255,255,0.72)', borderWidth: 1.5, borderColor: '#111111' },
   actionIconGlass: { backgroundColor: 'rgba(255,255,255,0.22)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.16)' },
-  actionCopy: { flex: 1, paddingHorizontal: 14, backgroundColor: 'transparent', borderWidth: 0 },
-  actionTitle: { color: 'rgba(255,255,255,0.96)', fontSize: 17, fontWeight: '700', letterSpacing: -0.2, backgroundColor: 'transparent' },
+  actionCopy: { flex: 1, paddingHorizontal: 12, backgroundColor: 'transparent', borderWidth: 0 },
+  actionTitle: { color: 'rgba(255,255,255,0.96)', fontSize: 16, fontWeight: '700', letterSpacing: -0.2, backgroundColor: 'transparent' },
   actionTitlePrimary: { color: colors.black },
-  actionSubtitle: { color: colors.muted, fontSize: 13, marginTop: 4, backgroundColor: 'transparent' },
+  actionSubtitle: { color: colors.muted, fontSize: 12, marginTop: 3, backgroundColor: 'transparent' },
   actionSubtitlePrimary: { color: 'rgba(16,21,28,0.58)' },
   button: { minHeight: 58, borderRadius: radii.button, backgroundColor: colors.glassLight, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, borderWidth: 1, borderColor: 'rgba(255,255,255,0.14)' },
   primary: { backgroundColor: colors.white, borderColor: 'rgba(255,255,255,0.82)' },
