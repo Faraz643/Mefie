@@ -2,7 +2,7 @@ module.exports = function mefieTextGuard({ types: t }) {
   return {
     name: 'mefie-text-guard',
     visitor: {
-      JSXExpressionContainer(path) {
+      JSXExpressionContainer(path, state) {
         const expression = path.node.expression;
         if (!expression || expression.type !== 'LogicalExpression' || expression.operator !== '&&') return;
 
@@ -14,9 +14,10 @@ module.exports = function mefieTextGuard({ types: t }) {
           : 'unknown';
         const loc = expression.loc?.start;
         const location = loc ? `${loc.line}:${loc.column + 1}` : 'unknown';
+        const filename = state?.filename || 'unknown file';
 
         if (process.env.MEFIE_TEXT_GUARD_DEBUG === '1') {
-          console.log(`[MEFIE TEXT GUARD] ${name} logical && at ${location} -> ternary`);
+          console.log(`[MEFIE TEXT GUARD] ${filename}:${location} | ${name} logical && -> ternary`);
         }
 
         path.node.expression = t.conditionalExpression(expression.left, expression.right, t.nullLiteral());
