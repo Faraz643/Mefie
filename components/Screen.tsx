@@ -20,7 +20,7 @@ export function Screen({ children, backgroundImage, blurBackground = false }: { 
   return (
     <View style={styles.bg}>
       <ImageBackground source={source} style={StyleSheet.absoluteFill} resizeMode="cover" />
-      {blurBackground ? <BlurView intensity={22} tint="dark" style={StyleSheet.absoluteFill} /> : null}
+      {blurBackground ? <BlurView intensity={22} tint="dark" experimentalBlurMethod="dimezisBlurView" style={StyleSheet.absoluteFillObject} /> : null}
       <LinearGradient colors={['rgba(5,9,14,0.02)', 'rgba(5,9,14,0.00)', 'rgba(5,9,14,0.10)', 'rgba(5,9,14,0.78)']} locations={[0, 0.34, 0.62, 1]} style={StyleSheet.absoluteFill} />
       <ScrollView contentContainerStyle={[styles.content, { paddingTop: insets.top + 16, paddingBottom: insets.bottom + 138 }]} showsVerticalScrollIndicator={false}>
         {children}
@@ -52,17 +52,12 @@ export function BottomNav({ active = 'home' }: { active?: 'home' | 'events' | 'y
   }, [activeIndex, itemWidth, indicatorX]);
 
   const navigate = (index: number, path: '/' | '/events' | '/you') => {
-    Animated.timing(indicatorX, {
-      toValue: index * itemWidth,
-      duration: 260,
-      easing: Easing.out(Easing.cubic),
-      useNativeDriver: true,
-    }).start();
+    Animated.timing(indicatorX, { toValue: index * itemWidth, duration: 260, easing: Easing.out(Easing.cubic), useNativeDriver: true }).start();
     setTimeout(() => router.replace(path), 150);
   };
 
   return (
-    <BlurView intensity={78} tint="dark" style={[styles.nav, { bottom: Math.max(insets.bottom + 14, 18) }]}>
+    <BlurView intensity={78} tint="dark" experimentalBlurMethod="dimezisBlurView" style={[styles.nav, { bottom: Math.max(insets.bottom + 14, 18) }]}>
       <View style={styles.navInner}>
         <Animated.View pointerEvents="none" style={[styles.navIndicator, { width: itemWidth, transform: [{ translateX: indicatorX }] }]} />
         {items.map(({ key, label, icon, path }, index) => (
