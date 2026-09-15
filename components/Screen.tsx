@@ -20,7 +20,7 @@ export function Screen({ children, backgroundImage, blurBackground = false }: { 
   return (
     <View style={styles.bg}>
       <ImageBackground source={source} style={StyleSheet.absoluteFill} resizeMode="cover" />
-      {blurBackground ? <BlurView intensity={22} tint="dark" experimentalBlurMethod="dimezisBlurView" style={StyleSheet.absoluteFillObject} /> : null}
+      {blurBackground ? <BlurView intensity={22} tint="dark" style={StyleSheet.absoluteFill} /> : null}
       <LinearGradient colors={['rgba(5,9,14,0.02)', 'rgba(5,9,14,0.00)', 'rgba(5,9,14,0.10)', 'rgba(5,9,14,0.78)']} locations={[0, 0.34, 0.62, 1]} style={StyleSheet.absoluteFill} />
       <ScrollView contentContainerStyle={[styles.content, { paddingTop: insets.top + 16, paddingBottom: insets.bottom + 138 }]} showsVerticalScrollIndicator={false}>
         {children}
@@ -52,12 +52,17 @@ export function BottomNav({ active = 'home' }: { active?: 'home' | 'events' | 'y
   }, [activeIndex, itemWidth, indicatorX]);
 
   const navigate = (index: number, path: '/' | '/events' | '/you') => {
-    Animated.timing(indicatorX, { toValue: index * itemWidth, duration: 260, easing: Easing.out(Easing.cubic), useNativeDriver: true }).start();
+    Animated.timing(indicatorX, {
+      toValue: index * itemWidth,
+      duration: 260,
+      easing: Easing.out(Easing.cubic),
+      useNativeDriver: true,
+    }).start();
     setTimeout(() => router.replace(path), 150);
   };
 
   return (
-    <BlurView intensity={78} tint="dark" experimentalBlurMethod="dimezisBlurView" style={[styles.nav, { bottom: Math.max(insets.bottom + 14, 18) }]}>
+    <BlurView intensity={78} tint="dark" style={[styles.nav, { bottom: Math.max(insets.bottom + 14, 18) }]}>
       <View style={styles.navInner}>
         <Animated.View pointerEvents="none" style={[styles.navIndicator, { width: itemWidth, transform: [{ translateX: indicatorX }] }]} />
         {items.map(({ key, label, icon, path }, index) => (
@@ -82,7 +87,7 @@ const styles = StyleSheet.create({
   brandRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   brandMark: { width: 34, height: 34, borderRadius: 10, backgroundColor: 'rgba(10,15,21,0.70)', alignItems: 'center', justifyContent: 'center', ...shadows },
   markA: { position: 'absolute', width: 17, height: 20, borderRadius: 6, borderWidth: 2, borderColor: '#FFF', left: 7, top: 7 },
-  markB: { position: 'absolute', width: 17, height: 20, borderRadius: 6, borderWidth: 2, borderColor: '#C9D7F5', left: 11, top: 7 },
+  markB: { position: 'absolute', width: 17, height: 20, borderRadius: 6, borderColor: '#C9D7F5', left: 11, top: 7, borderWidth: 2 },
   brand: { color: colors.white, fontSize: 21, fontWeight: '800', letterSpacing: -0.6 },
   nav: { position: 'absolute', left: 18, right: 18, minHeight: 76, borderRadius: 38, borderWidth: 1, borderColor: 'rgba(255,255,255,0.16)', overflow: 'hidden', ...shadows },
   navInner: { height: 74, padding: 6, backgroundColor: 'rgba(220,225,232,0.16)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.22)', borderRadius: 37, flexDirection: 'row', alignItems: 'center', position: 'relative' },
