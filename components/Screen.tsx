@@ -121,7 +121,7 @@ export function BottomNav({
       easing: Easing.out(Easing.cubic),
       useNativeDriver: true,
     }).start();
-    router.replace(path);
+    router.navigate(path);
   };
 
   return (
