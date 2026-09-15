@@ -56,11 +56,11 @@ export function BottomNav({ active = 'home' }: { active?: 'home' | 'events' | 'y
   const navigate = (index: number, path: NavPath) => {
     Animated.timing(indicatorX, {
       toValue: index * itemWidth,
-      duration: 260,
+      duration: 220,
       easing: Easing.out(Easing.cubic),
       useNativeDriver: true,
     }).start();
-    setTimeout(() => router.replace(path), 150);
+    router.replace(path);
   };
 
   return (
