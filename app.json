@@ -8,8 +8,18 @@
     "userInterfaceStyle": "dark",
     "plugins": [
       "expo-router",
-      ["expo-camera", {"cameraPermission": "Mefie needs camera access to capture shared moments."}],
-      ["expo-image-picker", {"photosPermission": "Mefie needs photo access to save and share your moments."}]
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Mefie needs camera access to capture shared moments."
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Mefie needs photo access to save and share your moments."
+        }
+      ]
     ],
     "ios": {
       "supportsTablet": true,
@@ -22,13 +32,15 @@
         {
           "action": "VIEW",
           "autoVerify": true,
-          "data": [{"scheme": "https", "host": "mefie.app", "pathPrefix": "/e"}],
+          "data": [
+            { "scheme": "https", "host": "mefie.app", "pathPrefix": "/e" }
+          ],
           "category": ["BROWSABLE", "DEFAULT"]
         }
       ]
     },
     "extra": {
-      "router": {"origin": false}
+      "router": { "origin": false }
     }
   }
 }

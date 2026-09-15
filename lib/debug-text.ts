@@ -1,4 +1,4 @@
-import React from 'react';
+import React from "react";
 
 // React Native emits this warning from the renderer, which can hide the
 // component that supplied the invalid child. In development, capture the
@@ -13,15 +13,19 @@ if (__DEV__) {
 
     console.error = (...args: any[]) => {
       const message = args
-        .map(value => (typeof value === 'string' ? value : String(value)))
-        .join(' ');
+        .map((value) => (typeof value === "string" ? value : String(value)))
+        .join(" ");
 
-      if (message.includes('Text strings must be rendered within a <Text> component')) {
+      if (
+        message.includes(
+          "Text strings must be rendered within a <Text> component",
+        )
+      ) {
         originalError(
-          '\n[MEFIE TEXT DEBUG] React Native emitted the raw-text warning.\n' +
-            'JavaScript stack at warning time:\n' +
+          "\n[MEFIE TEXT DEBUG] React Native emitted the raw-text warning.\n" +
+            "JavaScript stack at warning time:\n" +
             new Error().stack +
-            '\n[MEFIE TEXT DEBUG] End diagnostic.\n'
+            "\n[MEFIE TEXT DEBUG] End diagnostic.\n",
         );
       }
 

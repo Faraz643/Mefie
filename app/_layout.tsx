@@ -11,7 +11,13 @@ export default function RootLayout() {
       <GestureHandlerRootView style={{ flex: 1 }}>
         <AppProvider>
           <StatusBar style="light" />
-          <Stack screenOptions={{ headerShown: false, animation: 'fade', contentStyle: { backgroundColor: '#0A0F15' } }}>
+          <Stack
+            screenOptions={{
+              headerShown: false,
+              animation: 'fade',
+              contentStyle: { backgroundColor: '#0A0F15' },
+            }}
+          >
             <Stack.Screen name="index" options={{ animation: 'none' }} />
             <Stack.Screen name="events" options={{ animation: 'none' }} />
             <Stack.Screen name="you" options={{ animation: 'none' }} />
