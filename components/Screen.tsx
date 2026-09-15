@@ -2,8 +2,8 @@ import { BlurView } from 'expo-blur';
 import { LinearGradient } from 'expo-linear-gradient';
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { useRouter } from 'expo-router';
-import React from 'react';
-import { ImageBackground, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import React, { useEffect, useRef } from 'react';
+import { Animated, Easing, ImageBackground, Pressable, ScrollView, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors, shadows } from '../lib/theme';
 import { useApp } from '../lib/app-context';
@@ -37,18 +37,40 @@ export function BackButton() {
 export function BottomNav({ active = 'home' }: { active?: 'home' | 'events' | 'you' }) {
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const { width } = useWindowDimensions();
   const items = [
     { key: 'home' as const, label: 'Home', icon: 'home' as const, path: '/' },
     { key: 'events' as const, label: 'Events', icon: 'image-outline' as const, path: '/events' },
     { key: 'you' as const, label: 'You', icon: 'account-outline' as const, path: '/you' },
   ];
+  const activeIndex = items.findIndex(item => item.key === active);
+  const itemWidth = Math.max((width - 36 - 12) / items.length, 0);
+  const indicatorX = useRef(new Animated.Value(Math.max(activeIndex, 0) * itemWidth)).current;
+
+  useEffect(() => {
+    indicatorX.setValue(Math.max(activeIndex, 0) * itemWidth);
+  }, [activeIndex, itemWidth, indicatorX]);
+
+  const navigate = (index: number, path: '/' | '/events' | '/you') => {
+    Animated.timing(indicatorX, {
+      toValue: index * itemWidth,
+      duration: 260,
+      easing: Easing.out(Easing.cubic),
+      useNativeDriver: true,
+    }).start();
+    setTimeout(() => router.replace(path), 150);
+  };
+
   return (
-    <BlurView intensity={78} tint="dark" style={[styles.nav, { bottom: 0, paddingBottom: Math.max(insets.bottom, 0) }]}>
+    <BlurView intensity={78} tint="dark" style={[styles.nav, { bottom: Math.max(insets.bottom + 14, 18) }]}>
       <View style={styles.navInner}>
-        {items.map(({ key, label, icon, path }) => <Pressable key={key} onPress={() => router.replace(path)} style={styles.navItem}>
-          <MaterialCommunityIcons name={icon} size={32} color={active === key ? '#FFFFFF' : 'rgba(255,255,255,0.72)'} />
-          <Text style={[styles.navText, active === key && styles.navTextSelected]}>{label}</Text>
-        </Pressable>)}
+        <Animated.View pointerEvents="none" style={[styles.navIndicator, { width: itemWidth, transform: [{ translateX: indicatorX }] }]} />
+        {items.map(({ key, label, icon, path }, index) => (
+          <Pressable key={key} onPress={() => navigate(index, path)} style={styles.navItem} android_ripple={{ color: 'rgba(255,255,255,0.08)', borderless: true }}>
+            <MaterialCommunityIcons name={icon} size={25} color={active === key ? '#FFFFFF' : 'rgba(255,255,255,0.62)'} />
+            <Text style={[styles.navText, active === key && styles.navTextSelected]}>{label}</Text>
+          </Pressable>
+        ))}
       </View>
     </BlurView>
   );
@@ -67,9 +89,10 @@ const styles = StyleSheet.create({
   markA: { position: 'absolute', width: 17, height: 20, borderRadius: 6, borderWidth: 2, borderColor: '#FFF', left: 7, top: 7 },
   markB: { position: 'absolute', width: 17, height: 20, borderRadius: 6, borderWidth: 2, borderColor: '#C9D7F5', left: 11, top: 7 },
   brand: { color: colors.white, fontSize: 21, fontWeight: '800', letterSpacing: -0.6 },
-  nav: { position: 'absolute', left: 0, right: 0, bottom: 0, minHeight: 102, borderTopLeftRadius: 30, borderTopRightRadius: 30, borderBottomLeftRadius: 0, borderBottomRightRadius: 0, borderWidth: 1, borderColor: 'rgba(255,255,255,0.16)', overflow: 'hidden', ...shadows },
-  navInner: { flex: 1, minHeight: 82, backgroundColor: 'rgba(220,225,232,0.20)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.38)', flexDirection: 'row', justifyContent: 'space-around', alignItems: 'center', paddingTop: 8, paddingBottom: 4 },
-  navItem: { alignItems: 'center', justifyContent: 'center', minWidth: 90, gap: 3 },
-  navText: { color: 'rgba(255,255,255,0.68)', fontSize: 14, lineHeight: 18, fontWeight: '500' },
-  navTextSelected: { color: colors.white, fontWeight: '600' },
+  nav: { position: 'absolute', left: 18, right: 18, minHeight: 76, borderRadius: 38, borderWidth: 1, borderColor: 'rgba(255,255,255,0.16)', overflow: 'hidden', ...shadows },
+  navInner: { height: 74, padding: 6, backgroundColor: 'rgba(220,225,232,0.16)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.22)', borderRadius: 37, flexDirection: 'row', alignItems: 'center', position: 'relative' },
+  navIndicator: { position: 'absolute', left: 6, top: 6, bottom: 6, borderRadius: 31, backgroundColor: 'rgba(255,255,255,0.18)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.28)' },
+  navItem: { flex: 1, height: 62, alignItems: 'center', justifyContent: 'center', gap: 1, zIndex: 2 },
+  navText: { color: 'rgba(255,255,255,0.62)', fontSize: 11, lineHeight: 15, fontWeight: '500' },
+  navTextSelected: { color: colors.white, fontWeight: '700' },
 });
