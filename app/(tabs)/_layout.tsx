@@ -1,0 +1,17 @@
+import { Tabs } from "expo-router";
+
+export default function TabsLayout() {
+  return (
+    <Tabs
+      screenOptions={{
+        headerShown: false,
+        tabBarStyle: { display: "none" },
+        animation: "none",
+      }}
+    >
+      <Tabs.Screen name="index" />
+      <Tabs.Screen name="events" />
+      <Tabs.Screen name="you" />
+    </Tabs>
+  );
+}
