@@ -34,7 +34,7 @@ const styles=StyleSheet.create({
   sectionRow:{flexDirection:'row',alignItems:'center',justifyContent:'space-between'},
   seeAll:{color:'rgba(220,225,232,0.82)',fontSize:14,fontWeight:'600',marginBottom:12},
   seeArrow:{fontSize:23,fontWeight:'300',color:'rgba(220,225,232,0.82)'},
-  grid:{flexDirection:'row',flexWrap:'wrap',justifyContent:'space-between',columnGap:10,rowGap:12,marginHorizontal:-2},
+  grid:{flexDirection:'row',flexWrap:'wrap',justifyContent:'space-between',rowGap:12,marginHorizontal:-2},
   eventCard:{width:'48.5%',height:170,borderRadius:radii.card,overflow:'hidden',backgroundColor:'#26313F',...shadows},
   cover:{flex:1,position:'relative',justifyContent:'flex-end'},
   coverImage:{...StyleSheet.absoluteFillObject,width:'100%',height:'100%'},
