@@ -1,7 +1,7 @@
 import { BlurView } from "expo-blur";
 import { LinearGradient } from "expo-linear-gradient";
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
-import { useRouter } from "expo-router";
+import { usePathname, useRouter } from "expo-router";
 import React, { useEffect, useRef } from "react";
 import {
   Animated,
@@ -91,12 +91,9 @@ export function BackButton() {
   );
 }
 
-export function BottomNav({
-  active = "home",
-}: {
-  active?: "home" | "events" | "you";
-}) {
+export function BottomNav() {
   const router = useRouter();
+  const pathname = usePathname();
   const insets = useSafeAreaInsets();
   const { width } = useWindowDimensions();
   const items: NavItem[] = [
@@ -104,17 +101,16 @@ export function BottomNav({
     { key: "events", label: "Events", icon: "image-outline", path: "/events" },
     { key: "you", label: "You", icon: "account-outline", path: "/you" },
   ];
-  const activeIndex = items.findIndex((item) => item.key === active);
+  const activeIndex = pathname === "/events" ? 1 : pathname === "/you" ? 2 : 0;
   const itemWidth = Math.max((width - 36 - 12) / items.length, 0);
-  const indicatorX = useRef(
-    new Animated.Value(Math.max(activeIndex, 0) * itemWidth),
-  ).current;
+  const indicatorX = useRef(new Animated.Value(activeIndex * itemWidth)).current;
 
   useEffect(() => {
-    indicatorX.setValue(Math.max(activeIndex, 0) * itemWidth);
+    indicatorX.setValue(activeIndex * itemWidth);
   }, [activeIndex, itemWidth, indicatorX]);
 
   const navigate = (index: number, path: NavPath) => {
+    if (path === pathname) return;
     Animated.timing(indicatorX, {
       toValue: index * itemWidth,
       duration: 220,
@@ -138,31 +134,31 @@ export function BottomNav({
             { width: itemWidth, transform: [{ translateX: indicatorX }] },
           ]}
         />
-        {items.map(({ key, label, icon, path }, index) => (
-          <Pressable
-            key={key}
-            onPress={() => navigate(index, path)}
-            style={styles.navItem}
-            android_ripple={{
-              color: "rgba(255,255,255,0.08)",
-              borderless: true,
-            }}
-          >
-            <MaterialCommunityIcons
-              name={icon}
-              size={25}
-              color={active === key ? "#FFFFFF" : "rgba(255,255,255,0.62)"}
-            />
-            <Text
-              style={[
-                styles.navText,
-                active === key ? styles.navTextSelected : null,
-              ]}
+        {items.map(({ key, label, icon, path }, index) => {
+          const selected = pathname === path;
+          return (
+            <Pressable
+              key={key}
+              onPress={() => navigate(index, path)}
+              style={styles.navItem}
+              android_ripple={{
+                color: "rgba(255,255,255,0.08)",
+                borderless: true,
+              }}
             >
-              {label}
-            </Text>
-          </Pressable>
-        ))}
+              <MaterialCommunityIcons
+                name={icon}
+                size={25}
+                color={selected ? "#FFFFFF" : "rgba(255,255,255,0.62)"}
+              />
+              <Text
+                style={[styles.navText, selected ? styles.navTextSelected : null]}
+              >
+                {label}
+              </Text>
+            </Pressable>
+          );
+        })}
       </View>
     </BlurView>
   );
