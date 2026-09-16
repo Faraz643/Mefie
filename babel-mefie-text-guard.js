@@ -1,59 +1,51 @@
 module.exports = function mefieTextGuard({ types: t }) {
+  const isTextElement = (path) => {
+    const parent = path.parentPath;
+    return (
+      parent?.isJSXElement() &&
+      parent.node.openingElement.name.type === "JSXIdentifier" &&
+      parent.node.openingElement.name.name === "Text"
+    );
+  };
+
+  const makeTextElement = (value) =>
+    t.jsxElement(
+      t.jsxOpeningElement(t.jsxIdentifier("Text"), [], false),
+      t.jsxClosingElement(t.jsxIdentifier("Text")),
+      [t.jsxText(value)],
+      false,
+    );
+
   return {
     name: "mefie-text-guard",
     visitor: {
-      JSXAttribute(path) {
-        const name = path.node.name;
-        if (
-          name?.type === "JSXIdentifier" &&
-          name.name === "experimentalBlurMethod"
-        ) {
-          path.remove();
-        }
-      },
-
       JSXText(path, state) {
         const value = path.node.value.replace(/\s+/g, " ").trim();
-        if (!value) return;
-
-        const parent = path.parentPath?.parentPath;
-        const parentName = parent?.isJSXElement()
-          ? parent.node.openingElement.name.type === "JSXIdentifier"
-            ? parent.node.openingElement.name.name
-            : "component"
-          : "unknown";
-
-        if (parentName === "Text") return;
+        if (!value || isTextElement(path)) return;
 
         const loc = path.node.loc?.start;
         const location = loc ? `${loc.line}:${loc.column + 1}` : "unknown";
         const filename = state?.filename || "unknown file";
-        console.error(
-          `[MEFIE TEXT GUARD] RAW JSX TEXT ${filename}:${location} | parent=${parentName} | value=${JSON.stringify(value)}`,
+        console.warn(
+          `[MEFIE TEXT GUARD] Wrapped raw JSX text ${filename}:${location} | value=${JSON.stringify(value)}`,
         );
+        path.replaceWith(makeTextElement(value));
       },
 
       JSXExpressionContainer(path, state) {
         const expression = path.node.expression;
-        if (!expression) return;
+        if (!expression || isTextElement(path)) return;
 
         if (expression.type === "StringLiteral") {
           const value = expression.value.trim();
           if (!value) return;
-          const parent = path.parentPath?.parentPath;
-          const parentName = parent?.isJSXElement()
-            ? parent.node.openingElement.name.type === "JSXIdentifier"
-              ? parent.node.openingElement.name.name
-              : "component"
-            : "unknown";
-          if (parentName !== "Text") {
-            const loc = expression.loc?.start;
-            const location = loc ? `${loc.line}:${loc.column + 1}` : "unknown";
-            const filename = state?.filename || "unknown file";
-            console.error(
-              `[MEFIE TEXT GUARD] RAW STRING EXPRESSION ${filename}:${location} | parent=${parentName} | value=${JSON.stringify(value)}`,
-            );
-          }
+          const loc = expression.loc?.start;
+          const location = loc ? `${loc.line}:${loc.column + 1}` : "unknown";
+          const filename = state?.filename || "unknown file";
+          console.warn(
+            `[MEFIE TEXT GUARD] Wrapped raw string expression ${filename}:${location} | value=${JSON.stringify(value)}`,
+          );
+          path.replaceWith(makeTextElement(value));
           return;
         }
 
@@ -63,19 +55,13 @@ module.exports = function mefieTextGuard({ types: t }) {
         )
           return;
 
-        const parentElement = path.parentPath?.parentPath;
-        const name = parentElement?.isJSXElement()
-          ? parentElement.node.openingElement.name.type === "JSXIdentifier"
-            ? parentElement.node.openingElement.name.name
-            : "component"
-          : "unknown";
         const loc = expression.loc?.start;
         const location = loc ? `${loc.line}:${loc.column + 1}` : "unknown";
         const filename = state?.filename || "unknown file";
 
         if (process.env.MEFIE_TEXT_GUARD_DEBUG === "1") {
           console.log(
-            `[MEFIE TEXT GUARD] ${filename}:${location} | ${name} logical && -> ternary`,
+            `[MEFIE TEXT GUARD] ${filename}:${location} | ${expression.operator} expression normalized`,
           );
         }
 
