@@ -58,15 +58,19 @@ module.exports = function mefieTextGuard({ types: t }) {
         const loc = expression.loc?.start;
         const location = loc ? `${loc.line}:${loc.column + 1}` : "unknown";
         const filename = state?.filename || "unknown file";
-
         if (process.env.MEFIE_TEXT_GUARD_DEBUG === "1") {
           console.log(
-            `[MEFIE TEXT GUARD] ${filename}:${location} | ${expression.operator} expression normalized`,
+            `[MEFIE TEXT GUARD] ${filename}:${location} | logical && coerced to boolean`,
           );
         }
 
+        const booleanLeft = t.unaryExpression(
+          "!",
+          t.unaryExpression("!", expression.left, true),
+          true,
+        );
         path.node.expression = t.conditionalExpression(
-          expression.left,
+          booleanLeft,
           expression.right,
           t.nullLiteral(),
         );
