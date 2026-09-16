@@ -1,3 +1,4 @@
+import { BlurView } from 'expo-blur';
 import { useFocusEffect, useRouter } from 'expo-router';
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import React, { useCallback } from 'react';
@@ -19,7 +20,7 @@ export default function HomeScreen() {
     </View>
     <GlassAction primary label="Create an event" onPress={() => router.push('/create-event')} icon={<MaterialCommunityIcons name="plus" size={30} color={colors.black} />} />
     <GlassAction label="Join an event" onPress={() => router.push('/join-event')} icon={<MaterialCommunityIcons name="link-variant" size={26} color={colors.white} />} />
-    <View style={styles.eventsSection}><View style={styles.sectionRow}><SectionTitle>Your events</SectionTitle>{events.length > 0 ? <Pressable onPress={() => router.push('/events')}><Text style={styles.seeAll}>See all <Text style={styles.seeArrow}>›</Text></Text></Pressable> : null}</View>{events.length === 0 ? <GlassCard><Text style={styles.emptyTitle}>Your moments start here.</Text><Text style={styles.emptySub}>Create an event and invite your people.</Text></GlassCard> : <View style={styles.grid}>{events.slice(0, 4).map(e => <Pressable key={e.id} onPress={() => router.push({ pathname:'/event/[id]', params:{id:e.id} })} style={styles.eventCard}><View style={styles.cover}>{e.cover ? <Image source={{ uri: e.cover }} style={styles.coverImage} /> : null}<View style={styles.eventInfo}>{e.cover ? <Image source={{ uri: e.cover }} style={styles.eventInfoBlur} blurRadius={18} /> : null}<View style={styles.eventInfoTint} /><View style={styles.eventInfoContent}><Text style={styles.eventName} numberOfLines={1}>{e.name}</Text><Text style={styles.eventMeta}>{e.people || '—'} people · {e.photos || '—'} photos</Text></View></View></View></Pressable>)}</View>}</View>
+    <View style={styles.eventsSection}><View style={styles.sectionRow}><SectionTitle>Your events</SectionTitle>{events.length > 0 ? <Pressable onPress={() => router.push('/events')}><Text style={styles.seeAll}>See all <Text style={styles.seeArrow}>›</Text></Text></Pressable> : null}</View>{events.length === 0 ? <GlassCard><Text style={styles.emptyTitle}>Your moments start here.</Text><Text style={styles.emptySub}>Create an event and invite your people.</Text></GlassCard> : <View style={styles.grid}>{events.slice(0, 4).map(e => <Pressable key={e.id} onPress={() => router.push({ pathname:'/event/[id]', params:{id:e.id} })} style={styles.eventCard}><View style={styles.cover}>{e.cover ? <Image source={{ uri: e.cover }} style={styles.coverImage} /> : null}<BlurView intensity={58} tint="dark" experimentalBlurMethod="dimezisBlurView" style={styles.eventInfo}><View style={styles.eventInfoTint} /><View style={styles.eventInfoContent}><Text style={styles.eventName} numberOfLines={1}>{e.name}</Text><Text style={styles.eventMeta}>{e.people || '—'} people · {e.photos || '—'} photos</Text></View></BlurView></View></Pressable>)}</View>}</View>
   </Screen><BottomNav active="home" /></View>;
 }
 
@@ -37,9 +38,8 @@ const styles=StyleSheet.create({
   eventCard:{width:'48%',height:170,borderRadius:radii.card,overflow:'hidden',backgroundColor:'#26313F',...shadows},
   cover:{flex:1,position:'relative',justifyContent:'flex-end'},
   coverImage:{...StyleSheet.absoluteFillObject,width:'100%',height:'100%'},
-  eventInfo:{position:'absolute',left:0,right:0,bottom:0,height:78,overflow:'hidden'},
-  eventInfoBlur:{position:'absolute',left:0,right:0,bottom:0,width:'100%',height:170,transform:[{scale:1.08}]},
-  eventInfoTint:{...StyleSheet.absoluteFillObject,backgroundColor:'rgba(14,24,36,0.48)',borderTopWidth:1,borderTopColor:'rgba(255,255,255,0.12)'},
+  eventInfo:{position:'absolute',left:0,right:0,bottom:0,height:78,overflow:'hidden',borderTopWidth:1,borderTopColor:'rgba(255,255,255,0.12)'},
+  eventInfoTint:{...StyleSheet.absoluteFillObject,backgroundColor:'rgba(55,76,96,0.28)'},
   eventInfoContent:{flex:1,justifyContent:'flex-end',paddingHorizontal:13,paddingBottom:13,paddingTop:10},
   eventName:{color:colors.white,fontSize:16,fontWeight:'800',letterSpacing:-.2},
   eventMeta:{color:'rgba(255,255,255,0.72)',fontSize:11,marginTop:4},
