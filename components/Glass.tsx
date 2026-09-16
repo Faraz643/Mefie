@@ -183,7 +183,7 @@ export function GlassInput({
         autoCapitalize="sentences"
         selectionColor="#FFFFFF"
         style={styles.input}
-      />{" "}
+      />
     </View>
   );
 }
