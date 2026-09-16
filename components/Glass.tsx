@@ -182,6 +182,7 @@ export function GlassInput({
         placeholderTextColor="rgba(255,255,255,0.44)"
         autoCapitalize="sentences"
         selectionColor="#FFFFFF"
+        underlineColorAndroid="transparent"
         style={styles.input}
       />
     </View>
@@ -284,12 +285,7 @@ const styles = StyleSheet.create({
   },
   primaryLabel: { color: colors.black },
   inputWrap: {
-    backgroundColor: "rgba(255,255,255,0.12)",
-    borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.16)",
-    borderRadius: 20,
-    paddingHorizontal: 15,
-    paddingVertical: 12,
+    paddingVertical: 4,
   },
   inputLabel: {
     color: colors.muted,
@@ -301,7 +297,10 @@ const styles = StyleSheet.create({
     color: colors.white,
     fontSize: 16,
     paddingVertical: 4,
+    paddingHorizontal: 0,
     minHeight: 26,
+    backgroundColor: "transparent",
+    borderWidth: 0,
   },
   sectionTitle: {
     color: colors.white,
