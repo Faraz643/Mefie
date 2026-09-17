@@ -10,11 +10,6 @@ import {
 } from "react-native";
 import { colors, radii, shadows } from "../lib/theme";
 
-/**
- * One glass recipe used everywhere in the app.
- * Keep the blur itself separate from the translucent surface so Android does
- * not turn the entire card into a dark/opaque slab.
- */
 export function GlassCard({
   children,
   style,
@@ -44,7 +39,7 @@ export function GlassButton({
   icon?: React.ReactNode;
   disabled?: boolean;
 }) {
-  return (
+  const content = (
     <Pressable
       disabled={disabled}
       onPress={onPress}
@@ -69,6 +64,16 @@ export function GlassButton({
         color={primary ? colors.black : colors.white}
       />
     </Pressable>
+  );
+
+  if (primary) return content;
+
+  return (
+    <View style={styles.buttonSurface}>
+      <BlurView intensity={30} tint="light" style={StyleSheet.absoluteFillObject} />
+      <View pointerEvents="none" style={styles.buttonSheen} />
+      {content}
+    </View>
   );
 }
 
@@ -177,18 +182,22 @@ export function GlassInput({
   placeholder?: string;
 }) {
   return (
-    <View style={styles.inputWrap}>
-      {label ? <Text style={styles.inputLabel}>{label}</Text> : null}
-      <TextInput
-        value={value}
-        onChangeText={onChangeText}
-        placeholder={placeholder}
-        placeholderTextColor="rgba(255,255,255,0.44)"
-        autoCapitalize="sentences"
-        selectionColor="#FFFFFF"
-        underlineColorAndroid="transparent"
-        style={styles.input}
-      />
+    <View style={styles.inputSurface}>
+      <BlurView intensity={28} tint="light" style={StyleSheet.absoluteFillObject} />
+      <View pointerEvents="none" style={styles.inputSheen} />
+      <View style={styles.inputContent}>
+        {label ? <Text style={styles.inputLabel}>{label}</Text> : null}
+        <TextInput
+          value={value}
+          onChangeText={onChangeText}
+          placeholder={placeholder}
+          placeholderTextColor="rgba(255,255,255,0.56)"
+          autoCapitalize="sentences"
+          selectionColor="#FFFFFF"
+          underlineColorAndroid="transparent"
+          style={styles.input}
+        />
+      </View>
     </View>
   );
 }
@@ -204,7 +213,7 @@ const styles = StyleSheet.create({
     borderRadius: radii.card,
     borderWidth: 1,
     borderColor: "rgba(255,255,255,0.28)",
-    backgroundColor: "rgba(255,255,255,0.08)",
+    backgroundColor: "rgba(255,255,255,0.07)",
     ...shadows,
   },
   cardSheen: {
@@ -220,7 +229,7 @@ const styles = StyleSheet.create({
     overflow: "hidden",
     borderWidth: 1,
     borderColor: "rgba(255,255,255,0.30)",
-    backgroundColor: "rgba(255,255,255,0.08)",
+    backgroundColor: "rgba(255,255,255,0.07)",
     ...shadows,
   },
   actionSheen: {
@@ -242,7 +251,6 @@ const styles = StyleSheet.create({
   },
   actionGlass: {
     backgroundColor: "transparent",
-    borderWidth: 0,
   },
   actionIcon: {
     width: 44,
@@ -278,17 +286,28 @@ const styles = StyleSheet.create({
     marginTop: 3,
   },
   actionSubtitlePrimary: { color: "rgba(16,21,28,0.58)" },
-  button: {
+  buttonSurface: {
     minHeight: 58,
     borderRadius: radii.button,
+    overflow: "hidden",
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.26)",
+    backgroundColor: "rgba(255,255,255,0.07)",
+    ...shadows,
+  },
+  buttonSheen: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: "rgba(255,255,255,0.11)",
+  },
+  button: {
+    minHeight: 56,
+    borderRadius: 20,
     flexDirection: "row",
     alignItems: "center",
     paddingHorizontal: 16,
-    borderWidth: 1,
   },
   buttonGlass: {
-    backgroundColor: "rgba(255,255,255,0.12)",
-    borderColor: "rgba(255,255,255,0.26)",
+    backgroundColor: "transparent",
   },
   primary: {
     backgroundColor: colors.white,
@@ -304,19 +323,32 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   primaryLabel: { color: colors.black },
-  inputWrap: {
-    paddingVertical: 4,
+  inputSurface: {
+    minHeight: 72,
+    borderRadius: 18,
+    overflow: "hidden",
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.24)",
+    backgroundColor: "rgba(255,255,255,0.06)",
+  },
+  inputSheen: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: "rgba(255,255,255,0.10)",
+  },
+  inputContent: {
+    paddingHorizontal: 14,
+    paddingVertical: 9,
   },
   inputLabel: {
-    color: colors.muted,
+    color: "rgba(255,255,255,0.88)",
     fontSize: 12,
-    marginBottom: 5,
+    marginBottom: 3,
     fontWeight: "600",
   },
   input: {
     color: colors.white,
     fontSize: 16,
-    paddingVertical: 4,
+    paddingVertical: 3,
     paddingHorizontal: 0,
     minHeight: 26,
     backgroundColor: "transparent",
