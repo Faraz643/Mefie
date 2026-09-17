@@ -117,7 +117,7 @@ export function BottomNav({ active = "home" }: { active?: NavKey }) {
   return (
     <BlurView
       intensity={78}
-      tint="dark"
+      tint="light"
       style={[styles.nav, { bottom: Math.max(insets.bottom + 14, 18) }]}
     >
       <View style={styles.navInner}>
@@ -137,7 +137,7 @@ export function BottomNav({ active = "home" }: { active?: NavKey }) {
               <MaterialCommunityIcons
                 name={icon}
                 size={25}
-                color={selected ? "#FFFFFF" : "rgba(255,255,255,0.62)"}
+                color={selected ? "#FFFFFF" : "rgba(255,255,255,0.70)"}
               />
               <Text
                 style={[
@@ -221,16 +221,17 @@ const styles = StyleSheet.create({
     minHeight: 76,
     borderRadius: 38,
     borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.16)",
+    borderColor: "rgba(255,255,255,0.26)",
+    backgroundColor: "rgba(255,255,255,0.10)",
     overflow: "hidden",
     ...shadows,
   },
   navInner: {
     height: 74,
     padding: 6,
-    backgroundColor: "rgba(220,225,232,0.16)",
+    backgroundColor: "rgba(255,255,255,0.20)",
     borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.22)",
+    borderColor: "rgba(255,255,255,0.34)",
     borderRadius: 37,
     flexDirection: "row",
     alignItems: "center",
@@ -238,9 +239,9 @@ const styles = StyleSheet.create({
   navIndicator: {
     ...StyleSheet.absoluteFillObject,
     borderRadius: 31,
-    backgroundColor: "rgba(255,255,255,0.18)",
+    backgroundColor: "rgba(255,255,255,0.28)",
     borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.28)",
+    borderColor: "rgba(255,255,255,0.42)",
   },
   navItem: {
     height: 62,
@@ -250,7 +251,7 @@ const styles = StyleSheet.create({
     position: "relative",
   },
   navText: {
-    color: "rgba(255,255,255,0.62)",
+    color: "rgba(255,255,255,0.70)",
     fontSize: 11,
     lineHeight: 15,
     fontWeight: "500",
