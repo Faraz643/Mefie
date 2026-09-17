@@ -10,10 +10,17 @@ import {
 } from "react-native";
 import { colors, radii, shadows } from "../lib/theme";
 
+const glass = {
+  blur: 28,
+  surface: "rgba(30,35,42,0.30)",
+  edge: "rgba(255,255,255,0.18)",
+  highlight: "rgba(255,255,255,0.045)",
+};
+
 export function GlassCard({ children, style }: { children: React.ReactNode; style?: ViewStyle }) {
   return (
     <View style={[styles.card, style]}>
-      <BlurView intensity={50} tint="light" style={StyleSheet.absoluteFillObject} />
+      <BlurView intensity={glass.blur} tint="dark" style={StyleSheet.absoluteFillObject} />
       <View pointerEvents="none" style={styles.cardTint} />
       <View style={styles.cardContent}>{children}</View>
     </View>
@@ -33,7 +40,7 @@ export function GlassButton({ label, onPress, primary = false, icon, disabled = 
   if (primary) return content;
   return (
     <View style={styles.buttonSurface}>
-      <BlurView intensity={46} tint="light" style={StyleSheet.absoluteFillObject} />
+      <BlurView intensity={glass.blur} tint="dark" style={StyleSheet.absoluteFillObject} />
       <View pointerEvents="none" style={styles.buttonTint} />
       {content}
     </View>
@@ -56,7 +63,7 @@ export function GlassAction({ label, subtitle, onPress, primary = false, icon }:
   if (primary) return content;
   return (
     <View style={styles.actionSurface}>
-      <BlurView intensity={50} tint="light" style={StyleSheet.absoluteFillObject} />
+      <BlurView intensity={glass.blur} tint="dark" style={StyleSheet.absoluteFillObject} />
       <View pointerEvents="none" style={styles.actionTint} />
       {content}
     </View>
@@ -67,7 +74,7 @@ export function IconButton({ children, onPress, accessibilityLabel }: { children
   return (
     <Pressable accessibilityRole="button" accessibilityLabel={accessibilityLabel} onPress={onPress} focusable={false} android_ripple={{ color: "transparent" }} style={({ pressed }) => [styles.iconButtonOuter, pressed && styles.pressed]}>
       <View style={styles.iconButton}>
-        <BlurView intensity={42} tint="light" style={StyleSheet.absoluteFillObject} />
+        <BlurView intensity={22} tint="dark" style={StyleSheet.absoluteFillObject} />
         <View pointerEvents="none" style={styles.iconTint} />
         {children}
       </View>
@@ -78,11 +85,11 @@ export function IconButton({ children, onPress, accessibilityLabel }: { children
 export function GlassInput({ label, value, onChangeText, placeholder }: { label?: string; value: string; onChangeText: (v: string) => void; placeholder?: string }) {
   return (
     <View style={styles.inputSurface}>
-      <BlurView intensity={46} tint="light" style={StyleSheet.absoluteFillObject} />
+      <BlurView intensity={glass.blur} tint="dark" style={StyleSheet.absoluteFillObject} />
       <View pointerEvents="none" style={styles.inputTint} />
       <View style={styles.inputContent}>
         {label ? <Text style={styles.inputLabel}>{label}</Text> : null}
-        <TextInput value={value} onChangeText={onChangeText} placeholder={placeholder} placeholderTextColor="rgba(255,255,255,0.60)" autoCapitalize="sentences" selectionColor="#FFFFFF" underlineColorAndroid="transparent" style={styles.input} />
+        <TextInput value={value} onChangeText={onChangeText} placeholder={placeholder} placeholderTextColor="rgba(255,255,255,0.56)" autoCapitalize="sentences" selectionColor="#FFFFFF" underlineColorAndroid="transparent" style={styles.input} />
       </View>
     </View>
   );
@@ -93,24 +100,24 @@ export function SectionTitle({ children }: { children: React.ReactNode }) {
 }
 
 const styles = StyleSheet.create({
-  card: { position: "relative", overflow: "hidden", borderRadius: radii.card, borderWidth: 1, borderColor: "rgba(255,255,255,0.34)", backgroundColor: "rgba(255,255,255,0.04)", ...shadows },
-  cardTint: { ...StyleSheet.absoluteFillObject, backgroundColor: "rgba(255,255,255,0.13)" },
+  card: { position: "relative", overflow: "hidden", borderRadius: radii.card, borderWidth: 1, borderColor: glass.edge, backgroundColor: glass.surface, ...shadows },
+  cardTint: { ...StyleSheet.absoluteFillObject, backgroundColor: glass.highlight },
   cardContent: { padding: 18 },
-  actionSurface: { height: 66, borderRadius: 19, overflow: "hidden", borderWidth: 1, borderColor: "rgba(255,255,255,0.34)", backgroundColor: "rgba(255,255,255,0.04)", ...shadows },
-  actionTint: { ...StyleSheet.absoluteFillObject, backgroundColor: "rgba(255,255,255,0.12)" },
+  actionSurface: { height: 66, borderRadius: 19, overflow: "hidden", borderWidth: 1, borderColor: glass.edge, backgroundColor: glass.surface, ...shadows },
+  actionTint: { ...StyleSheet.absoluteFillObject, backgroundColor: glass.highlight },
   action: { height: 64, borderRadius: 18, flexDirection: "row", alignItems: "center", paddingHorizontal: 11, overflow: "hidden" },
   actionPrimary: { backgroundColor: "rgba(250,252,255,0.97)", borderWidth: 1, borderColor: "rgba(255,255,255,0.82)" },
   actionGlass: { backgroundColor: "transparent" },
   actionIcon: { width: 44, height: 44, borderRadius: 22, alignItems: "center", justifyContent: "center" },
   actionIconPrimary: { backgroundColor: "rgba(255,255,255,0.72)", borderWidth: 1.5, borderColor: "#111111" },
-  actionIconGlass: { backgroundColor: "rgba(255,255,255,0.16)", borderWidth: 1, borderColor: "rgba(255,255,255,0.28)" },
+  actionIconGlass: { backgroundColor: "rgba(255,255,255,0.10)", borderWidth: 1, borderColor: "rgba(255,255,255,0.18)" },
   actionCopy: { flex: 1, paddingHorizontal: 12 },
   actionTitle: { color: "rgba(255,255,255,0.96)", fontSize: 16, fontWeight: "700", letterSpacing: -0.2 },
   actionTitlePrimary: { color: colors.black },
   actionSubtitle: { color: colors.muted, fontSize: 12, marginTop: 3 },
   actionSubtitlePrimary: { color: "rgba(16,21,28,0.58)" },
-  buttonSurface: { minHeight: 58, borderRadius: radii.button, overflow: "hidden", borderWidth: 1, borderColor: "rgba(255,255,255,0.32)", backgroundColor: "rgba(255,255,255,0.04)", ...shadows },
-  buttonTint: { ...StyleSheet.absoluteFillObject, backgroundColor: "rgba(255,255,255,0.12)" },
+  buttonSurface: { minHeight: 58, borderRadius: radii.button, overflow: "hidden", borderWidth: 1, borderColor: glass.edge, backgroundColor: glass.surface, ...shadows },
+  buttonTint: { ...StyleSheet.absoluteFillObject, backgroundColor: glass.highlight },
   button: { minHeight: 56, borderRadius: 20, flexDirection: "row", alignItems: "center", paddingHorizontal: 16 },
   buttonGlass: { backgroundColor: "transparent" },
   primary: { backgroundColor: colors.white, borderColor: "rgba(255,255,255,0.82)" },
@@ -119,14 +126,14 @@ const styles = StyleSheet.create({
   primaryIcon: { opacity: 0.9 },
   buttonLabel: { color: colors.white, fontSize: 15, fontWeight: "750", flex: 1 },
   primaryLabel: { color: colors.black },
-  inputSurface: { minHeight: 72, borderRadius: 18, overflow: "hidden", borderWidth: 1, borderColor: "rgba(255,255,255,0.30)", backgroundColor: "rgba(255,255,255,0.04)" },
-  inputTint: { ...StyleSheet.absoluteFillObject, backgroundColor: "rgba(255,255,255,0.10)" },
+  inputSurface: { minHeight: 72, borderRadius: 18, overflow: "hidden", borderWidth: 1, borderColor: glass.edge, backgroundColor: glass.surface },
+  inputTint: { ...StyleSheet.absoluteFillObject, backgroundColor: glass.highlight },
   inputContent: { paddingHorizontal: 14, paddingVertical: 9 },
   inputLabel: { color: "rgba(255,255,255,0.88)", fontSize: 12, marginBottom: 3, fontWeight: "600" },
   input: { color: colors.white, fontSize: 16, paddingVertical: 3, paddingHorizontal: 0, minHeight: 26, backgroundColor: "transparent", borderWidth: 0 },
   sectionTitle: { color: colors.white, fontSize: 20, fontWeight: "800", marginBottom: 12, letterSpacing: -0.3 },
   iconButtonOuter: { width: 44, height: 44, borderRadius: 22, overflow: "hidden", ...shadows },
-  iconButton: { width: 44, height: 44, borderRadius: 22, overflow: "hidden", borderWidth: 1, borderColor: "rgba(255,255,255,0.38)", backgroundColor: "rgba(255,255,255,0.06)", alignItems: "center", justifyContent: "center" },
-  iconTint: { ...StyleSheet.absoluteFillObject, backgroundColor: "rgba(255,255,255,0.08)" },
+  iconButton: { width: 44, height: 44, borderRadius: 22, overflow: "hidden", borderWidth: 1, borderColor: glass.edge, backgroundColor: glass.surface, alignItems: "center", justifyContent: "center" },
+  iconTint: { ...StyleSheet.absoluteFillObject, backgroundColor: glass.highlight },
   pressed: { transform: [{ scale: 0.985 }], opacity: 0.88 },
 });
