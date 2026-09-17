@@ -18,7 +18,7 @@ export function GlassCard({
   style?: ViewStyle;
 }) {
   return (
-    <BlurView intensity={42} tint="dark" style={[styles.card, style]}>
+    <BlurView intensity={72} tint="light" style={[styles.card, style]}>
       {children}
     </BlurView>
   );
@@ -127,7 +127,7 @@ export function GlassAction({
   if (primary) return content;
 
   return (
-    <BlurView intensity={78} tint="dark" style={styles.actionBlur}>
+    <BlurView intensity={78} tint="light" style={styles.actionBlur}>
       {content}
     </BlurView>
   );
@@ -196,8 +196,8 @@ export function SectionTitle({ children }: { children: React.ReactNode }) {
 const styles = StyleSheet.create({
   card: {
     overflow: "hidden",
-    backgroundColor: colors.glass,
-    borderColor: "rgba(255,255,255,0.18)",
+    backgroundColor: "rgba(255,255,255,0.20)",
+    borderColor: "rgba(255,255,255,0.34)",
     borderWidth: 1,
     borderRadius: radii.card,
     padding: 18,
@@ -208,7 +208,7 @@ const styles = StyleSheet.create({
     height: 66,
     borderRadius: 19,
     borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.18)",
+    borderColor: "rgba(255,255,255,0.30)",
     flexDirection: "row",
     alignItems: "center",
     paddingHorizontal: 11,
@@ -219,7 +219,7 @@ const styles = StyleSheet.create({
     borderColor: "rgba(255,255,255,0.82)",
   },
   actionGlass: {
-    backgroundColor: "rgba(220,225,232,0.20)",
+    backgroundColor: "rgba(255,255,255,0.20)",
     borderColor: "rgba(255,255,255,0.38)",
   },
   actionIcon: {
@@ -235,9 +235,9 @@ const styles = StyleSheet.create({
     borderColor: "#111111",
   },
   actionIconGlass: {
-    backgroundColor: "rgba(255,255,255,0.22)",
+    backgroundColor: "rgba(255,255,255,0.26)",
     borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.16)",
+    borderColor: "rgba(255,255,255,0.20)",
   },
   actionCopy: {
     flex: 1,
