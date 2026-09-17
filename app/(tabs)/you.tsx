@@ -28,15 +28,13 @@ export default function You() {
           <Text style={styles.handle}>@{displayName.toLowerCase().replace(/\s+/g, "")}</Text>
         </View>
         <GlassCard style={styles.menu}>
-          <View style={styles.menuContent}>
-            <MenuRow icon="image-multiple-outline" label="My events" onPress={() => router.push("/events")} />
-            <View style={styles.div} />
-            <MenuRow icon="image-outline" label="Background photo" onPress={chooseBackground} />
-            <View style={styles.div} />
-            <MenuRow icon="cog-outline" label="Settings" onPress={() => setEditing((v) => !v)} />
-            <View style={styles.div} />
-            <MenuRow icon="help-circle-outline" label="Help & feedback" />
-          </View>
+          <MenuRow icon="image-multiple-outline" label="My events" onPress={() => router.push("/events")} />
+          <View style={styles.div} />
+          <MenuRow icon="image-outline" label="Background photo" onPress={chooseBackground} />
+          <View style={styles.div} />
+          <MenuRow icon="cog-outline" label="Settings" onPress={() => setEditing((v) => !v)} />
+          <View style={styles.div} />
+          <MenuRow icon="help-circle-outline" label="Help & feedback" />
         </GlassCard>
         <GlassCard style={styles.backgroundCard}>
           <View style={styles.backgroundHeader}>
@@ -67,11 +65,10 @@ const styles = StyleSheet.create({
   avatarText: { fontSize: 39, color: "#fff", fontWeight: "800" },
   title: { color: "#fff", fontSize: 29, fontWeight: "800", marginTop: 14, letterSpacing: -0.5 },
   handle: { color: colors.muted, marginTop: 3, fontSize: 13 },
-  menu: { padding: 0 },
-  menuContent: { paddingHorizontal: 16, paddingVertical: 8 },
-  menuRow: { minHeight: 54, flexDirection: "row", alignItems: "center" },
+  menu: {},
+  menuRow: { minHeight: 54, flexDirection: "row", alignItems: "center", paddingHorizontal: 16 },
   rowText: { flex: 1, color: "#fff", fontSize: 16, fontWeight: "600", marginLeft: 13 },
-  div: { height: 1, backgroundColor: colors.line, marginHorizontal: 2 },
+  div: { height: 1, backgroundColor: colors.line, marginHorizontal: 18 },
   backgroundCard: { gap: 14 },
   backgroundHeader: { flexDirection: "row", alignItems: "center" },
   backgroundIcon: { width: 40, height: 40, borderRadius: 12, backgroundColor: "rgba(255,255,255,.10)", alignItems: "center", justifyContent: "center" },
