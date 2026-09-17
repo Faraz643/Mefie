@@ -10,6 +10,11 @@ import {
 } from "react-native";
 import { colors, radii, shadows } from "../lib/theme";
 
+/**
+ * One glass recipe used everywhere in the app.
+ * Keep the blur itself separate from the translucent surface so Android does
+ * not turn the entire card into a dark/opaque slab.
+ */
 export function GlassCard({
   children,
   style,
@@ -18,9 +23,11 @@ export function GlassCard({
   style?: ViewStyle;
 }) {
   return (
-    <BlurView intensity={72} tint="light" style={[styles.card, style]}>
-      {children}
-    </BlurView>
+    <View style={[styles.card, style]}>
+      <BlurView intensity={32} tint="light" style={StyleSheet.absoluteFillObject} />
+      <View pointerEvents="none" style={styles.cardSheen} />
+      <View style={styles.cardContent}>{children}</View>
+    </View>
   );
 }
 
@@ -45,15 +52,13 @@ export function GlassButton({
       android_ripple={{ color: "transparent" }}
       style={({ pressed }) => [
         styles.button,
-        primary && styles.primary,
+        primary ? styles.primary : styles.buttonGlass,
         disabled && styles.disabled,
         pressed && styles.pressed,
       ]}
     >
       {icon ? (
-        <View style={[styles.buttonIcon, primary && styles.primaryIcon]}>
-          {icon}
-        </View>
+        <View style={[styles.buttonIcon, primary && styles.primaryIcon]}>{icon}</View>
       ) : null}
       <Text style={[styles.buttonLabel, primary && styles.primaryLabel]}>
         {label}
@@ -100,9 +105,7 @@ export function GlassAction({
         {icon}
       </View>
       <View style={styles.actionCopy}>
-        <Text
-          style={[styles.actionTitle, primary && styles.actionTitlePrimary]}
-        >
+        <Text style={[styles.actionTitle, primary && styles.actionTitlePrimary]}>
           {label}
         </Text>
         {subtitle ? (
@@ -127,9 +130,11 @@ export function GlassAction({
   if (primary) return content;
 
   return (
-    <BlurView intensity={78} tint="light" style={styles.actionBlur}>
+    <View style={styles.actionSurface}>
+      <BlurView intensity={32} tint="light" style={StyleSheet.absoluteFillObject} />
+      <View pointerEvents="none" style={styles.actionSheen} />
       {content}
-    </BlurView>
+    </View>
   );
 }
 
@@ -149,14 +154,13 @@ export function IconButton({
       onPress={onPress}
       focusable={false}
       android_ripple={{ color: "transparent" }}
-      style={({ pressed }) => [
-        styles.iconButtonOuter,
-        pressed && styles.pressed,
-      ]}
+      style={({ pressed }) => [styles.iconButtonOuter, pressed && styles.pressed]}
     >
-      <BlurView intensity={34} tint="light" style={styles.iconButton}>
+      <View style={styles.iconButton}>
+        <BlurView intensity={28} tint="light" style={StyleSheet.absoluteFillObject} />
+        <View pointerEvents="none" style={styles.iconSheen} />
         {children}
-      </BlurView>
+      </View>
     </Pressable>
   );
 }
@@ -195,20 +199,37 @@ export function SectionTitle({ children }: { children: React.ReactNode }) {
 
 const styles = StyleSheet.create({
   card: {
+    position: "relative",
     overflow: "hidden",
-    backgroundColor: "rgba(255,255,255,0.20)",
-    borderColor: "rgba(255,255,255,0.34)",
-    borderWidth: 1,
     borderRadius: radii.card,
-    padding: 18,
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.28)",
+    backgroundColor: "rgba(255,255,255,0.08)",
     ...shadows,
   },
-  actionBlur: { height: 66, borderRadius: 19, overflow: "hidden", ...shadows },
-  action: {
+  cardSheen: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: "rgba(255,255,255,0.13)",
+  },
+  cardContent: {
+    padding: 18,
+  },
+  actionSurface: {
     height: 66,
     borderRadius: 19,
+    overflow: "hidden",
     borderWidth: 1,
     borderColor: "rgba(255,255,255,0.30)",
+    backgroundColor: "rgba(255,255,255,0.08)",
+    ...shadows,
+  },
+  actionSheen: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: "rgba(255,255,255,0.12)",
+  },
+  action: {
+    height: 64,
+    borderRadius: 18,
     flexDirection: "row",
     alignItems: "center",
     paddingHorizontal: 11,
@@ -216,11 +237,12 @@ const styles = StyleSheet.create({
   },
   actionPrimary: {
     backgroundColor: "rgba(250,252,255,0.97)",
+    borderWidth: 1,
     borderColor: "rgba(255,255,255,0.82)",
   },
   actionGlass: {
-    backgroundColor: "rgba(255,255,255,0.20)",
-    borderColor: "rgba(255,255,255,0.38)",
+    backgroundColor: "transparent",
+    borderWidth: 0,
   },
   actionIcon: {
     width: 44,
@@ -235,40 +257,38 @@ const styles = StyleSheet.create({
     borderColor: "#111111",
   },
   actionIconGlass: {
-    backgroundColor: "rgba(255,255,255,0.26)",
+    backgroundColor: "rgba(255,255,255,0.18)",
     borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.20)",
+    borderColor: "rgba(255,255,255,0.24)",
   },
   actionCopy: {
     flex: 1,
     paddingHorizontal: 12,
-    backgroundColor: "transparent",
-    borderWidth: 0,
   },
   actionTitle: {
     color: "rgba(255,255,255,0.96)",
     fontSize: 16,
     fontWeight: "700",
     letterSpacing: -0.2,
-    backgroundColor: "transparent",
   },
   actionTitlePrimary: { color: colors.black },
   actionSubtitle: {
     color: colors.muted,
     fontSize: 12,
     marginTop: 3,
-    backgroundColor: "transparent",
   },
   actionSubtitlePrimary: { color: "rgba(16,21,28,0.58)" },
   button: {
     minHeight: 58,
     borderRadius: radii.button,
-    backgroundColor: colors.glassLight,
     flexDirection: "row",
     alignItems: "center",
     paddingHorizontal: 16,
     borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.14)",
+  },
+  buttonGlass: {
+    backgroundColor: "rgba(255,255,255,0.12)",
+    borderColor: "rgba(255,255,255,0.26)",
   },
   primary: {
     backgroundColor: colors.white,
@@ -320,11 +340,16 @@ const styles = StyleSheet.create({
     width: 44,
     height: 44,
     borderRadius: 22,
+    overflow: "hidden",
     borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.42)",
-    backgroundColor: "rgba(255,255,255,0.10)",
+    borderColor: "rgba(255,255,255,0.36)",
+    backgroundColor: "rgba(255,255,255,0.08)",
     alignItems: "center",
     justifyContent: "center",
+  },
+  iconSheen: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: "rgba(255,255,255,0.10)",
   },
   pressed: { transform: [{ scale: 0.985 }], opacity: 0.88 },
 });
