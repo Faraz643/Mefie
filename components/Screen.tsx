@@ -30,7 +30,7 @@ type NavItem = {
 export function Screen({
   children,
   backgroundImage,
-  blurBackground = false,
+  blurBackground = true,
 }: {
   children: React.ReactNode;
   backgroundImage?: any;
@@ -52,17 +52,21 @@ export function Screen({
         resizeMode="cover"
       />
       {blurBackground ? (
-        <BlurView intensity={22} tint="dark" style={StyleSheet.absoluteFill} />
+        <BlurView
+          intensity={24}
+          tint="dark"
+          style={StyleSheet.absoluteFillObject}
+        />
       ) : null}
       <LinearGradient
         colors={[
-          "rgba(5,9,14,0.02)",
           "rgba(5,9,14,0.00)",
-          "rgba(5,9,14,0.10)",
-          "rgba(5,9,14,0.78)",
+          "rgba(5,9,14,0.02)",
+          "rgba(5,9,14,0.08)",
+          "rgba(5,9,14,0.56)",
         ]}
-        locations={[0, 0.34, 0.62, 1]}
-        style={StyleSheet.absoluteFill}
+        locations={[0, 0.34, 0.64, 1]}
+        style={StyleSheet.absoluteFillObject}
       />
       <ScrollView
         contentContainerStyle={[
@@ -116,7 +120,7 @@ export function BottomNav({ active = "home" }: { active?: NavKey }) {
     >
       <View style={styles.nav}>
         <BlurView
-          intensity={30}
+          intensity={42}
           tint="light"
           style={StyleSheet.absoluteFillObject}
         />
@@ -138,7 +142,7 @@ export function BottomNav({ active = "home" }: { active?: NavKey }) {
                 <MaterialCommunityIcons
                   name={icon}
                   size={25}
-                  color={selected ? "#FFFFFF" : "rgba(255,255,255,0.66)"}
+                  color={selected ? "#FFFFFF" : "rgba(255,255,255,0.68)"}
                 />
                 <Text
                   style={[
@@ -227,7 +231,7 @@ const styles = StyleSheet.create({
   },
   navSheen: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: "rgba(255,255,255,0.12)",
+    backgroundColor: "rgba(255,255,255,0.06)",
   },
   navInner: {
     height: 74,
@@ -239,9 +243,9 @@ const styles = StyleSheet.create({
   navIndicator: {
     ...StyleSheet.absoluteFillObject,
     borderRadius: 31,
-    backgroundColor: "rgba(255,255,255,0.18)",
+    backgroundColor: "rgba(255,255,255,0.16)",
     borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.30)",
+    borderColor: "rgba(255,255,255,0.26)",
   },
   navItem: {
     height: 62,
@@ -251,7 +255,7 @@ const styles = StyleSheet.create({
     position: "relative",
   },
   navText: {
-    color: "rgba(255,255,255,0.62)",
+    color: "rgba(255,255,255,0.64)",
     fontSize: 11,
     lineHeight: 15,
     fontWeight: "500",
