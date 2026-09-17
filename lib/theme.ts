@@ -29,6 +29,6 @@ export const shadows = Platform.select({
     shadowRadius: 28,
     shadowOffset: { width: 0, height: 14 },
   },
-  android: { elevation: 16 },
+  android: { elevation: 7 },
   default: {},
 });
