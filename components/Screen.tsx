@@ -60,8 +60,7 @@ export function BottomNav({ active = "home" }: { active?: NavKey }) {
   const navigate = (key: NavKey, path: NavPath) => { if (key === active) return; router.navigate(path); };
   return (
     <View pointerEvents="box-none" style={[styles.navPosition, { bottom: Math.max(insets.bottom + 14, 18) }]}>
-      <View style={styles.nav}>
-        <BlurView intensity={34} tint="dark" style={StyleSheet.absoluteFillObject} />
+      <BlurView intensity={34} tint="dark" style={styles.nav}>
         <View pointerEvents="none" style={styles.navFrost} />
         <View style={styles.navInner}>
           {items.map(({ key, label, icon, path }) => {
@@ -75,7 +74,7 @@ export function BottomNav({ active = "home" }: { active?: NavKey }) {
             );
           })}
         </View>
-      </View>
+      </BlurView>
     </View>
   );
 }
