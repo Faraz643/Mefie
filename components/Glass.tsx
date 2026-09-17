@@ -20,8 +20,7 @@ const glass = {
 export function GlassCard({ children, style }: { children: React.ReactNode; style?: ViewStyle }) {
   return (
     <View style={[styles.card, style]}>
-      <BlurView intensity={glass.blur} tint="dark" style={StyleSheet.absoluteFillObject} />
-      <View pointerEvents="none" style={styles.cardTint} />
+      <BlurView intensity={glass.blur} tint="dark" style={styles.cardBlur} />
       <View style={styles.cardContent}>{children}</View>
     </View>
   );
@@ -101,7 +100,7 @@ export function SectionTitle({ children }: { children: React.ReactNode }) {
 
 const styles = StyleSheet.create({
   card: { position: "relative", overflow: "hidden", borderRadius: radii.card, borderWidth: 1, borderColor: glass.edge, backgroundColor: glass.surface, ...shadows },
-  cardTint: { ...StyleSheet.absoluteFillObject, backgroundColor: glass.highlight },
+  cardBlur: { ...StyleSheet.absoluteFillObject, borderRadius: radii.card },
   cardContent: { padding: 18 },
   actionSurface: { height: 66, borderRadius: 19, overflow: "hidden", borderWidth: 1, borderColor: glass.edge, backgroundColor: glass.surface, ...shadows },
   actionTint: { ...StyleSheet.absoluteFillObject, backgroundColor: glass.highlight },
