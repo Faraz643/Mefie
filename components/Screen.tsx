@@ -99,12 +99,7 @@ export function BottomNav({ active = "home" }: { active?: NavKey }) {
   const { width } = useWindowDimensions();
   const items: NavItem[] = [
     { key: "home", label: "Home", icon: "home", path: "/" },
-    {
-      key: "events",
-      label: "Events",
-      icon: "image-outline",
-      path: "/events",
-    },
+    { key: "events", label: "Events", icon: "image-outline", path: "/events" },
     { key: "you", label: "You", icon: "account-outline", path: "/you" },
   ];
   const itemWidth = Math.max((width - 36 - 12) / items.length, 0);
@@ -115,43 +110,46 @@ export function BottomNav({ active = "home" }: { active?: NavKey }) {
   };
 
   return (
-    <BlurView
-      intensity={78}
-      tint="light"
-      style={[styles.nav, { bottom: Math.max(insets.bottom + 14, 18) }]}
+    <View
+      pointerEvents="box-none"
+      style={[styles.navPosition, { bottom: Math.max(insets.bottom + 14, 18) }]}
     >
-      <View style={styles.navInner}>
-        {items.map(({ key, label, icon, path }) => {
-          const selected = active === key;
-          return (
-            <Pressable
-              key={key}
-              onPress={() => navigate(key, path)}
-              style={[styles.navItem, { width: itemWidth }]}
-              android_ripple={{
-                color: "rgba(255,255,255,0.08)",
-                borderless: true,
-              }}
-            >
-              {selected ? <View pointerEvents="none" style={styles.navIndicator} /> : null}
-              <MaterialCommunityIcons
-                name={icon}
-                size={25}
-                color={selected ? "#FFFFFF" : "rgba(255,255,255,0.70)"}
-              />
-              <Text
-                style={[
-                  styles.navText,
-                  selected ? styles.navTextSelected : null,
-                ]}
+      <BlurView intensity={78} tint="dark" style={styles.nav}>
+        <View style={styles.navInner}>
+          {items.map(({ key, label, icon, path }) => {
+            const selected = active === key;
+            return (
+              <Pressable
+                key={key}
+                onPress={() => navigate(key, path)}
+                style={[styles.navItem, { width: itemWidth }]}
+                android_ripple={{
+                  color: "rgba(255,255,255,0.08)",
+                  borderless: true,
+                }}
               >
-                {label}
-              </Text>
-            </Pressable>
-          );
-        })}
-      </View>
-    </BlurView>
+                {selected ? (
+                  <View pointerEvents="none" style={styles.navIndicator} />
+                ) : null}
+                <MaterialCommunityIcons
+                  name={icon}
+                  size={25}
+                  color={selected ? "#FFFFFF" : "rgba(255,255,255,0.66)"}
+                />
+                <Text
+                  style={[
+                    styles.navText,
+                    selected ? styles.navTextSelected : null,
+                  ]}
+                >
+                  {label}
+                </Text>
+              </Pressable>
+            );
+          })}
+        </View>
+      </BlurView>
+    </View>
   );
 }
 
@@ -202,7 +200,6 @@ const styles = StyleSheet.create({
     position: "absolute",
     width: 17,
     height: 20,
-    borderRadius: 6,
     borderColor: "#C9D7F5",
     left: 11,
     top: 7,
@@ -214,34 +211,29 @@ const styles = StyleSheet.create({
     fontWeight: "800",
     letterSpacing: -0.6,
   },
+  navPosition: { position: "absolute", left: 18, right: 18 },
   nav: {
-    position: "absolute",
-    left: 18,
-    right: 18,
-    minHeight: 76,
+    height: 76,
     borderRadius: 38,
     borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.26)",
-    backgroundColor: "rgba(255,255,255,0.10)",
+    borderColor: "rgba(255,255,255,0.18)",
     overflow: "hidden",
     ...shadows,
   },
   navInner: {
     height: 74,
     padding: 6,
-    backgroundColor: "rgba(255,255,255,0.20)",
-    borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.34)",
-    borderRadius: 37,
+    backgroundColor: "rgba(220,225,232,0.20)",
     flexDirection: "row",
     alignItems: "center",
+    position: "relative",
   },
   navIndicator: {
     ...StyleSheet.absoluteFillObject,
     borderRadius: 31,
-    backgroundColor: "rgba(255,255,255,0.28)",
+    backgroundColor: "rgba(255,255,255,0.18)",
     borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.42)",
+    borderColor: "rgba(255,255,255,0.28)",
   },
   navItem: {
     height: 62,
@@ -251,7 +243,7 @@ const styles = StyleSheet.create({
     position: "relative",
   },
   navText: {
-    color: "rgba(255,255,255,0.70)",
+    color: "rgba(255,255,255,0.62)",
     fontSize: 11,
     lineHeight: 15,
     fontWeight: "500",
