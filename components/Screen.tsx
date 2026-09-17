@@ -114,7 +114,13 @@ export function BottomNav({ active = "home" }: { active?: NavKey }) {
       pointerEvents="box-none"
       style={[styles.navPosition, { bottom: Math.max(insets.bottom + 14, 18) }]}
     >
-      <BlurView intensity={78} tint="dark" style={styles.nav}>
+      <View style={styles.nav}>
+        <BlurView
+          intensity={30}
+          tint="light"
+          style={StyleSheet.absoluteFillObject}
+        />
+        <View pointerEvents="none" style={styles.navSheen} />
         <View style={styles.navInner}>
           {items.map(({ key, label, icon, path }) => {
             const selected = active === key;
@@ -122,11 +128,9 @@ export function BottomNav({ active = "home" }: { active?: NavKey }) {
               <Pressable
                 key={key}
                 onPress={() => navigate(key, path)}
+                focusable={false}
                 style={[styles.navItem, { width: itemWidth }]}
-                android_ripple={{
-                  color: "rgba(255,255,255,0.08)",
-                  borderless: true,
-                }}
+                android_ripple={{ color: "transparent" }}
               >
                 {selected ? (
                   <View pointerEvents="none" style={styles.navIndicator} />
@@ -148,7 +152,7 @@ export function BottomNav({ active = "home" }: { active?: NavKey }) {
             );
           })}
         </View>
-      </BlurView>
+      </View>
     </View>
   );
 }
@@ -216,14 +220,18 @@ const styles = StyleSheet.create({
     height: 76,
     borderRadius: 38,
     borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.18)",
+    borderColor: "rgba(255,255,255,0.30)",
     overflow: "hidden",
+    backgroundColor: "rgba(255,255,255,0.07)",
     ...shadows,
+  },
+  navSheen: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: "rgba(255,255,255,0.12)",
   },
   navInner: {
     height: 74,
     padding: 6,
-    backgroundColor: "rgba(220,225,232,0.20)",
     flexDirection: "row",
     alignItems: "center",
     position: "relative",
@@ -233,7 +241,7 @@ const styles = StyleSheet.create({
     borderRadius: 31,
     backgroundColor: "rgba(255,255,255,0.18)",
     borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.28)",
+    borderColor: "rgba(255,255,255,0.30)",
   },
   navItem: {
     height: 62,
