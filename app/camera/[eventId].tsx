@@ -61,10 +61,9 @@ export default function CameraScreen() {
         await FileSystem.copyAsync({ from: uri, to: temporaryUri });
         localUri = temporaryUri;
       }
-      const info = await FileSystem.getInfoAsync(localUri, { size: true });
+      const info = await FileSystem.getInfoAsync(localUri);
       if (!info.exists)
         throw new Error("The photo file no longer exists on the device.");
-      if (!info.size) throw new Error("The captured photo is empty.");
       const base64 = await FileSystem.readAsStringAsync(localUri, {
         encoding: FileSystem.EncodingType.Base64,
       });
