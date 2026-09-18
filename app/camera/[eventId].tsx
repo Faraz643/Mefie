@@ -1,6 +1,6 @@
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 import { CameraView, useCameraPermissions } from "expo-camera";
-import * as FileSystem from "expo-file-system";
+import * as FileSystem from "expo-file-system/legacy";
 import { decode } from "base64-arraybuffer";
 import * as Haptics from "expo-haptics";
 import * as ImagePicker from "expo-image-picker";
@@ -205,7 +205,7 @@ export default function CameraScreen() {
       <View style={styles.bottom}>
         {message ? (
           <View style={styles.message}>
-            <MaterialCommunityIcons name="sparkles" size={15} color="#fff" />
+            <MaterialCommunityIcons name="star" size={15} color="#fff" />
             <Text style={styles.messageText}>{message}</Text>
           </View>
         ) : null}
