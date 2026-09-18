@@ -1,43 +1,37 @@
-import { BlurView } from "expo-blur";
+import { BlurTargetView, BlurView } from "expo-blur";
 import { LinearGradient } from "expo-linear-gradient";
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 import { useRouter } from "expo-router";
-import React from "react";
-import {
-  ImageBackground,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  useWindowDimensions,
-  View,
-} from "react-native";
+import React, { useRef } from "react";
+import { ImageBackground, Pressable, ScrollView, StyleSheet, Text, useWindowDimensions, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { colors, shadows } from "../lib/theme";
 import { useApp } from "../lib/app-context";
-import { IconButton } from "./Glass";
+import { GlassTargetProvider, IconButton, useGlassTarget } from "./Glass";
 
 const hero = require("../assets/hero-background.jpg");
 type NavPath = "/" | "/events" | "/you";
 type NavKey = "home" | "events" | "you";
-type NavItem = {
-  key: NavKey;
-  label: string;
-  icon: "home" | "image-outline" | "account-outline";
-  path: NavPath;
-};
+type NavItem = { key: NavKey; label: string; icon: "home" | "image-outline" | "account-outline"; path: NavPath };
 
-export function Screen({ children, backgroundImage, blurBackground = true }: { children: React.ReactNode; backgroundImage?: any; blurBackground?: boolean }) {
+export function Screen({ children, backgroundImage, blurBackground = true, bottomNav }: { children: React.ReactNode; backgroundImage?: any; blurBackground?: boolean; bottomNav?: React.ReactNode }) {
   const insets = useSafeAreaInsets();
   const { backgroundImage: userBackground } = useApp();
   const activeBackground = backgroundImage ?? userBackground ?? hero;
   const source = typeof activeBackground === "string" ? { uri: activeBackground } : activeBackground;
+  const blurTarget = useRef<View | null>(null);
+
   return (
     <View style={styles.bg}>
-      <ImageBackground source={source} style={StyleSheet.absoluteFill} resizeMode="cover" />
-      {blurBackground ? <BlurView intensity={24} tint="dark" style={StyleSheet.absoluteFillObject} /> : null}
-      <LinearGradient colors={["rgba(5,9,14,0.00)", "rgba(5,9,14,0.02)", "rgba(5,9,14,0.08)", "rgba(5,9,14,0.56)"]} locations={[0, 0.34, 0.64, 1]} style={StyleSheet.absoluteFillObject} />
-      <ScrollView contentContainerStyle={[styles.content, { paddingTop: insets.top + 16, paddingBottom: insets.bottom + 138 }]} showsVerticalScrollIndicator={false}>{children}</ScrollView>
+      <BlurTargetView ref={blurTarget} style={styles.backgroundTarget}>
+        <ImageBackground source={source} style={StyleSheet.absoluteFill} resizeMode="cover" />
+        <LinearGradient colors={["rgba(5,9,14,0.00)", "rgba(5,9,14,0.02)", "rgba(5,9,14,0.08)", "rgba(5,9,14,0.56)"]} locations={[0, 0.34, 0.64, 1]} style={StyleSheet.absoluteFillObject} />
+      </BlurTargetView>
+      {blurBackground ? <BlurView blurTarget={blurTarget} blurMethod="dimezisBlurView" intensity={24} tint="dark" pointerEvents="none" style={StyleSheet.absoluteFillObject} /> : null}
+      <GlassTargetProvider target={blurTarget}>
+        <ScrollView contentContainerStyle={[styles.content, { paddingTop: insets.top + 16, paddingBottom: insets.bottom + 138 }]} showsVerticalScrollIndicator={false}>{children}</ScrollView>
+        {bottomNav}
+      </GlassTargetProvider>
     </View>
   );
 }
@@ -51,6 +45,7 @@ export function BottomNav({ active = "home" }: { active?: NavKey }) {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { width } = useWindowDimensions();
+  const target = useGlassTarget();
   const items: NavItem[] = [
     { key: "home", label: "Home", icon: "home", path: "/" },
     { key: "events", label: "Events", icon: "image-outline", path: "/events" },
@@ -60,18 +55,16 @@ export function BottomNav({ active = "home" }: { active?: NavKey }) {
   const navigate = (key: NavKey, path: NavPath) => { if (key === active) return; router.navigate(path); };
   return (
     <View pointerEvents="box-none" style={[styles.navPosition, { bottom: Math.max(insets.bottom + 14, 18) }]}>
-      <BlurView intensity={34} tint="dark" style={styles.nav}>
+      <BlurView {...(target ? { blurTarget: target, blurMethod: "dimezisBlurView" as const } : { blurMethod: "none" as const })} intensity={34} tint="dark" style={styles.nav}>
         <View pointerEvents="none" style={styles.navFrost} />
         <View style={styles.navInner}>
           {items.map(({ key, label, icon, path }) => {
             const selected = active === key;
-            return (
-              <Pressable key={key} onPress={() => navigate(key, path)} focusable={false} style={[styles.navItem, { width: itemWidth }]} android_ripple={{ color: "transparent" }}>
-                {selected ? <View pointerEvents="none" style={styles.navIndicator} /> : null}
-                <MaterialCommunityIcons name={icon} size={25} color={selected ? "#FFFFFF" : "rgba(255,255,255,0.68)"} />
-                <Text style={[styles.navText, selected ? styles.navTextSelected : null]}>{label}</Text>
-              </Pressable>
-            );
+            return <Pressable key={key} onPress={() => navigate(key, path)} focusable={false} style={[styles.navItem, { width: itemWidth }]} android_ripple={{ color: "transparent" }}>
+              {selected ? <View pointerEvents="none" style={styles.navIndicator} /> : null}
+              <MaterialCommunityIcons name={icon} size={25} color={selected ? "#FFFFFF" : "rgba(255,255,255,0.68)"} />
+              <Text style={[styles.navText, selected ? styles.navTextSelected : null]}>{label}</Text>
+            </Pressable>;
           })}
         </View>
       </BlurView>
@@ -85,6 +78,7 @@ export function Header({ title, right }: { title: string; right?: React.ReactNod
 
 const styles = StyleSheet.create({
   bg: { flex: 1, backgroundColor: "#0A0F15" },
+  backgroundTarget: { ...StyleSheet.absoluteFillObject },
   content: { paddingHorizontal: 20, gap: 16 },
   header: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
   brandRow: { flexDirection: "row", alignItems: "center", gap: 10 },
