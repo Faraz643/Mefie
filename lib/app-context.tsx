@@ -101,12 +101,19 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const [displayName, setName] = useState("Faraz");
   const [backgroundImage, setBackground] = useState<string | null>(null);
   const [events, setEvents] = useState<DemoEvent[]>([]);
+  const mountedRef = React.useRef(false);
 
   useEffect(() => {
-    AsyncStorage.getItem("mefie.displayName").then((v) => v && setName(v));
-    AsyncStorage.getItem("mefie.backgroundImage").then(
-      (v) => v && setBackground(v),
-    );
+    mountedRef.current = true;
+    AsyncStorage.getItem("mefie.displayName").then((v) => {
+      if (mountedRef.current && v) setName(v);
+    });
+    AsyncStorage.getItem("mefie.backgroundImage").then((v) => {
+      if (mountedRef.current && v) setBackground(v);
+    });
+    return () => {
+      mountedRef.current = false;
+    };
   }, []);
   const setDisplayName = async (name: string) => {
     const value = name.trim() || "Faraz";
@@ -127,7 +134,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       .eq("status", "active")
       .order("created_at", { ascending: false })
       .limit(20);
-    if (!data) return;
+    if (!data || !mountedRef.current) return;
     const enriched = await Promise.all(
       data.map(async (e) => {
         const [{ count: people }, { count: photos }, { data: cover }] =
@@ -158,7 +165,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         };
       }),
     );
-    setEvents(enriched);
+    if (mountedRef.current) setEvents(enriched);
   }, []);
 
   useEffect(() => {
