@@ -55,7 +55,7 @@ export default function EventScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { displayName } = useApp();
   const scrollY = useRef(new Animated.Value(0)).current;
-  const scrollRef = useRef<Animated.ScrollView>(null);
+  const scrollRef = useRef<ScrollView>(null);
   const photoScrollOffset = useRef(0);
   const peopleScrollOffset = useRef(0);
   const [event, setEvent] = useState<any>(null);
@@ -141,7 +141,7 @@ export default function EventScreen() {
         .subscribe();
       return () => {
         active = false;
-        supabase.removeChannel(ch);
+        client.removeChannel(ch);
       };
     }
     return () => {
@@ -340,7 +340,7 @@ export default function EventScreen() {
           [{ nativeEvent: { contentOffset: { y: scrollY } } }],
           {
             useNativeDriver: true,
-            listener: (event) => {
+            listener: (event: NativeSyntheticEvent<NativeScrollEvent>) => {
               const offset = event.nativeEvent.contentOffset.y;
               if (tab === "photos")
                 photoScrollOffset.current = Math.max(0, offset);
