@@ -1,6 +1,5 @@
-import React, { createContext, useContext, type ReactNode } from "react";
-import { Pressable, StyleSheet, Text, TextInput, View, type RefObject, type ViewStyle } from "react-native";
-import type { ReactNode } from "react";
+import React, { createContext, useContext, type ReactNode, type RefObject } from "react";
+import { Pressable, StyleSheet, Text, TextInput, View, type ViewStyle } from "react-native";
 import { BlurView } from "expo-blur";
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 import { colors, radii, shadows } from "../lib/theme";
