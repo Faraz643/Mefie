@@ -15,6 +15,9 @@ import {
   Text,
   View,
   ActivityIndicator,
+  ScrollView,
+  type NativeScrollEvent,
+  type NativeSyntheticEvent,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { BackButton } from "../../components/Screen";
@@ -96,7 +99,7 @@ export default function EventScreen() {
       }
     })();
     if (supabase) {
-      const ch = supabase
+      const client = supabase
         .channel(`event-${id}`)
         .on(
           "postgres_changes",
@@ -164,8 +167,8 @@ export default function EventScreen() {
   const selectTab = (nextTab: "photos" | "people") => {
     if (nextTab === tab) return;
     if (tab === "photos")
-      photoScrollOffset.current = Math.max(0, scrollY.__getValue());
-    else peopleScrollOffset.current = Math.max(0, scrollY.__getValue());
+      photoScrollOffset.current = Math.max(0, photoScrollOffset.current);
+    else peopleScrollOffset.current = Math.max(0, peopleScrollOffset.current);
     setTab(nextTab);
   };
   const galleryPhotos = photos.length
