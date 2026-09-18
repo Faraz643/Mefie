@@ -1,4 +1,5 @@
-import React, { createContext, useContext, Pressable, RefObject, StyleSheet, Text, TextInput, View, ViewStyle } from "react-native";
+import React, { createContext, useContext, type ReactNode } from "react";
+import { Pressable, StyleSheet, Text, TextInput, View, type RefObject, type ViewStyle } from "react-native";
 import type { ReactNode } from "react";
 import { BlurView } from "expo-blur";
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
