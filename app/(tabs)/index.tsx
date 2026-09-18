@@ -15,7 +15,8 @@ import { colors, radii, shadows } from "../../lib/theme";
 
 export default function HomeScreen() {
   const router = useRouter();
-  const { displayName, events, refreshEvents } = useApp();\n  const glassTarget = useGlassTarget();
+  const { displayName, events, refreshEvents } = useApp();
+  const glassTarget = useGlassTarget();
   useFocusEffect(
     useCallback(() => {
       refreshEvents();
