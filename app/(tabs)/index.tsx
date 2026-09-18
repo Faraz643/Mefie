@@ -18,7 +18,14 @@ export default function HomeScreen() {
   const { displayName, events, refreshEvents } = useApp();
   useFocusEffect(
     useCallback(() => {
-      refreshEvents();
+      let active = true;
+      const frame = requestAnimationFrame(() => {
+        if (active) void refreshEvents();
+      });
+      return () => {
+        active = false;
+        cancelAnimationFrame(frame);
+      };
     }, [refreshEvents]),
   );
   return (
