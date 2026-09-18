@@ -1,4 +1,5 @@
 import React, { createContext, useContext, Pressable, RefObject, StyleSheet, Text, TextInput, View, ViewStyle } from "react-native";
+import type { ReactNode } from "react";
 import { BlurView } from "expo-blur";
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 import { colors, radii, shadows } from "../lib/theme";
@@ -13,7 +14,7 @@ const glass = {
 type GlassTarget = RefObject<View | null>;
 const GlassTargetContext = createContext<GlassTarget | null>(null);
 
-export function GlassTargetProvider({ target, children }: { target: GlassTarget; children: React.ReactNode }) {
+export function GlassTargetProvider({ target, children }: { target: GlassTarget; children: ReactNode }) {
   return <GlassTargetContext.Provider value={target}>{children}</GlassTargetContext.Provider>;
 }
 
@@ -27,7 +28,7 @@ function blurProps(target: GlassTarget | null) {
     : { blurMethod: "none" as const };
 }
 
-export function GlassCard({ children, style }: { children: React.ReactNode; style?: ViewStyle }) {
+export function GlassCard({ children, style }: { children: ReactNode; style?: ViewStyle }) {
   const target = useGlassTarget();
   return (
     <View style={[styles.card, style]}>
@@ -39,7 +40,7 @@ export function GlassCard({ children, style }: { children: React.ReactNode; styl
 }
 
 export function GlassButton({ label, onPress, primary = false, icon, disabled = false }: {
-  label: string; onPress?: () => void; primary?: boolean; icon?: React.ReactNode; disabled?: boolean;
+  label: string; onPress?: () => void; primary?: boolean; icon?: ReactNode; disabled?: boolean;
 }) {
   const target = useGlassTarget();
   const content = (
@@ -60,7 +61,7 @@ export function GlassButton({ label, onPress, primary = false, icon, disabled = 
 }
 
 export function GlassAction({ label, subtitle, onPress, primary = false, icon }: {
-  label: string; subtitle?: string; onPress?: () => void; primary?: boolean; icon: React.ReactNode;
+  label: string; subtitle?: string; onPress?: () => void; primary?: boolean; icon: ReactNode;
 }) {
   const target = useGlassTarget();
   const content = (
@@ -83,7 +84,7 @@ export function GlassAction({ label, subtitle, onPress, primary = false, icon }:
   );
 }
 
-export function IconButton({ children, onPress, accessibilityLabel }: { children: React.ReactNode; onPress?: () => void; accessibilityLabel: string }) {
+export function IconButton({ children, onPress, accessibilityLabel }: { children: ReactNode; onPress?: () => void; accessibilityLabel: string }) {
   const target = useGlassTarget();
   return (
     <Pressable accessibilityRole="button" accessibilityLabel={accessibilityLabel} onPress={onPress} focusable={false} android_ripple={{ color: "transparent" }} style={({ pressed }) => [styles.iconButtonOuter, pressed && styles.pressed]}>
@@ -110,7 +111,7 @@ export function GlassInput({ label, value, onChangeText, placeholder }: { label?
   );
 }
 
-export function SectionTitle({ children }: { children: React.ReactNode }) {
+export function SectionTitle({ children }: { children: ReactNode }) {
   return <Text style={styles.sectionTitle}>{children}</Text>;
 }
 
@@ -141,7 +142,7 @@ const styles = StyleSheet.create({
   disabled: { opacity: 0.5 },
   buttonIcon: { marginRight: 10 },
   primaryIcon: { opacity: 0.9 },
-  buttonLabel: { color: colors.white, fontSize: 15, fontWeight: "750", flex: 1 },
+  buttonLabel: { color: colors.white, fontSize: 15, fontWeight: "700", flex: 1 },
   primaryLabel: { color: colors.black },
   inputSurface: { minHeight: 72, borderRadius: 18, overflow: "hidden", borderWidth: 1, borderColor: glass.edge, backgroundColor: glass.surface },
   inputTint: { ...StyleSheet.absoluteFillObject, backgroundColor: glass.highlight },
