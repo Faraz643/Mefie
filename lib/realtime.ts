@@ -6,7 +6,8 @@ export function subscribeToEvent(
   onParticipant?: (payload: Record<string, unknown>) => void,
 ) {
   if (!supabase) return () => {};
-  const channel = supabase
+  const client = supabase;
+  const channel = client
     .channel(`mefie:event:${eventId}`)
     .on(
       "postgres_changes",
