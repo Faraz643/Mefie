@@ -15,7 +15,7 @@ import { colors, radii, shadows } from "../../lib/theme";
 
 export default function HomeScreen() {
   const router = useRouter();
-  const { displayName, events, refreshEvents } = useApp();
+  const { displayName, events, refreshEvents } = useApp();\n  const glassTarget = useGlassTarget();
   useFocusEffect(
     useCallback(() => {
       refreshEvents();
@@ -23,7 +23,7 @@ export default function HomeScreen() {
   );
   return (
     <View style={styles.root}>
-      <Screen>
+      <Screen bottomNav={<BottomNav active="home" />}>
         <Header
           title="Mefie"
           right={
