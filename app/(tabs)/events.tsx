@@ -19,7 +19,7 @@ export default function Events() {
   );
   return (
     <View style={styles.root}>
-      <Screen>
+      <Screen bottomNav={<BottomNav active="events" />}>
         <View style={styles.heading}>
           <Text style={styles.title}>Your events</Text>
           <Text style={styles.sub}>Every group memory, in one place.</Text>
