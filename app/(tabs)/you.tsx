@@ -21,7 +21,7 @@ export default function You() {
 
   return (
     <View style={styles.root}>
-      <Screen>
+      <Screen bottomNav={<BottomNav active="you" />}>
         <View style={styles.profile}>
           <View style={styles.avatar}><Text style={styles.avatarText}>{displayName[0]?.toUpperCase() || "M"}</Text></View>
           <Text style={styles.title}>{displayName}</Text>
