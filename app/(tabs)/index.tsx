@@ -9,7 +9,6 @@ import {
   GlassCard,
   SectionTitle,
   IconButton,
-  useGlassTarget,
 } from "../../components/Glass";
 import { useApp } from "../../lib/app-context";
 import { colors, radii, shadows } from "../../lib/theme";
@@ -17,7 +16,6 @@ import { colors, radii, shadows } from "../../lib/theme";
 export default function HomeScreen() {
   const router = useRouter();
   const { displayName, events, refreshEvents } = useApp();
-  const glassTarget = useGlassTarget();
   useFocusEffect(
     useCallback(() => {
       refreshEvents();
