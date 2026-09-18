@@ -31,6 +31,6 @@ export function subscribeToEvent(
     )
     .subscribe();
   return () => {
-    supabase.removeChannel(channel);
+    client.removeChannel(channel);
   };
 }
