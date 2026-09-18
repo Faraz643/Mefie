@@ -177,7 +177,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  count: { color: "#fff", fontSize: 13, fontWeight: "750" },
+  count: { color: "#fff", fontSize: 13, fontWeight: "700" },
   bottom: {
     position: "absolute",
     bottom: 28,
