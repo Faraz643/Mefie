@@ -99,8 +99,8 @@ export default function EventScreen() {
       }
     })();
     if (supabase) {
-      const client = supabase
-        .channel(`event-${id}`)
+      const client = supabase;
+      const ch = client.channel(`event-${id}`)
         .on(
           "postgres_changes",
           {
