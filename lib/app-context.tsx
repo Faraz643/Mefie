@@ -76,7 +76,7 @@ async function syncAvatarToCloud(sessionId: string, uri: string | null): Promise
     return null;
   }
 
-  if (!/^(file|content):\\/\\//i.test(uri)) {
+  if (!/^(file|content):\/\//i.test(uri)) {
     const { error } = await supabase
       .from("participants")
       .update({ avatar_url: uri })
@@ -184,11 +184,11 @@ export async function ensureParticipant(eventId: string, displayName: string, av
   if (existingError) throw existingError;
 
   let resolvedAvatarUrl =
-    avatarUrl !== undefined && !/^(file|content):\\/\\//i.test(avatarUrl || "")
+    avatarUrl !== undefined && !/^(file|content):\/\//i.test(avatarUrl || "")
       ? avatarUrl
       : existing?.avatar_url ?? null;
 
-  if (avatarUrl && /^(file|content):\\/\\//i.test(avatarUrl)) {
+  if (avatarUrl && /^(file|content):\/\//i.test(avatarUrl)) {
     try {
       resolvedAvatarUrl = await syncAvatarToCloud(sessionId, avatarUrl);
     } catch {
