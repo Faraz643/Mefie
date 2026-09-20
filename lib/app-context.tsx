@@ -184,19 +184,21 @@ export async function ensureParticipant(eventId: string, displayName: string, av
           .maybeSingle();
         resolvedAvatarUrl = data?.avatar_url ?? null;
       }
-    } else {
-      await supabase
-        .from("profiles")
-        .upsert(
-          {
-            session_id: sessionId,
-            avatar_url: avatarUrl || null,
-            updated_at: new Date().toISOString(),
-          },
-          { onConflict: "session_id" },
-        );
     }
   }
+
+  const { error: profileIdentityError } = await supabase
+    .from("profiles")
+    .upsert(
+      {
+        session_id: sessionId,
+        display_name: displayName.trim() || "Guest",
+        ...(resolvedAvatarUrl !== undefined ? { avatar_url: resolvedAvatarUrl } : {}),
+        updated_at: new Date().toISOString(),
+      },
+      { onConflict: "session_id" },
+    );
+  if (profileIdentityError) throw profileIdentityError;
 
   const { data: existing, error: existingError } = await supabase
     .from("participants")
