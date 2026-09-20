@@ -126,16 +126,31 @@ async function syncAvatarToCloud(sessionId: string, uri: string | null): Promise
     encoding: FileSystem.EncodingType.Base64,
   });
   const path = `avatars/${sessionId}.jpg`;
-  const { error: uploadError } = await supabase.storage
-    .from("avatars")
+  let bucket = "avatars";
+  let { error: uploadError } = await supabase.storage
+    .from(bucket)
     .upload(path, decode(base64), {
       contentType: "image/jpeg",
       cacheControl: "3600",
       upsert: true,
     });
+
+  // Fall back to the original public photos bucket so cross-device avatars
+  // still work even when the dedicated avatars migration has not been run.
+  if (uploadError) {
+    bucket = "photos";
+    const fallback = await supabase.storage
+      .from(bucket)
+      .upload(path, decode(base64), {
+        contentType: "image/jpeg",
+        cacheControl: "3600",
+        upsert: true,
+      });
+    uploadError = fallback.error;
+  }
   if (uploadError) throw uploadError;
 
-  const { data } = supabase.storage.from("avatars").getPublicUrl(path);
+  const { data } = supabase.storage.from(bucket).getPublicUrl(path);
   const versionedUrl = `${data.publicUrl}?v=${Date.now()}`;
   const now = new Date().toISOString();
 
