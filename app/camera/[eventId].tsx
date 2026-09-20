@@ -5,9 +5,11 @@ import { decode } from "base64-arraybuffer";
 import * as Haptics from "expo-haptics";
 import * as ImagePicker from "expo-image-picker";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import React, { useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
+  AppState,
+  Linking,
   Pressable,
   StyleSheet,
   Text,
@@ -26,7 +28,15 @@ export default function CameraScreen() {
   const [busy, setBusy] = useState(false);
   const [cameraReady, setCameraReady] = useState(false);
   const [message, setMessage] = useState("");
+  const [permissionBusy, setPermissionBusy] = useState(false);
   const ref = useRef<CameraView>(null);
+
+  useEffect(() => {
+    const subscription = AppState.addEventListener("change", async (state) => {
+      if (state === "active") await request();
+    });
+    return () => subscription.remove();
+  }, [request]);
   if (!perm)
     return (
       <View style={styles.center}>
@@ -41,8 +51,27 @@ export default function CameraScreen() {
         <Text style={styles.sub}>
           Mefie needs the camera to capture and share moments.
         </Text>
-        <Pressable onPress={request} style={styles.cta}>
-          <Text style={styles.ctaText}>Allow camera</Text>
+        <Pressable
+          disabled={permissionBusy}
+          onPress={async () => {
+            if (permissionBusy) return;
+            setPermissionBusy(true);
+            try {
+              const result = await request();
+              if (!result.granted && !result.canAskAgain) await Linking.openSettings();
+            } finally {
+              setPermissionBusy(false);
+            }
+          }}
+          style={styles.cta}
+        >
+          {permissionBusy ? (
+            <ActivityIndicator color="#111" />
+          ) : (
+            <Text style={styles.ctaText}>
+              {perm.canAskAgain ? "Allow camera" : "Open Settings"}
+            </Text>
+          )}
         </Pressable>
       </View>
     );
