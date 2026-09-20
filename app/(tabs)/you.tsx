@@ -63,6 +63,8 @@ export default function You() {
               accessibilityRole="button"
               accessibilityLabel="Change profile photo"
               onPress={chooseAvatar}
+              focusable={false}
+              android_ripple={{ color: "transparent" }}
               style={({ pressed }) => [styles.avatar, pressed && styles.avatarPressed]}
             >
               {avatarImage ? (
@@ -267,13 +269,12 @@ const styles = StyleSheet.create({
     width: 78,
     height: 78,
     borderRadius: 39,
-    backgroundColor: "rgba(255,255,255,.16)",
+    backgroundColor: "transparent",
     borderWidth: 1,
-    borderColor: colors.lineStrong,
+    borderColor: "rgba(255,255,255,.42)",
     alignItems: "center",
     justifyContent: "center",
     overflow: "hidden",
-    ...shadows,
   },
   avatarImage: { width: "100%", height: "100%" },
   avatarText: { fontSize: 31, color: "#fff", fontWeight: "800" },
