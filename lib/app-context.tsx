@@ -192,7 +192,7 @@ export async function ensureParticipant(eventId: string, displayName: string, av
   const sessionId = await getSessionId();
   const resolvedAvatarUrl =
     avatarUrl && /^(file|content):\/\//i.test(avatarUrl)
-      ? supabase.storage.from("photos").getPublicUrl(`avatars/${sessionId}.jpg`).data.publicUrl
+      ? supabase.storage.from("avatars").getPublicUrl(`avatars/${sessionId}.jpg`).data.publicUrl
       : avatarUrl;
   const { data: existing } = await supabase
     .from("participants")
