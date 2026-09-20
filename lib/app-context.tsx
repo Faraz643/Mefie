@@ -161,7 +161,27 @@ async function syncAvatarToCloud(sessionId: string, uri: string | null) {
   return true;
 }
 
-async function syncLocalAvatarIfNeeded(uri: string) {\n  if (!supabase) return;\n  try {\n    const sessionId = await getSessionId();\n    const { data: profile } = await supabase\n      .from("avatar_profiles")\n      .select("storage_location, storage_path")\n      .eq("user_id", sessionId)\n      .maybeSingle();\n\n    if (!profile || profile.storage_location !== "supabase_storage" || !profile.storage_path?.startsWith("avatars/")) {\n      await queueAvatarSync(uri);\n      await syncAvatarToCloud(sessionId, uri);\n      await clearAvatarSyncQueue();\n    }\n  } catch {\n    // Keep local avatar; foreground retry handles temporary failures.\n  }\n}\n\nasync function syncPendingAvatar() {
+async function syncLocalAvatarIfNeeded(uri: string) {
+  if (!supabase) return;
+  try {
+    const sessionId = await getSessionId();
+    const { data: profile } = await supabase
+      .from("avatar_profiles")
+      .select("storage_location, storage_path")
+      .eq("user_id", sessionId)
+      .maybeSingle();
+
+    if (!profile || profile.storage_location !== "supabase_storage" || !profile.storage_path?.startsWith("avatars/")) {
+      await queueAvatarSync(uri);
+      await syncAvatarToCloud(sessionId, uri);
+      await clearAvatarSyncQueue();
+    }
+  } catch {
+    // Keep local avatar; foreground retry handles temporary failures.
+  }
+}
+
+async function syncPendingAvatar() {
   if (!supabase) return;
   const raw = await AsyncStorage.getItem(AVATAR_PENDING_KEY);
   if (!raw) return;
@@ -250,7 +270,10 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       if (mountedRef.current && v) setName(v);
     });
     AsyncStorage.getItem("mefie.avatarImage").then((v) => {
-      if (mountedRef.current && v) {\n        setAvatar(v);\n        void syncLocalAvatarIfNeeded(v);\n      }
+      if (mountedRef.current && v) {
+        setAvatar(v);
+        void syncLocalAvatarIfNeeded(v);
+      }
     });
     AsyncStorage.getItem("mefie.backgroundImage").then((v) => {
       if (mountedRef.current && v) setBackground(v);
