@@ -2,7 +2,7 @@ import { BlurView } from "expo-blur";
 import { LinearGradient } from "expo-linear-gradient";
 import { useFocusEffect, useRouter } from "expo-router";
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
-import React, { useCallback, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import { Alert, Image, Pressable, StyleSheet, Text, View } from "react-native";
 import { BottomNav, Header, Screen } from "../../components/Screen";
 import {
@@ -33,6 +33,11 @@ export default function HomeScreen() {
   const [selecting, setSelecting] = useState(false);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [deleting, setDeleting] = useState(false);
+  const [sessionId, setSessionId] = useState<string | null>(null);
+
+  useEffect(() => {
+    void getSessionId().then(setSessionId);
+  }, []);
   useFocusEffect(
     useCallback(() => {
       let active = true;
@@ -96,13 +101,26 @@ export default function HomeScreen() {
         />
         <View style={styles.eventsSection}>
           <View style={styles.sectionRow}>
-            <SectionTitle>Your events</SectionTitle>
+            <SectionTitle>{selecting ? `${selectedIds.length} selected` : "Your events"}</SectionTitle>
             {events.length > 0 ? (
-              <Pressable onPress={() => router.push("/events")}>
-                <Text style={styles.seeAll}>
-                  See all <Text style={styles.seeArrow}>›</Text>
-                </Text>
-              </Pressable>
+              selecting ? (
+                <Pressable onPress={cancelSelection}>
+                  <Text style={styles.seeAll}>Cancel</Text>
+                </Pressable>
+              ) : (
+                <View style={styles.sectionActions}>
+                  {selectableEvents.length > 0 ? (
+                    <Pressable onPress={startSelection}>
+                      <Text style={styles.seeAll}>Select</Text>
+                    </Pressable>
+                  ) : null}
+                  <Pressable onPress={() => router.push("/events")}>
+                    <Text style={styles.seeAll}>
+                      See all <Text style={styles.seeArrow}>›</Text>
+                    </Text>
+                  </Pressable>
+                </View>
+              )
             ) : null}
           </View>
           {events.length === 0 ? (
@@ -121,7 +139,7 @@ export default function HomeScreen() {
                   key={e.id}
                   onPress={() => {
                     if (selecting) {
-                      if (e.creatorSessionId) toggleSelected(e.id);
+                      if (e.creatorSessionId === sessionId) toggleSelected(e.id);
                       return;
                     }
                     router.push({
@@ -189,6 +207,7 @@ const styles = StyleSheet.create({
   avatarText: { color: colors.white, fontSize: 17, fontWeight: "700" },
   headerAvatar: { width: "100%", height: "100%", borderRadius: 22, alignItems: "center", justifyContent: "center" },
   eventsSection: { marginTop: 10 },
+  sectionActions: { flexDirection: "row", alignItems: "center", gap: 16 },
   sectionRow: {
     flexDirection: "row",
     alignItems: "center",
