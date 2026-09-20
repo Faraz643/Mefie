@@ -139,7 +139,18 @@ async function syncAvatarToCloud(sessionId: string, uri: string | null): Promise
   const versionedUrl = `${data.publicUrl}?v=${Date.now()}`;
   const now = new Date().toISOString();
 
-  const { error: profileError } = await supabase
+  // The participant row is the event-level source of truth for avatars.
+  // Update it immediately after the Storage upload so other event members can
+  // render the avatar even if the optional profile metadata write is unavailable.
+  const { error: participantError } = await supabase
+    .from("participants")
+    .update({ avatar_url: versionedUrl })
+    .eq("session_id", sessionId);
+  if (participantError) throw participantError;
+
+  // Keep the profile index in sync as a reusable cross-event cache. A profile
+  // metadata failure must not hide an otherwise successful avatar upload.
+  await supabase
     .from("avatar_profiles")
     .upsert(
       {
@@ -151,12 +162,6 @@ async function syncAvatarToCloud(sessionId: string, uri: string | null): Promise
       },
       { onConflict: "user_id" },
     );
-  if (profileError) throw profileError;
-
-  await supabase
-    .from("participants")
-    .update({ avatar_url: versionedUrl })
-    .eq("session_id", sessionId);
 
   return versionedUrl;
 }
