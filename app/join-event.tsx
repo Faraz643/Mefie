@@ -5,7 +5,6 @@ import { useRouter } from "expo-router";
 import React, { useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { Screen } from "../components/Screen";
-import { useGlassTarget } from "../components/Glass";
 import { GlassButton, GlassCard, GlassInput } from "../components/Glass";
 import { colors, shadows } from "../lib/theme";
 import { ensureParticipant, supabase, useApp } from "../lib/app-context";
@@ -23,7 +22,6 @@ export default function JoinEventScreen() {
   const [scanning, setScanning] = useState(false);
   const [error, setError] = useState("");
   const [perm, request] = useCameraPermissions();
-  const blurTarget = useGlassTarget();
 
   const join = async (value = link) => {
     setError("");
