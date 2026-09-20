@@ -60,6 +60,10 @@ export async function getSessionId() {
 export async function ensureParticipant(eventId: string, displayName: string, avatarUrl?: string | null) {
   if (!supabase || !eventId) return null;
   const sessionId = await getSessionId();
+  const resolvedAvatarUrl =
+    avatarUrl && /^(file|content):\/\//i.test(avatarUrl)
+      ? supabase.storage.from("photos").getPublicUrl(`avatars/${sessionId}.jpg`).data.publicUrl
+      : avatarUrl;
   const { data: existing } = await supabase
     .from("participants")
     .select("*")
