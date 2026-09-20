@@ -1,8 +1,10 @@
-import * as ImagePicker from "expo-image-picker";
+// PROFILE PHOTO LOGIC DISABLED FOR NOW:
+// import * as ImagePicker from "expo-image-picker";
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
+import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
-import { Alert, Image, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
+import { Image, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 import { BottomNav, Screen } from "../../components/Screen";
 import { GlassCard } from "../../components/Glass";
 import { useApp } from "../../lib/app-context";
@@ -13,8 +15,6 @@ export default function You() {
   const {
     displayName,
     setDisplayName,
-    avatarImage,
-    setAvatarImage,
     backgroundImage,
     setBackgroundImage,
   } = useApp();
@@ -25,6 +25,7 @@ export default function You() {
     setName(displayName);
   }, [displayName]);
 
+  /* PROFILE PHOTO LOGIC DISABLED — kept for future use.
   const chooseAvatar = async () => {
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ["images"],
@@ -45,6 +46,8 @@ export default function You() {
       }
     }
   };
+
+  */
 
   const saveName = async () => {
     await setDisplayName(name);
@@ -67,45 +70,10 @@ export default function You() {
     <View style={styles.root}>
       <Screen bottomNav={<BottomNav active="you" />}>
         <View style={styles.profile}>
-          <View style={styles.avatarWrap}>
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel="Change profile photo"
-              onPress={chooseAvatar}
-              focusable={false}
-              android_ripple={{ color: "transparent" }}
-              style={({ pressed }) => [styles.avatar, pressed && styles.avatarPressed]}
-            >
-              {avatarImage ? (
-                <Image source={{ uri: avatarImage }} style={styles.avatarImage} />
-              ) : (
-                <>
-                  <Text style={styles.avatarText}>
-                    {displayName[0]?.toUpperCase() || "M"}
-                  </Text>
-                  <View style={styles.avatarCamera}>
-                    <MaterialCommunityIcons
-                      name="camera-plus-outline"
-                      size={15}
-                      color={colors.white}
-                    />
-                  </View>
-                </>
-              )}
-            </Pressable>
-            {avatarImage ? (
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel="Remove profile photo"
-                onPress={() => void setAvatarImage(null)}
-                style={styles.avatarDelete}
-                hitSlop={6}
-              >
-                <MaterialCommunityIcons name="trash-can-outline" size={14} color="#fff" />
-              </Pressable>
-            ) : null}
-          </View>
-
+          {/* PROFILE PHOTO LOGIC DISABLED — replaced with a deterministic gradient avatar. */}
+          <LinearGradient colors={gradientForName(displayName)} style={styles.avatar}>
+            <Text style={styles.avatarText}>{displayName[0]?.toUpperCase() || "M"}</Text>
+          </LinearGradient>
           <View style={styles.nameRow}>
             {editingName ? (
               <TextInput
@@ -233,6 +201,19 @@ export default function You() {
   );
 }
 
+function gradientForName(name: string): [string, string] {
+  const palettes: [string, string][] = [
+    ["#5B5FEF", "#9B8CFF"],
+    ["#7C3AED", "#C084FC"],
+    ["#0284C7", "#38BDF8"],
+    ["#0F766E", "#2DD4BF"],
+    ["#EA580C", "#FB7185"],
+    ["#DB2777", "#F472B6"],
+  ];
+  const hash = [...name].reduce((sum, char) => sum + char.charCodeAt(0), 0);
+  return palettes[hash % palettes.length];
+}
+
 function MenuRow({
   icon,
   label,
@@ -273,21 +254,19 @@ const styles = StyleSheet.create({
     paddingBottom: 12,
     position: "relative",
   },
-  avatarWrap: { width: 78, height: 78, position: "relative" },
   avatar: {
     width: 78,
     height: 78,
     borderRadius: 39,
-    backgroundColor: "transparent",
+    backgroundColor: "#5865F2",
     borderWidth: 1,
     borderColor: "rgba(255,255,255,.42)",
     alignItems: "center",
     justifyContent: "center",
     overflow: "hidden",
   },
-  avatarImage: { width: "100%", height: "100%" },
   avatarText: { fontSize: 31, color: "#fff", fontWeight: "800" },
-  avatarCamera: {
+  /* avatarCamera: {
     position: "absolute",
     right: 4,
     bottom: 4,
@@ -300,8 +279,9 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  avatarPressed: { opacity: 0.86 },
-  avatarDelete: {
+  */
+  /* avatarPressed: { opacity: 0.86 }, */
+  /* avatarDelete: {
     position: "absolute",
     right: 3,
     bottom: 3,
@@ -314,6 +294,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
+  */
   nameRow: {
     flexDirection: "row",
     alignItems: "center",
