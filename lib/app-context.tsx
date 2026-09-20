@@ -35,6 +35,8 @@ type DemoEvent = {
 type AppContextValue = {
   displayName: string;
   setDisplayName: (name: string) => Promise<void>;
+  avatarImage: string | null;
+  setAvatarImage: (uri: string | null) => Promise<void>;
   backgroundImage: string | null;
   setBackgroundImage: (uri: string | null) => Promise<void>;
   events: DemoEvent[];
@@ -99,6 +101,7 @@ export async function getParticipantId(eventId: string) {
 
 export function AppProvider({ children }: { children: React.ReactNode }) {
   const [displayName, setName] = useState("Faraz");
+  const [avatarImage, setAvatar] = useState<string | null>(null);
   const [backgroundImage, setBackground] = useState<string | null>(null);
   const [events, setEvents] = useState<DemoEvent[]>([]);
   const mountedRef = React.useRef(false);
@@ -108,6 +111,9 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     AsyncStorage.getItem("mefie.displayName").then((v) => {
       if (mountedRef.current && v) setName(v);
     });
+    AsyncStorage.getItem("mefie.avatarImage").then((v) => {
+      if (mountedRef.current && v) setAvatar(v);
+    });
     AsyncStorage.getItem("mefie.backgroundImage").then((v) => {
       if (mountedRef.current && v) setBackground(v);
     });
@@ -115,11 +121,19 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       mountedRef.current = false;
     };
   }, []);
+
   const setDisplayName = async (name: string) => {
     const value = name.trim() || "Faraz";
     setName(value);
     await AsyncStorage.setItem("mefie.displayName", value);
   };
+
+  const setAvatarImage = async (uri: string | null) => {
+    setAvatar(uri);
+    if (uri) await AsyncStorage.setItem("mefie.avatarImage", uri);
+    else await AsyncStorage.removeItem("mefie.avatarImage");
+  };
+
   const setBackgroundImage = async (uri: string | null) => {
     setBackground(uri);
     if (uri) await AsyncStorage.setItem("mefie.backgroundImage", uri);
@@ -171,19 +185,24 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     refreshEvents();
   }, [refreshEvents]);
+
   const value = useMemo(
     () => ({
       displayName,
       setDisplayName,
+      avatarImage,
+      setAvatarImage,
       backgroundImage,
       setBackgroundImage,
       events,
       refreshEvents,
     }),
-    [displayName, backgroundImage, events, refreshEvents],
+    [displayName, avatarImage, backgroundImage, events, refreshEvents],
   );
+
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }
+
 export function useApp() {
   const value = useContext(Ctx);
   if (!value) throw new Error("useApp must be used inside AppProvider");
