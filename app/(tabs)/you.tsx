@@ -116,21 +116,6 @@ export default function You() {
             )}
           </View>
 
-          {editingName ? (
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel="Save name"
-              onPress={saveName}
-              hitSlop={8}
-              style={styles.saveNameButton}
-            >
-              <MaterialCommunityIcons
-                name="check"
-                size={17}
-                color="rgba(255,255,255,.84)"
-              />
-            </Pressable>
-          ) : null}
         </View>
 
         <GlassCard style={styles.menu}>
@@ -310,15 +295,6 @@ const styles = StyleSheet.create({
     borderWidth: 0,
     backgroundColor: "transparent",
     textAlign: "center",
-  },
-  saveNameButton: {
-    width: 28,
-    height: 28,
-    alignItems: "center",
-    justifyContent: "center",
-    alignSelf: "center",
-    marginTop: -34,
-    marginLeft: 190,
   },
   menu: {},
   menuRow: {
