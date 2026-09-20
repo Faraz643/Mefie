@@ -79,7 +79,7 @@ export default function EventScreen() {
       if (!supabase) return;
       try {
         await ensureParticipant(String(id), displayName, avatarImage);
-        const [{ data: e }, { data: p }, { data: pt }] = await Promise.all([
+        const [eventResult, photosResult, participantsResult] = await Promise.all([
           supabase.from("events").select("*").eq("id", id).single(),
           supabase
             .from("photos")
@@ -93,10 +93,47 @@ export default function EventScreen() {
             .eq("event_id", id)
             .order("joined_at", { ascending: true }),
         ]);
+
+        if (eventResult.error) throw eventResult.error;
+        if (photosResult.error) throw photosResult.error;
+        if (participantsResult.error) throw participantsResult.error;
+
+        const participantRows = participantsResult.data || [];
+        const sessionIds = Array.from(
+          new Set(
+            participantRows
+              .map((person: any) => person.session_id)
+              .filter(Boolean),
+          ),
+        );
+
+        let avatarProfiles: any[] = [];
+        if (sessionIds.length) {
+          const { data: profiles, error: profileError } = await supabase
+            .from("avatar_profiles")
+            .select("user_id, avatar_url, last_updated")
+            .in("user_id", sessionIds);
+          if (!profileError) avatarProfiles = profiles || [];
+        }
+
+        const profileByUser = new Map(
+          avatarProfiles.map((profile: any) => [profile.user_id, profile]),
+        );
+
+        const peopleWithAvatars = participantRows.map((person: any) => {
+          const profile = person.session_id
+            ? profileByUser.get(person.session_id)
+            : null;
+          return {
+            ...person,
+            avatar_url: person.avatar_url || profile?.avatar_url || null,
+          };
+        });
+
         if (active) {
-          setEvent(e);
-          setPhotos(p || []);
-          setPeople(pt || []);
+          setEvent(eventResult.data);
+          setPhotos(photosResult.data || []);
+          setPeople(peopleWithAvatars);
         }
       } catch (e: any) {
         if (active) setError(e?.message || "Could not load event.");
@@ -132,7 +169,9 @@ export default function EventScreen() {
             if (payload.eventType === "INSERT")
               setPeople((curr) =>
                 curr.some((x) => x.id === payload.new.id)
-                  ? curr
+                  ? curr.map((x) =>
+                      x.id === payload.new.id ? { ...x, ...payload.new } : x,
+                    )
                   : [...curr, payload.new],
               );
             else if (payload.eventType === "DELETE")
