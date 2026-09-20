@@ -23,7 +23,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { BackButton } from "../../components/Screen";
 import { IconButton } from "../../components/Glass";
 import { colors, shadows } from "../../lib/theme";
-import { ensureParticipant, supabase, useApp } from "../../lib/app-context";
+import { ensureParticipant, getSessionId, supabase, useApp } from "../../lib/app-context";
 
 const fallbackPhoto =
   "https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=1200&q=85";
@@ -61,7 +61,7 @@ export default function EventScreen() {
   const scrollRef = useRef<ScrollView>(null);
   const photoScrollOffset = useRef(0);
   const peopleScrollOffset = useRef(0);
-  const [event, setEvent] = useState<any>(null);
+  const [event, setEvent] = useState<any>(null);\n  const [sessionId, setSessionId] = useState<string | null>(null);
   const [photos, setPhotos] = useState<any[]>([]);
   const [people, setPeople] = useState<any[]>([]);
   const [tab, setTab] = useState<"photos" | "people">("photos");
@@ -69,7 +69,7 @@ export default function EventScreen() {
   const [selectionMode, setSelectionMode] = useState(false);
   const [actionBusy, setActionBusy] = useState(false);
   const [error, setError] = useState("");
-  useEffect(() => {
+  useEffect(() => {\n    void getSessionId().then(setSessionId);\n  }, []);\n  useEffect(() => {
     let active = true;
     (async () => {
       if (!supabase) return;
@@ -379,7 +379,7 @@ export default function EventScreen() {
               </Text>
               <View style={styles.avatars}>
                 {visiblePeople.map((person, index) => {
-                  const avatarUrl = person.avatar_url;
+                  const avatarUrl = person.session_id === sessionId && avatarImage ? avatarImage : person.avatar_url;
                   return (
                     <View
                       key={person.id || index}
