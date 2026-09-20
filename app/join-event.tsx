@@ -56,12 +56,25 @@ export default function JoinEventScreen() {
   };
 
   const startScan = async () => {
-    if (!perm?.granted) {
-      const result = await request();
-      if (!result.granted) return;
-    }
-    setScanning(true);
     setError("");
+    try {
+      const current = perm?.granted
+        ? perm
+        : await request();
+
+      if (!current.granted) {
+        setError(
+          current.canAskAgain
+            ? "Camera permission is required to scan a QR code."
+            : "Camera access is blocked. Enable it in Android Settings for Mefie."
+        );
+        return;
+      }
+
+      setScanning(true);
+    } catch (e: any) {
+      setError(e?.message || "Could not access the camera.");
+    }
   };
 
   if (scanning)
