@@ -9,7 +9,7 @@ import React, {
 } from "react";
 import { createClient } from "@supabase/supabase-js";
 import { AppState, View, Text } from "react-native";
-import * as FileSystem from "expo-file-system";
+import { File } from "expo-file-system";
 import { decode } from "base64-arraybuffer";
 
 const SUPABASE_URL = process.env.EXPO_PUBLIC_SUPABASE_URL;
@@ -89,15 +89,13 @@ async function syncAvatarToCloud(sessionId: string, uri: string | null): Promise
     return uri;
   }
 
-  const info = await FileSystem.getInfoAsync(uri);
-  if (!info.exists) throw new Error("The local avatar file no longer exists.");
-  if (typeof info.size === "number" && info.size > AVATAR_MAX_BYTES) {
+  const file = new File(uri);
+  if (!file.exists) throw new Error("The local avatar file no longer exists.");
+  if (file.size > AVATAR_MAX_BYTES) {
     throw new Error("Avatar must be 2 MB or smaller.");
   }
 
-  const base64 = await FileSystem.readAsStringAsync(uri, {
-    encoding: FileSystem.EncodingType.Base64,
-  });
+  const base64 = await file.base64();
 
   const path = `${sessionId}.jpg`;
   const { error: uploadError } = await supabase.storage
