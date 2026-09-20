@@ -42,13 +42,14 @@ export default function HomeScreen() {
               accessibilityLabel="Open profile"
               onPress={() => router.push("/you")}
             >
-              {avatarImage ? (
-                <Image source={{ uri: avatarImage }} style={styles.headerAvatarImage} />
-              ) : (
+              <LinearGradient
+                colors={gradientForName(displayName)}
+                style={styles.headerAvatar}
+              >
                 <Text style={styles.avatarText}>
                   {displayName.slice(0, 1).toUpperCase()}
                 </Text>
-              )}
+              </LinearGradient>
             </IconButton>
           }
         />
