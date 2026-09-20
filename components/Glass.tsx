@@ -85,12 +85,9 @@ export function GlassAction({ label, subtitle, onPress, primary = false, icon }:
 }
 
 export function IconButton({ children, onPress, accessibilityLabel, plain = false }: { children: ReactNode; onPress?: () => void; accessibilityLabel: string; plain?: boolean }) {
-  const target = useGlassTarget();
   return (
     <Pressable accessibilityRole="button" accessibilityLabel={accessibilityLabel} onPress={onPress} focusable={false} android_ripple={{ color: "transparent" }} style={({ pressed }) => [styles.iconButtonOuter, plain && styles.iconButtonPlain, pressed && styles.pressed]}>
       <View style={[styles.iconButton, plain && styles.iconButtonPlain]}>
-        <BlurView {...blurProps(target)} intensity={22} tint="dark" pointerEvents="none" style={styles.surfaceBlur} />
-        <View pointerEvents="none" style={styles.iconTint} />
         {children}
       </View>
     </Pressable>
@@ -152,7 +149,7 @@ const styles = StyleSheet.create({
   sectionTitle: { color: colors.white, fontSize: 20, fontWeight: "800", marginBottom: 3, letterSpacing: -0.3 },
   iconButtonOuter: { width: 44, height: 44, borderRadius: 22, overflow: "hidden", ...shadows },
   iconButtonPlain: { backgroundColor: "transparent", borderWidth: 0, borderColor: "transparent", ...shadows },
-  iconButton: { width: 44, height: 44, overflow: "hidden", borderWidth: 1, borderColor: glass.edge, backgroundColor: glass.surface, alignItems: "center", justifyContent: "center" },
+  iconButton: { width: 44, height: 44, overflow: "hidden", borderWidth: 1, borderColor: "rgba(255,255,255,0.16)", backgroundColor: "rgba(25,31,38,0.78)", alignItems: "center", justifyContent: "center" },
   iconTint: { ...StyleSheet.absoluteFillObject, backgroundColor: glass.highlight },
   pressed: { transform: [{ scale: 0.985 }], opacity: 0.88 },
 });
