@@ -75,7 +75,7 @@ export async function ensureParticipant(eventId: string, displayName: string, av
       .from("participants")
       .update({
         display_name: displayName.trim() || "Guest",
-        ...(avatarUrl !== undefined ? { avatar_url: avatarUrl } : {}),
+        ...(avatarUrl !== undefined ? { avatar_url: resolvedAvatarUrl } : {}),
         last_seen_at: new Date().toISOString(),
       })
       .eq("id", existing.id);
