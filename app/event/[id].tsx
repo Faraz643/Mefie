@@ -322,7 +322,6 @@ export default function EventScreen() {
         <BlurView
           intensity={35}
           tint="dark"
-          experimentalBlurMethod="dimezisBlurView"
           style={StyleSheet.absoluteFillObject}
         />
         <LinearGradient
@@ -431,10 +430,9 @@ export default function EventScreen() {
             <BlurView
               intensity={58}
               tint="dark"
-              experimentalBlurMethod="dimezisBlurView"
               style={styles.tabs}
             >
-              <View style={styles.tabsGlass}>
+              <View style={styles.tabsContent}>
                 <Pressable
                   onPress={() => selectTab("photos")}
                   style={[styles.tab, tab === "photos" && styles.activeTab]}
@@ -681,17 +679,13 @@ const styles = StyleSheet.create({
     borderRadius: 29,
     overflow: "hidden",
     borderWidth: 1,
-    borderColor: "rgba(255,255,255,.34)",
-    backgroundColor: "rgba(170,185,196,.16)",
+    borderColor: "rgba(255,255,255,.20)",
+    backgroundColor: "rgba(30,35,42,.46)",
     ...shadows,
   },
-  tabsGlass: {
+  tabsContent: {
     flex: 1,
     padding: 5,
-    borderRadius: 29,
-    backgroundColor: "rgba(190,205,215,.18)",
-    borderWidth: 1,
-    borderColor: "rgba(255,255,255,.22)",
     flexDirection: "row",
   },
   tab: {
