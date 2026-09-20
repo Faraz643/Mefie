@@ -14,6 +14,19 @@ import {
 import { deleteEventsAsCreator, getSessionId, useApp } from "../../lib/app-context";
 import { colors, radii, shadows } from "../../lib/theme";
 
+function gradientForName(name: string): [string, string] {
+  const palettes: [string, string][] = [
+    ["#5B5FEF", "#9B8CFF"],
+    ["#7C3AED", "#C084FC"],
+    ["#0284C7", "#38BDF8"],
+    ["#0F766E", "#2DD4BF"],
+    ["#EA580C", "#FB7185"],
+    ["#DB2777", "#F472B6"],
+  ];
+  const hash = [...name].reduce((sum, char) => sum + char.charCodeAt(0), 0);
+  return palettes[hash % palettes.length];
+}
+
 export default function HomeScreen() {
   const router = useRouter();
   const { displayName, events, refreshEvents } = useApp();
