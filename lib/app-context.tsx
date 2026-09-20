@@ -9,6 +9,8 @@ import React, {
 } from "react";
 import { createClient } from "@supabase/supabase-js";
 import { View, Text } from "react-native";
+import * as FileSystem from "expo-file-system";
+import { decode } from "base64-arraybuffer";
 
 const SUPABASE_URL = process.env.EXPO_PUBLIC_SUPABASE_URL;
 const SUPABASE_ANON_KEY = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY;
@@ -55,7 +57,7 @@ export async function getSessionId() {
   return id;
 }
 
-export async function ensureParticipant(eventId: string, displayName: string) {
+export async function ensureParticipant(eventId: string, displayName: string, avatarUrl?: string | null) {
   if (!supabase || !eventId) return null;
   const sessionId = await getSessionId();
   const { data: existing } = await supabase
@@ -69,6 +71,7 @@ export async function ensureParticipant(eventId: string, displayName: string) {
       .from("participants")
       .update({
         display_name: displayName.trim() || "Guest",
+        ...(avatarUrl !== undefined ? { avatar_url: avatarUrl } : {}),
         last_seen_at: new Date().toISOString(),
       })
       .eq("id", existing.id);
@@ -130,8 +133,48 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
   const setAvatarImage = async (uri: string | null) => {
     setAvatar(uri);
-    if (uri) await AsyncStorage.setItem("mefie.avatarImage", uri);
-    else await AsyncStorage.removeItem("mefie.avatarImage");
+    if (uri) {
+      await AsyncStorage.setItem("mefie.avatarImage", uri);
+      if (supabase) {
+        try {
+          const sessionId = await getSessionId();
+          const info = await FileSystem.getInfoAsync(uri);
+          if (info.exists) {
+            const base64 = await FileSystem.readAsStringAsync(uri, {
+              encoding: FileSystem.EncodingType.Base64,
+            });
+            const path = `avatars/${sessionId}.jpg`;
+            const { error: uploadError } = await supabase.storage
+              .from("photos")
+              .upload(path, decode(base64), {
+                contentType: "image/jpeg",
+                upsert: true,
+              });
+            if (uploadError) throw uploadError;
+            const { data } = supabase.storage.from("photos").getPublicUrl(path);
+            const avatarUrl = data.publicUrl;
+            await supabase
+              .from("participants")
+              .update({ avatar_url: avatarUrl })
+              .eq("session_id", sessionId);
+          }
+        } catch {
+          // Keep the local avatar even if cloud sync is temporarily unavailable.
+        }
+      }
+    } else {
+      await AsyncStorage.removeItem("mefie.avatarImage");
+      if (supabase) {
+        try {
+          const sessionId = await getSessionId();
+          await supabase.storage.from("photos").remove([`avatars/${sessionId}.jpg`]);
+          await supabase
+            .from("participants")
+            .update({ avatar_url: null })
+            .eq("session_id", sessionId);
+        } catch {}
+      }
+    }
   };
 
   const setBackgroundImage = async (uri: string | null) => {
