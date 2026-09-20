@@ -262,6 +262,7 @@ const styles = StyleSheet.create({
     paddingBottom: 12,
     position: "relative",
   },
+  avatarWrap: { width: 78, height: 78, position: "relative" },
   avatar: {
     width: 78,
     height: 78,
