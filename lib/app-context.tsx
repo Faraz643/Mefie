@@ -10,7 +10,6 @@ import React, {
 import { createClient } from "@supabase/supabase-js";
 import { AppState, View, Text } from "react-native";
 import { File } from "expo-file-system";
-import { decode } from "base64-arraybuffer";
 
 const SUPABASE_URL = process.env.EXPO_PUBLIC_SUPABASE_URL;
 const SUPABASE_ANON_KEY = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY;
@@ -95,14 +94,19 @@ async function syncAvatarToCloud(sessionId: string, uri: string | null): Promise
     throw new Error("Avatar must be 2 MB or smaller.");
   }
 
-  const base64 = await file.base64();
+  // Do not turn the image into a base64 JS string. Large base64 strings can
+  // fail in React Native/Expo before the upload even reaches Supabase.
+  const arrayBuffer = await file.arrayBuffer();
+  if (arrayBuffer.byteLength > AVATAR_MAX_BYTES) {
+    throw new Error("Avatar must be 2 MB or smaller.");
+  }
 
   const path = `${sessionId}.jpg`;
   const { error: uploadError } = await supabase.storage
     .from("avatars")
-    .upload(path, decode(base64), {
+    .upload(path, arrayBuffer, {
       contentType: "image/jpeg",
-      cacheControl: "0",
+      cacheControl: "3600",
       upsert: true,
     });
 
