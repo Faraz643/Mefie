@@ -99,13 +99,39 @@ export default function EventScreen() {
         if (participantsResult.error) throw participantsResult.error;
 
         const participantRows = participantsResult.data || [];
+        const sessionIds = [...new Set(
+          participantRows.map((person: any) => person.session_id).filter(Boolean),
+        )];
 
-        // participants.avatar_url is the event-visible source of truth.
-        // Every device loads the same field for every person in this event.
+        const profilesResult = sessionIds.length
+          ? await supabase
+              .from("profiles")
+              .select("session_id,display_name,avatar_url,updated_at")
+              .in("session_id", sessionIds)
+          : { data: [], error: null };
+
+        if (profilesResult.error) throw profilesResult.error;
+
+        const profileBySession = new Map(
+          (profilesResult.data || []).map((profile: any) => [
+            profile.session_id,
+            profile,
+          ]),
+        );
+
+        const mergedPeople = participantRows.map((person: any) => {
+          const profile = profileBySession.get(person.session_id);
+          return {
+            ...person,
+            display_name: profile?.display_name || person.display_name,
+            avatar_url: profile?.avatar_url || null,
+          };
+        });
+
         if (active) {
           setEvent(eventResult.data);
           setPhotos(photosResult.data || []);
-          setPeople(participantRows);
+          setPeople(mergedPeople);
         }
       } catch (e: any) {
         if (active) setError(e?.message || "Could not load event.");
@@ -113,6 +139,38 @@ export default function EventScreen() {
     })();
     if (supabase) {
       const client = supabase;
+      const refreshPeopleFromProfiles = async () => {
+        try {
+          const { data: participantRows } = await client
+            .from("participants")
+            .select("*")
+            .eq("event_id", id)
+            .order("joined_at", { ascending: true });
+          const rows = participantRows || [];
+          const sessionIds = [...new Set(
+            rows.map((person: any) => person.session_id).filter(Boolean),
+          )];
+          const { data: profiles } = sessionIds.length
+            ? await client
+                .from("profiles")
+                .select("session_id,display_name,avatar_url,updated_at")
+                .in("session_id", sessionIds)
+            : { data: [] as any[] };
+          const bySession = new Map(
+            (profiles || []).map((profile: any) => [profile.session_id, profile]),
+          );
+          setPeople(rows.map((person: any) => {
+            const profile = bySession.get(person.session_id);
+            return {
+              ...person,
+              display_name: profile?.display_name || person.display_name,
+              avatar_url: profile?.avatar_url || null,
+            };
+          }));
+        } catch {
+          // The realtime payload already keeps participant membership live.
+        }
+      };
       const ch = client.channel(`event-${id}`)
         .on(
           "postgres_changes",
@@ -138,24 +196,47 @@ export default function EventScreen() {
             filter: `event_id=eq.${id}`,
           },
           (payload) => {
-            if (payload.eventType === "INSERT")
+            if (payload.eventType === "INSERT") {
               setPeople((curr) =>
                 curr.some((x) => x.id === payload.new.id)
-                  ? curr.map((x) =>
-                      x.id === payload.new.id
-                        ? { ...x, ...payload.new }
-                        : x,
-                    )
+                  ? curr
                   : [...curr, payload.new],
               );
-            else if (payload.eventType === "DELETE")
+              void refreshPeopleFromProfiles();
+            } else if (payload.eventType === "DELETE") {
               setPeople((curr) => curr.filter((x) => x.id !== payload.old.id));
-            else
+            } else {
               setPeople((curr) =>
                 curr.map((x) =>
                   x.id === payload.new.id ? { ...x, ...payload.new } : x,
                 ),
               );
+              void refreshPeopleFromProfiles();
+            }
+          },
+        )
+        .on(
+          "postgres_changes",
+          {
+            event: "*",
+            schema: "public",
+            table: "profiles",
+          },
+          (payload) => {
+            if (payload.eventType === "DELETE") return;
+            const profile = payload.new as any;
+            if (!profile?.session_id) return;
+            setPeople((curr) =>
+              curr.map((person) =>
+                person.session_id === profile.session_id
+                  ? {
+                      ...person,
+                      display_name: profile.display_name || person.display_name,
+                      avatar_url: profile.avatar_url || null,
+                    }
+                  : person,
+              ),
+            );
           },
         )
         .subscribe();
@@ -399,7 +480,7 @@ ${link}`,
               </Text>
               <View style={styles.avatars}>
                 {visiblePeople.map((person, index) => {
-                  const avatarUrl = person.session_id === sessionId && avatarImage ? avatarImage : person.avatar_url;
+                  const avatarUrl = person.avatar_url;
                   return (
                     <View
                       key={person.id || index}
