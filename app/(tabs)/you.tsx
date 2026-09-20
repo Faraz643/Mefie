@@ -65,7 +65,18 @@ export default function You() {
             style={({ pressed }) => [styles.avatar, pressed && styles.avatarPressed]}
           >
             {avatarImage ? (
-              <Image source={{ uri: avatarImage }} style={styles.avatarImage} />
+              <>
+                <Image source={{ uri: avatarImage }} style={styles.avatarImage} />
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel="Remove profile photo"
+                  onPress={() => void setAvatarImage(null)}
+                  style={styles.avatarDelete}
+                  hitSlop={6}
+                >
+                  <MaterialCommunityIcons name="trash-can-outline" size={14} color="#fff" />
+                </Pressable>
+              </>
             ) : (
               <>
                 <Text style={styles.avatarText}>
@@ -83,20 +94,6 @@ export default function You() {
           </Pressable>
 
           <View style={styles.nameRow}>
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel="Edit name"
-              onPress={() => setEditingName(true)}
-              hitSlop={8}
-              style={styles.editNameButton}
-            >
-              <MaterialCommunityIcons
-                name="pencil-outline"
-                size={17}
-                color="rgba(255,255,255,.82)"
-              />
-            </Pressable>
-
             {editingName ? (
               <TextInput
                 value={name}
@@ -112,7 +109,22 @@ export default function You() {
                 style={styles.nameInput}
               />
             ) : (
-              <Text style={styles.title}>{displayName}</Text>
+              <>
+                <Text style={styles.title}>{displayName}</Text>
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel="Edit name"
+                  onPress={() => setEditingName(true)}
+                  hitSlop={8}
+                  style={styles.editNameButton}
+                >
+                  <MaterialCommunityIcons
+                    name="pencil-outline"
+                    size={17}
+                    color="rgba(255,255,255,.82)"
+                  />
+                </Pressable>
+              </>
             )}
           </View>
 
@@ -147,11 +159,22 @@ export default function You() {
             </View>
 
             {backgroundImage ? (
-              <Image
-                source={{ uri: backgroundImage }}
-                style={styles.preview}
-                resizeMode="cover"
-              />
+              <View style={styles.previewWrap}>
+                <Image
+                  source={{ uri: backgroundImage }}
+                  style={styles.preview}
+                  resizeMode="cover"
+                />
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel="Remove background photo"
+                  onPress={() => void setBackgroundImage(null)}
+                  style={styles.backgroundDelete}
+                  hitSlop={6}
+                >
+                  <MaterialCommunityIcons name="trash-can-outline" size={18} color="#fff" />
+                </Pressable>
+              </View>
             ) : null}
 
             <View style={styles.chooseButtonSpacing}>
@@ -265,6 +288,19 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   avatarPressed: { opacity: 0.86 },
+  avatarDelete: {
+    position: "absolute",
+    right: 3,
+    bottom: 3,
+    width: 25,
+    height: 25,
+    borderRadius: 13,
+    backgroundColor: "rgba(10,15,21,.78)",
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,.30)",
+    alignItems: "center",
+    justifyContent: "center",
+  },
   nameRow: {
     flexDirection: "row",
     alignItems: "center",
@@ -325,12 +361,32 @@ const styles = StyleSheet.create({
   backgroundCopy: { flex: 1, marginLeft: 12 },
   backgroundTitle: { color: colors.white, fontSize: 16, fontWeight: "700" },
   backgroundSub: { color: colors.muted, fontSize: 12, marginTop: 3 },
-  preview: {
+  previewWrap: {
     width: "100%",
     height: 170,
     borderRadius: radii.card,
+    overflow: "hidden",
+    position: "relative",
+  },
+  preview: {
+    width: "100%",
+    height: "100%",
+    borderRadius: radii.card,
     backgroundColor: "#26313F",
     ...shadows,
+  },
+  backgroundDelete: {
+    position: "absolute",
+    top: 10,
+    right: 10,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: "rgba(10,15,21,.72)",
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,.28)",
+    alignItems: "center",
+    justifyContent: "center",
   },
   chooseButtonSpacing: { marginTop: 4 },
   chooseButton: {
