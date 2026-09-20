@@ -40,8 +40,3 @@ create policy "avatar deletes"
 alter table public.participants
   add column if not exists avatar_url text;
 
--- Prevent two rows for the same anonymous device in one event. This also makes
--- the event participant lookup deterministic when two joins happen at once.
-create unique index if not exists participants_event_session_unique
-  on public.participants(event_id, session_id)
-  where session_id is not null;
