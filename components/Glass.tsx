@@ -148,7 +148,7 @@ const styles = StyleSheet.create({
   input: { color: colors.white, fontSize: 16, paddingVertical: 3, paddingHorizontal: 0, minHeight: 26, backgroundColor: "transparent", borderWidth: 0 },
   sectionTitle: { color: colors.white, fontSize: 20, fontWeight: "800", marginBottom: 3, letterSpacing: -0.3 },
   iconButtonOuter: { width: 44, height: 44, borderRadius: 22, overflow: "hidden", ...shadows },
-  iconButtonPlain: { backgroundColor: "transparent", borderWidth: 0, borderColor: "transparent", ...shadows },
+  iconButtonPlain: { backgroundColor: "transparent", borderWidth: 0, borderColor: "transparent", shadowColor: "transparent", shadowOpacity: 0, shadowRadius: 0, shadowOffset: { width: 0, height: 0 }, elevation: 0 },
   iconButton: { width: 44, height: 44, overflow: "hidden", borderWidth: 1, borderColor: "rgba(255,255,255,0.16)", backgroundColor: "rgba(25,31,38,0.78)", alignItems: "center", justifyContent: "center" },
   iconTint: { ...StyleSheet.absoluteFillObject, backgroundColor: glass.highlight },
   pressed: { transform: [{ scale: 0.985 }], opacity: 0.88 },
