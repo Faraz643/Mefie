@@ -1,4 +1,25 @@
--- Avatar persistence: local-first on device, cloud-backed for other users.\n\ninsert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)\nvalues ('avatars', 'avatars', true, 2097152, array['image/jpeg','image/png','image/webp'])\non conflict (id) do update set\n  public = true,\n  file_size_limit = 2097152,\n  allowed_mime_types = array['image/jpeg','image/png','image/webp'];\n\ndrop policy if exists "avatar uploads" on storage.objects;\ndrop policy if exists "avatar reads" on storage.objects;\ndrop policy if exists "avatar updates" on storage.objects;\ndrop policy if exists "avatar deletes" on storage.objects;\ncreate policy "avatar uploads" on storage.objects for insert to public\n  with check (bucket_id = 'avatars');\ncreate policy "avatar reads" on storage.objects for select to public\n  using (bucket_id = 'avatars');\ncreate policy "avatar updates" on storage.objects for update to public\n  using (bucket_id = 'avatars') with check (bucket_id = 'avatars');\ncreate policy "avatar deletes" on storage.objects for delete to public\n  using (bucket_id = 'avatars');\n
+-- Avatar persistence: local-first on device, cloud-backed for other users.
+
+insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+values ('avatars', 'avatars', true, 2097152, array['image/jpeg','image/png','image/webp'])
+on conflict (id) do update set
+  public = true,
+  file_size_limit = 2097152,
+  allowed_mime_types = array['image/jpeg','image/png','image/webp'];
+
+drop policy if exists "avatar uploads" on storage.objects;
+drop policy if exists "avatar reads" on storage.objects;
+drop policy if exists "avatar updates" on storage.objects;
+drop policy if exists "avatar deletes" on storage.objects;
+create policy "avatar uploads" on storage.objects for insert to public
+  with check (bucket_id = 'avatars');
+create policy "avatar reads" on storage.objects for select to public
+  using (bucket_id = 'avatars');
+create policy "avatar updates" on storage.objects for update to public
+  using (bucket_id = 'avatars') with check (bucket_id = 'avatars');
+create policy "avatar deletes" on storage.objects for delete to public
+  using (bucket_id = 'avatars');
+
 -- Current Mefie identity is the stable anonymous session_id. When Supabase Auth
 -- is introduced, user_id should be migrated to auth.users.id.
 
