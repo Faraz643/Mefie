@@ -1,11 +1,10 @@
-import { BlurView } from "expo-blur";
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 import { CameraView, useCameraPermissions } from "expo-camera";
 import { useRouter } from "expo-router";
 import React, { useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { Screen } from "../components/Screen";
-import { GlassButton, GlassCard, GlassInput } from "../components/Glass";
+import { GlassCard, GlassInput, GlassAction } from "../components/Glass";
 import { colors, shadows } from "../lib/theme";
 import { ensureParticipant, supabase, useApp } from "../lib/app-context";
 
@@ -163,24 +162,17 @@ export default function JoinEventScreen() {
         <View style={styles.orLine} />
       </View>
 
-      <Pressable
+      <GlassAction
+        label="Scan QR Code"
         onPress={startScan}
-        focusable={false}
-        android_ripple={{ color: "transparent" }}
-        style={({ pressed }) => [
-          styles.scanSurface,
-          pressed && styles.pressed,
-        ]}
-      >
-        <View style={styles.scanContent}>
+        icon={
           <MaterialCommunityIcons
             name="qrcode-scan"
             size={25}
             color={colors.white}
           />
-          <Text style={styles.scanLabel}>Scan QR Code</Text>
-        </View>
-      </Pressable>
+        }
+      />
     </Screen>
   );
 }
@@ -239,22 +231,6 @@ const styles = StyleSheet.create({
     marginHorizontal: 4,
     marginTop: -5,
   },
-  scanSurface: {
-    height: 76,
-    borderRadius: 20,
-    overflow: "hidden",
-    backgroundColor: "rgba(30,35,42,0.58)",
-    borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.18)",
-  },
-  scanContent: {
-    flex: 1,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 14,
-  },
-  scanLabel: { color: colors.white, fontSize: 16, fontWeight: "500" },
   scanner: { flex: 1, backgroundColor: "#000" },
   scanOverlay: {
     ...StyleSheet.absoluteFillObject,
