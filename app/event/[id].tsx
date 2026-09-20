@@ -525,7 +525,7 @@ export default function EventScreen() {
           ) : (
             <View style={styles.peopleList}>
               {people.map((person) => {
-                const avatarUrl = person.avatar_url;
+                const avatarUrl = person.session_id === sessionId && avatarImage ? avatarImage : person.avatar_url;
                 return (
                   <View key={person.id} style={styles.person}>
                     <View style={styles.personAvatar}>
