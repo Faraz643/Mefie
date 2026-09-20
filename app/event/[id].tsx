@@ -665,9 +665,9 @@ const styles = StyleSheet.create({
   moreAvatar: { backgroundColor: "rgba(25,33,42,.88)" },
   moreText: { color: colors.white, fontSize: 13, fontWeight: "800" },
   tabsSticky: {
-    height: 68,
+    height: 80,
     paddingHorizontal: 20,
-    paddingTop: 5,
+    paddingTop: 13,
     paddingBottom: 5,
     backgroundColor: "transparent",
     zIndex: 10,
