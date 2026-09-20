@@ -359,7 +359,7 @@ export default function EventScreen() {
         >
           <View style={styles.top}>
             <BackButton />
-            <IconButton accessibilityLabel="Invite friends" onPress={invite}>
+            <IconButton plain accessibilityLabel="Invite friends" onPress={invite}>
               <MaterialCommunityIcons
                 name="link-variant"
                 size={21}
