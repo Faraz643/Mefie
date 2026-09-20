@@ -99,44 +99,13 @@ export default function EventScreen() {
         if (participantsResult.error) throw participantsResult.error;
 
         const participantRows = participantsResult.data || [];
-        const sessionIds = Array.from(
-          new Set(
-            participantRows
-              .map((person: any) => person.session_id)
-              .filter(Boolean),
-          ),
-        );
 
-        let avatarProfiles: any[] = [];
-        if (sessionIds.length) {
-          // Participants carry the event-visible avatar URL. The profile table
-          // is only an optional cross-event cache, so an unavailable profile
-          // table must never prevent event avatars from rendering.
-          const { data: profiles } = await supabase
-            .from("avatar_profiles")
-            .select("user_id, avatar_url, last_updated")
-            .in("user_id", sessionIds);
-          avatarProfiles = profiles || [];
-        }
-
-        const profileByUser = new Map(
-          avatarProfiles.map((profile: any) => [profile.user_id, profile]),
-        );
-
-        const peopleWithAvatars = participantRows.map((person: any) => {
-          const profile = person.session_id
-            ? profileByUser.get(person.session_id)
-            : null;
-          return {
-            ...person,
-            avatar_url: profile?.avatar_url || person.avatar_url || null,
-          };
-        });
-
+        // participants.avatar_url is the event-visible source of truth.
+        // Every device loads the same field for every person in this event.
         if (active) {
           setEvent(eventResult.data);
           setPhotos(photosResult.data || []);
-          setPeople(peopleWithAvatars);
+          setPeople(participantRows);
         }
       } catch (e: any) {
         if (active) setError(e?.message || "Could not load event.");
