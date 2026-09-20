@@ -61,7 +61,8 @@ export default function EventScreen() {
   const scrollRef = useRef<ScrollView>(null);
   const photoScrollOffset = useRef(0);
   const peopleScrollOffset = useRef(0);
-  const [event, setEvent] = useState<any>(null);\n  const [sessionId, setSessionId] = useState<string | null>(null);
+  const [event, setEvent] = useState<any>(null);
+  const [sessionId, setSessionId] = useState<string | null>(null);
   const [photos, setPhotos] = useState<any[]>([]);
   const [people, setPeople] = useState<any[]>([]);
   const [tab, setTab] = useState<"photos" | "people">("photos");
@@ -69,7 +70,10 @@ export default function EventScreen() {
   const [selectionMode, setSelectionMode] = useState(false);
   const [actionBusy, setActionBusy] = useState(false);
   const [error, setError] = useState("");
-  useEffect(() => {\n    void getSessionId().then(setSessionId);\n  }, []);\n  useEffect(() => {
+  useEffect(() => {
+    void getSessionId().then(setSessionId);
+  }, []);
+  useEffect(() => {
     let active = true;
     (async () => {
       if (!supabase) return;
@@ -161,7 +165,10 @@ export default function EventScreen() {
   const invite = async () => {
     const link = `https://mefie.app/e/${event?.invite_code || ""}`;
     await Share.share({
-      message: `Join ${event?.name || "our Mefie event"} 📸\nEveryone's photos go into one shared album.\n\n${link}`,
+      message: `Join ${event?.name || "our Mefie event"} 📸
+Everyone's photos go into one shared album.
+
+${link}`,
     });
   };
   const selectTab = (nextTab: "photos" | "people") => {
