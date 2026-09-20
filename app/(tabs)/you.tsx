@@ -67,11 +67,11 @@ function MenuRow({ icon, label, onPress }: { icon: any; label: string; onPress?:
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: "#0A0F15" },
-  profile: { alignItems: "center", paddingTop: 28, paddingBottom: 22 },
-  avatar: { width: 100, height: 100, borderRadius: 50, backgroundColor: "rgba(255,255,255,.16)", borderWidth: 1, borderColor: colors.lineStrong, alignItems: "center", justifyContent: "center" },
-  avatarText: { fontSize: 39, color: "#fff", fontWeight: "800" },
-  title: { color: "#fff", fontSize: 29, fontWeight: "800", marginTop: 14, letterSpacing: -0.5 },
-  handle: { color: colors.muted, marginTop: 3, fontSize: 13 },
+  profile: { alignItems: "center", paddingTop: 12, paddingBottom: 12 },
+  avatar: { width: 78, height: 78, borderRadius: 39, backgroundColor: "rgba(255,255,255,.16)", borderWidth: 1, borderColor: colors.lineStrong, alignItems: "center", justifyContent: "center" },
+  avatarText: { fontSize: 31, color: "#fff", fontWeight: "800" },
+  title: { color: "#fff", fontSize: 24, fontWeight: "800", marginTop: 8, letterSpacing: -0.5 },
+  handle: { color: colors.muted, marginTop: 2, fontSize: 12 },
   menu: {},
   menuRow: { minHeight: 54, flexDirection: "row", alignItems: "center", paddingHorizontal: 16 },
   rowText: { flex: 1, color: "#fff", fontSize: 16, fontWeight: "600", marginLeft: 13 },
