@@ -3,7 +3,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 import { useRouter } from "expo-router";
 import React, { useRef } from "react";
-import { ImageBackground, Pressable, ScrollView, StyleSheet, Text, useWindowDimensions, View } from "react-native";
+import { Dimensions, ImageBackground, Pressable, ScrollView, StyleSheet, Text, useWindowDimensions, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { colors, shadows } from "../lib/theme";
 import { useApp } from "../lib/app-context";
@@ -16,6 +16,7 @@ type NavItem = { key: NavKey; label: string; icon: "home" | "image-outline" | "a
 
 export function Screen({ children, backgroundImage, blurBackground = true, bottomNav }: { children: React.ReactNode; backgroundImage?: any; blurBackground?: boolean; bottomNav?: React.ReactNode }) {
   const insets = useSafeAreaInsets();
+  const screenHeight = Dimensions.get("screen").height;
   const { backgroundImage: userBackground } = useApp();
   const activeBackground = backgroundImage ?? userBackground ?? hero;
   const source = typeof activeBackground === "string" ? { uri: activeBackground } : activeBackground;
@@ -23,7 +24,7 @@ export function Screen({ children, backgroundImage, blurBackground = true, botto
 
   return (
     <View style={styles.bg}>
-      <BlurTargetView ref={blurTarget} style={styles.backgroundTarget}>
+      <BlurTargetView ref={blurTarget} style={[styles.backgroundTarget, { height: screenHeight }]}>
         <ImageBackground source={source} style={StyleSheet.absoluteFill} resizeMode="cover" />
         <LinearGradient colors={["rgba(5,9,14,0.00)", "rgba(5,9,14,0.02)", "rgba(5,9,14,0.08)", "rgba(5,9,14,0.56)"]} locations={[0, 0.34, 0.64, 1]} style={StyleSheet.absoluteFillObject} />
       </BlurTargetView>
