@@ -13,7 +13,7 @@ function code() {
 
 export default function CreateEventScreen() {
   const router = useRouter();
-  const { displayName } = useApp();
+  const { displayName, avatarImage } = useApp();
   const [name, setName] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -43,7 +43,7 @@ export default function CreateEventScreen() {
       }
       if (insertError || !data)
         throw insertError || new Error("Could not create the event.");
-      await ensureParticipant(data.id, displayName);
+      await ensureParticipant(data.id, displayName, avatarImage);
       router.replace({
         pathname: "/event-created",
         params: { id: data.id, name: name.trim(), invite: data.invite_code },
