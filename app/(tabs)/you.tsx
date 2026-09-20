@@ -42,7 +42,12 @@ export default function You() {
             <View style={styles.backgroundCopy}><Text style={styles.backgroundTitle}>App background</Text><Text style={styles.backgroundSub}>Choose a photo from your phone</Text></View>
           </View>
           {backgroundImage ? <Image source={{ uri: backgroundImage }} style={styles.preview} resizeMode="cover" /> : null}
-          <GlassButton label={backgroundImage ? "Change background" : "Choose background photo"} onPress={chooseBackground} />
+          <View style={styles.chooseButtonSpacing}>
+            <Pressable onPress={chooseBackground} style={({ pressed }) => [styles.chooseButton, pressed && styles.chooseButtonPressed]}>
+              <MaterialCommunityIcons name="image-plus" size={20} color={colors.black} />
+              <Text style={styles.chooseButtonText}>{backgroundImage ? "Change background" : "Choose background photo"}</Text>
+            </Pressable>
+          </View>
           {backgroundImage ? <Pressable onPress={() => setBackgroundImage(null)} style={styles.removeButton}><Text style={styles.removeText}>Use default background</Text></Pressable> : null}
         </GlassCard>
         {editing ? (
@@ -76,6 +81,10 @@ const styles = StyleSheet.create({
   backgroundTitle: { color: colors.white, fontSize: 16, fontWeight: "700" },
   backgroundSub: { color: colors.muted, fontSize: 12, marginTop: 3 },
   preview: { width: "100%", height: 170, borderRadius: radii.card, backgroundColor: "#26313F", ...shadows },
+  chooseButtonSpacing: { marginTop: 4 },
+  chooseButton: { minHeight: 56, borderRadius: 20, backgroundColor: "#FFFFFF", borderWidth: 1, borderColor: "rgba(255,255,255,.86)", flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 9, paddingHorizontal: 16, ...shadows },
+  chooseButtonPressed: { opacity: 0.9, transform: [{ scale: 0.99 }] },
+  chooseButtonText: { color: colors.black, fontSize: 15, fontWeight: "700" },
   removeButton: { alignItems: "center", paddingTop: 2 },
   removeText: { color: "rgba(255,255,255,.68)", fontSize: 13, fontWeight: "600" },
 });
