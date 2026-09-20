@@ -95,7 +95,7 @@ async function syncAvatarToCloud(sessionId: string, uri: string | null) {
     return true;
   }
 
-  if (!/^(file|content):\\/\\//i.test(uri)) {
+  if (!/^(file|content):\/\//i.test(uri)) {
     const { error } = await supabase
       .from("avatar_profiles")
       .upsert(
