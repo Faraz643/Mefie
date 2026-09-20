@@ -5,7 +5,7 @@ import { Pressable, StyleSheet, Text, View } from "react-native";
 import { BackButton, Screen } from "../components/Screen";
 import { GlassCard, GlassInput } from "../components/Glass";
 import { colors, radii, shadows } from "../lib/theme";
-import { ensureParticipant, supabase, useApp } from "../lib/app-context";
+import { ensureParticipant, getSessionId, supabase, useApp } from "../lib/app-context";
 
 function code() {
   return Math.random().toString(36).slice(2, 8).toUpperCase();
@@ -13,7 +13,7 @@ function code() {
 
 export default function CreateEventScreen() {
   const router = useRouter();
-  const { displayName, avatarImage } = useApp();
+  const { displayName } = useApp();
   const [name, setName] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -29,12 +29,17 @@ export default function CreateEventScreen() {
     setLoading(true);
     setError("");
     try {
+      const creatorSessionId = await getSessionId();
       let data: any = null;
       let insertError: any = null;
       for (let attempt = 0; attempt < 3; attempt += 1) {
         const result = await supabase
           .from("events")
-          .insert({ name: name.trim(), invite_code: code() })
+          .insert({
+            name: name.trim(),
+            invite_code: code(),
+            creator_session_id: creatorSessionId,
+          })
           .select("id,invite_code")
           .single();
         data = result.data;
@@ -43,7 +48,7 @@ export default function CreateEventScreen() {
       }
       if (insertError || !data)
         throw insertError || new Error("Could not create the event.");
-      await ensureParticipant(data.id, displayName, avatarImage);
+      await ensureParticipant(data.id, displayName);
       router.replace({
         pathname: "/event-created",
         params: { id: data.id, name: name.trim(), invite: data.invite_code },
