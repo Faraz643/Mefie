@@ -50,6 +50,61 @@ export default function HomeScreen() {
       };
     }, [refreshEvents]),
   );
+  const selectableEvents = events.filter(
+    (event) => event.creatorSessionId === sessionId,
+  );
+
+  const toggleSelected = (id: string) => {
+    setSelectedIds((current) =>
+      current.includes(id)
+        ? current.filter((item) => item !== id)
+        : [...current, id],
+    );
+  };
+
+  const startSelection = () => {
+    if (selectableEvents.length === 0) return;
+    setSelectedIds([]);
+    setSelecting(true);
+  };
+
+  const cancelSelection = () => {
+    setSelecting(false);
+    setSelectedIds([]);
+  };
+
+  const confirmDelete = () => {
+    if (!selectedIds.length || deleting) return;
+    Alert.alert(
+      selectedIds.length === 1
+        ? "Delete event?"
+        : `Delete ${selectedIds.length} events?`,
+      "This will remove the selected events and their photos for everyone. This cannot be undone.",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Delete",
+          style: "destructive",
+          onPress: async () => {
+            setDeleting(true);
+            try {
+              await deleteEventsAsCreator(selectedIds);
+              cancelSelection();
+              await refreshEvents();
+            } catch (error) {
+              Alert.alert(
+                "Couldn’t delete events",
+                error instanceof Error ? error.message : "Please try again.",
+              );
+            } finally {
+              setDeleting(false);
+            }
+          },
+        },
+      ],
+    );
+  };
+
   return (
     <View style={styles.root}>
       <Screen bottomNav={<BottomNav active="home" />}>
