@@ -126,7 +126,7 @@ export default function EventScreen() {
             : null;
           return {
             ...person,
-            avatar_url: person.avatar_url || profile?.avatar_url || null,
+            avatar_url: profile?.avatar_url || person.avatar_url || null,
           };
         });
 
