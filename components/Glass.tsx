@@ -126,7 +126,7 @@ const styles = StyleSheet.create({
   actionGlass: { backgroundColor: "transparent" },
   actionIcon: { width: 44, height: 44, borderRadius: 22, alignItems: "center", justifyContent: "center" },
   actionIconPrimary: { backgroundColor: "rgba(255,255,255,0.72)", borderWidth: 1.5, borderColor: "#111111" },
-  actionIconGlass: { backgroundColor: "rgba(55,61,69,0.46)", borderWidth: 1, borderColor: "rgba(255,255,255,0.22)" },
+  actionIconGlass: { backgroundColor: "transparent", borderWidth: 0, borderColor: "transparent" },
   actionCopy: { flex: 1, paddingHorizontal: 12 },
   actionTitle: { color: "rgba(255,255,255,0.96)", fontSize: 16, fontWeight: "700", letterSpacing: -0.2 },
   actionTitlePrimary: { color: colors.black },
