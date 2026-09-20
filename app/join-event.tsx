@@ -16,7 +16,7 @@ function inviteFromValue(value: string) {
 
 export default function JoinEventScreen() {
   const router = useRouter();
-  const { displayName } = useApp();
+  const { displayName, avatarImage } = useApp();
   const [link, setLink] = useState("");
   const [scanning, setScanning] = useState(false);
   const [error, setError] = useState("");
@@ -48,7 +48,7 @@ export default function JoinEventScreen() {
       return;
     }
     try {
-      await ensureParticipant(data.id, displayName);
+      await ensureParticipant(data.id, displayName, avatarImage);
       router.replace({ pathname: "/event/[id]", params: { id: data.id } });
     } catch (e: any) {
       setError(e?.message || "Could not join the event.");
