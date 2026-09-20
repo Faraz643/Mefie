@@ -275,7 +275,7 @@ export async function ensureParticipant(eventId: string, displayName: string) {
   if (error) throw error;
   return data.id;
 }
-export async function getParticipantId(eventId: string) {
+export async function deleteEventsAsCreator(eventIds: string[]) {\n  if (!supabase || eventIds.length === 0) return;\n  const sessionId = await getSessionId();\n\n  for (const eventId of eventIds) {\n    const { data: photos, error: photoQueryError } = await supabase\n      .from("photos")\n      .select("storage_path,thumbnail_path")\n      .eq("event_id", eventId);\n    if (photoQueryError) throw photoQueryError;\n\n    const paths = Array.from(\n      new Set((photos ?? []).flatMap((photo) => [photo.storage_path, photo.thumbnail_path].filter(Boolean))),\n    ) as string[];\n    if (paths.length) {\n      const { error: storageError } = await supabase.storage.from("photos").remove(paths);\n      if (storageError) throw storageError;\n    }\n\n    const { data: deleted, error } = await supabase.rpc("delete_event_as_creator", {\n      p_event_id: eventId,\n      p_creator_session_id: sessionId,\n    });\n    if (error) throw error;\n    if (!deleted) throw new Error("Only events you created can be deleted.");\n  }\n}\n\nexport async function getParticipantId(eventId: string) {
   if (!supabase) return null;
   const sessionId = await getSessionId();
   const { data } = await supabase
@@ -350,7 +350,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     if (!supabase) return;
     const { data } = await supabase
       .from("events")
-      .select("id,name,created_at")
+      .select("id,name,created_at,creator_session_id")
       .eq("status", "active")
       .order("created_at", { ascending: false })
       .limit(20);
@@ -381,7 +381,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
           name: e.name,
           people: people || 0,
           photos: photos || 0,
-          cover: cover?.public_url || "",
+          cover: cover?.public_url || "",\n          creatorSessionId: e.creator_session_id ?? null,
         };
       }),
     );
