@@ -39,7 +39,7 @@ export function Screen({ children, backgroundImage, blurBackground = true, botto
 
 export function BackButton() {
   const router = useRouter();
-  return <IconButton accessibilityLabel="Go back" onPress={() => router.back()}><MaterialCommunityIcons name="chevron-left" size={25} color={colors.white} /></IconButton>;
+  return <IconButton plain accessibilityLabel="Go back" onPress={() => router.back()}><MaterialCommunityIcons name="chevron-left" size={25} color={colors.white} /></IconButton>;
 }
 
 export function BottomNav({ active = "home" }: { active?: NavKey }) {
