@@ -9,7 +9,8 @@ import React, {
 } from "react";
 import { createClient } from "@supabase/supabase-js";
 import { AppState, View, Text } from "react-native";
-import { File } from "expo-file-system";
+// PROFILE PHOTO LOGIC DISABLED FOR NOW:
+// import { File } from "expo-file-system";
 
 const SUPABASE_URL = process.env.EXPO_PUBLIC_SUPABASE_URL;
 const SUPABASE_ANON_KEY = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY;
@@ -36,14 +37,15 @@ type DemoEvent = {
 type AppContextValue = {
   displayName: string;
   setDisplayName: (name: string) => Promise<void>;
-  avatarImage: string | null;
-  setAvatarImage: (uri: string | null) => Promise<void>;
   backgroundImage: string | null;
   setBackgroundImage: (uri: string | null) => Promise<void>;
   events: DemoEvent[];
   refreshEvents: () => Promise<void>;
 };
 
+/*
+  PROFILE PHOTO / AVATAR SYNC LOGIC DISABLED FOR NOW.
+  Kept intact for future re-enablement.
 const AVATAR_PENDING_KEY = "mefie.avatarSyncPending";
 const AVATAR_MAX_BYTES = 2 * 1024 * 1024;
 
@@ -157,6 +159,8 @@ async function syncPendingAvatar() {
   }
 }
 
+*/
+
 const Ctx = createContext<AppContextValue | null>(null);
 
 export async function getSessionId() {
@@ -251,7 +255,6 @@ export async function getParticipantId(eventId: string) {
 
 export function AppProvider({ children }: { children: React.ReactNode }) {
   const [displayName, setName] = useState("Faraz");
-  const [avatarImage, setAvatar] = useState<string | null>(null);
   const [backgroundImage, setBackground] = useState<string | null>(null);
   const [events, setEvents] = useState<DemoEvent[]>([]);
   const mountedRef = React.useRef(false);
@@ -261,12 +264,14 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     AsyncStorage.getItem("mefie.displayName").then((v) => {
       if (mountedRef.current && v) setName(v);
     });
+    /* PROFILE PHOTO LOCAL CACHE LOGIC DISABLED.
     AsyncStorage.getItem("mefie.avatarImage").then((v) => {
       if (mountedRef.current && v) {
         setAvatar(v);
         void syncLocalAvatarIfNeeded(v);
       }
     });
+    */
     AsyncStorage.getItem("mefie.backgroundImage").then((v) => {
       if (mountedRef.current && v) setBackground(v);
     });
@@ -281,6 +286,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     await AsyncStorage.setItem("mefie.displayName", value);
   };
 
+  /* PROFILE PHOTO SETTER / CLOUD SYNC DISABLED.
   const setAvatarImage = async (uri: string | null) => {
     // Local-first: update the device cache before attempting any network work.
     setAvatar(uri);
@@ -298,6 +304,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       throw error;
     }
   };
+  */
 
   const setBackgroundImage = async (uri: string | null) => {
     setBackground(uri);
@@ -363,14 +370,12 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     () => ({
       displayName,
       setDisplayName,
-      avatarImage,
-      setAvatarImage,
       backgroundImage,
       setBackgroundImage,
       events,
       refreshEvents,
     }),
-    [displayName, avatarImage, backgroundImage, events, refreshEvents],
+    [displayName, backgroundImage, events, refreshEvents],
   );
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
