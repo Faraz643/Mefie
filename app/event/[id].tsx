@@ -23,7 +23,16 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { BackButton } from "../../components/Screen";
 import { IconButton } from "../../components/Glass";
 import { colors, shadows } from "../../lib/theme";
-import { ensureParticipant, getSessionId, supabase, useApp } from "../../lib/app-context";
+import { ensureParticipant, supabase, useApp } from "../../lib/app-context";
+
+function gradientForName(name: string): [string, string] {
+  const palettes: [string, string][] = [
+    ["#5B5FEF", "#9B8CFF"], ["#7C3AED", "#C084FC"], ["#0284C7", "#38BDF8"],
+    ["#0F766E", "#2DD4BF"], ["#EA580C", "#FB7185"], ["#DB2777", "#F472B6"],
+  ];
+  const hash = [...(name || "?")].reduce((sum, char) => sum + char.charCodeAt(0), 0);
+  return palettes[hash % palettes.length];
+}
 
 const fallbackPhoto =
   "https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=1200&q=85";
@@ -56,13 +65,12 @@ export default function EventScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { id } = useLocalSearchParams<{ id: string }>();
-  const { displayName, avatarImage } = useApp();
+  const { displayName } = useApp();
   const scrollY = useRef(new Animated.Value(0)).current;
   const scrollRef = useRef<ScrollView>(null);
   const photoScrollOffset = useRef(0);
   const peopleScrollOffset = useRef(0);
   const [event, setEvent] = useState<any>(null);
-  const [sessionId, setSessionId] = useState<string | null>(null);
   const [photos, setPhotos] = useState<any[]>([]);
   const [people, setPeople] = useState<any[]>([]);
   const [tab, setTab] = useState<"photos" | "people">("photos");
@@ -70,15 +78,18 @@ export default function EventScreen() {
   const [selectionMode, setSelectionMode] = useState(false);
   const [actionBusy, setActionBusy] = useState(false);
   const [error, setError] = useState("");
+  /* PROFILE PHOTO LOGIC DISABLED — session avatar loading kept here for future use.
   useEffect(() => {
     void getSessionId().then(setSessionId);
   }, []);
+  */
+
   useEffect(() => {
     let active = true;
     (async () => {
       if (!supabase) return;
       try {
-        await ensureParticipant(String(id), displayName, avatarImage);
+        await ensureParticipant(String(id), displayName);
         const [eventResult, photosResult, participantsResult] = await Promise.all([
           supabase.from("events").select("*").eq("id", id).single(),
           supabase
@@ -98,6 +109,13 @@ export default function EventScreen() {
         if (photosResult.error) throw photosResult.error;
         if (participantsResult.error) throw participantsResult.error;
 
+        const participantRows = participantsResult.data || [];
+        // PROFILE PHOTO LOGIC DISABLED — participants now use gradient initials.
+        const mergedPeople = participantRows.map((person: any) => ({
+          ...person,
+          avatar_url: null,
+        }));
+        /*
         const participantRows = participantsResult.data || [];
         const sessionIds = [...new Set(
           participantRows.map((person: any) => person.session_id).filter(Boolean),
@@ -128,6 +146,7 @@ export default function EventScreen() {
           };
         });
 
+        */
         if (active) {
           setEvent(eventResult.data);
           setPhotos(photosResult.data || []);
@@ -139,6 +158,7 @@ export default function EventScreen() {
     })();
     if (supabase) {
       const client = supabase;
+      /* PROFILE PHOTO LOGIC DISABLED — profile refresh kept for future use.
       const refreshPeopleFromProfiles = async () => {
         try {
           const { data: participantRows } = await client
@@ -171,6 +191,7 @@ export default function EventScreen() {
           // The realtime payload already keeps participant membership live.
         }
       };
+      */
       const ch = client.channel(`event-${id}`)
         .on(
           "postgres_changes",
@@ -215,6 +236,7 @@ export default function EventScreen() {
             }
           },
         )
+        /* PROFILE PHOTO REALTIME LOGIC DISABLED.
         .on(
           "postgres_changes",
           {
@@ -239,6 +261,7 @@ export default function EventScreen() {
             );
           },
         )
+        */
         .subscribe();
       return () => {
         active = false;
@@ -248,7 +271,7 @@ export default function EventScreen() {
     return () => {
       active = false;
     };
-  }, [id, displayName, avatarImage]);
+  }, [id, displayName]);
   useEffect(() => {
     const target =
       tab === "photos" ? photoScrollOffset.current : peopleScrollOffset.current;
@@ -480,23 +503,16 @@ ${link}`,
               </Text>
               <View style={styles.avatars}>
                 {visiblePeople.map((person, index) => {
-                  const avatarUrl = person.avatar_url;
                   return (
-                    <View
+                    <LinearGradient
                       key={person.id || index}
+                      colors={gradientForName(person.display_name)}
                       style={[styles.avatar, index > 0 && styles.avatarOverlap]}
                     >
-                      {avatarUrl ? (
-                        <Image
-                          source={{ uri: avatarUrl }}
-                          style={styles.avatarImage}
-                        />
-                      ) : (
-                        <Text style={styles.avatarText}>
-                          {(person.display_name || "?")[0].toUpperCase()}
-                        </Text>
-                      )}
-                    </View>
+                      <Text style={styles.avatarText}>
+                        {(person.display_name || "?")[0].toUpperCase()}
+                      </Text>
+                    </LinearGradient>
                   );
                 })}
                 {people.length > 5 ? (
@@ -626,21 +642,16 @@ ${link}`,
           ) : (
             <View style={styles.peopleList}>
               {people.map((person) => {
-                const avatarUrl = person.session_id === sessionId && avatarImage ? avatarImage : person.avatar_url;
                 return (
                   <View key={person.id} style={styles.person}>
-                    <View style={styles.personAvatar}>
-                      {avatarUrl ? (
-                        <Image
-                          source={{ uri: avatarUrl }}
-                          style={styles.personAvatarImage}
-                        />
-                      ) : (
-                        <Text style={styles.avatarText}>
-                          {(person.display_name || "?")[0].toUpperCase()}
-                        </Text>
-                      )}
-                    </View>
+                    <LinearGradient
+                      colors={gradientForName(person.display_name)}
+                      style={styles.personAvatar}
+                    >
+                      <Text style={styles.avatarText}>
+                        {(person.display_name || "?")[0].toUpperCase()}
+                      </Text>
+                    </LinearGradient>
                     <View>
                       <Text style={styles.personName}>
                         {person.display_name}
@@ -761,7 +772,8 @@ const styles = StyleSheet.create({
     overflow: "hidden",
   },
   avatarOverlap: { marginLeft: -7 },
-  avatarImage: { width: "100%", height: "100%" },
+  // PROFILE PHOTO STYLE DISABLED — kept for future image avatars.
+  /* avatarImage: { width: "100%", height: "100%" }, */
   avatarText: { color: colors.white, fontSize: 14, fontWeight: "800" },
   moreAvatar: { backgroundColor: "rgba(25,33,42,.88)" },
   moreText: { color: colors.white, fontSize: 13, fontWeight: "800" },
@@ -867,7 +879,8 @@ const styles = StyleSheet.create({
     marginRight: 12,
     overflow: "hidden",
   },
-  personAvatarImage: { width: "100%", height: "100%" },
+  // PROFILE PHOTO STYLE DISABLED — kept for future image avatars.
+  /* personAvatarImage: { width: "100%", height: "100%" }, */
   personName: { color: colors.white, fontWeight: "800", fontSize: 15 },
   personMeta: { color: colors.muted, fontSize: 12, marginTop: 3 },
   selectionBar: {
