@@ -69,18 +69,22 @@ async function syncAvatarToCloud(sessionId: string, uri: string | null): Promise
 
   if (!uri) {
     const { error } = await supabase
-      .from("participants")
-      .update({ avatar_url: null })
-      .eq("session_id", sessionId);
+      .from("profiles")
+      .upsert(
+        { session_id: sessionId, avatar_url: null, updated_at: new Date().toISOString() },
+        { onConflict: "session_id" },
+      );
     if (error) throw error;
     return null;
   }
 
   if (!/^(file|content):\/\//i.test(uri)) {
     const { error } = await supabase
-      .from("participants")
-      .update({ avatar_url: uri })
-      .eq("session_id", sessionId);
+      .from("profiles")
+      .upsert(
+        { session_id: sessionId, avatar_url: uri, updated_at: new Date().toISOString() },
+        { onConflict: "session_id" },
+      );
     if (error) throw error;
     return uri;
   }
@@ -94,56 +98,46 @@ async function syncAvatarToCloud(sessionId: string, uri: string | null): Promise
   const base64 = await FileSystem.readAsStringAsync(uri, {
     encoding: FileSystem.EncodingType.Base64,
   });
-  // Use a new object name for every upload. This avoids requiring UPDATE
-  // permission on the legacy public photos bucket when it is used as fallback.
-  const path = `avatars/${sessionId}-${Date.now()}.jpg`;
-  let bucket = "avatars";
-  let { error: uploadError } = await supabase.storage
-    .from(bucket)
+
+  const path = `${sessionId}.jpg`;
+  const { error: uploadError } = await supabase.storage
+    .from("avatars")
     .upload(path, decode(base64), {
       contentType: "image/jpeg",
-      cacheControl: "3600",
+      cacheControl: "0",
       upsert: true,
     });
 
-  if (uploadError) {
-    bucket = "photos";
-    const fallback = await supabase.storage
-      .from(bucket)
-      .upload(path, decode(base64), {
-        contentType: "image/jpeg",
-        cacheControl: "3600",
-        upsert: true,
-      });
-    uploadError = fallback.error;
-  }
   if (uploadError) throw uploadError;
 
-  const { data } = supabase.storage.from(bucket).getPublicUrl(path);
+  const { data } = supabase.storage.from("avatars").getPublicUrl(path);
   if (!data.publicUrl) throw new Error("Could not create a public avatar URL.");
 
   const versionedUrl = `${data.publicUrl}?v=${Date.now()}`;
-  const { error: participantError } = await supabase
-    .from("participants")
-    .update({ avatar_url: versionedUrl })
-    .eq("session_id", sessionId);
-  if (participantError) throw participantError;
+  const { error: profileError } = await supabase
+    .from("profiles")
+    .upsert(
+      {
+        session_id: sessionId,
+        avatar_url: versionedUrl,
+        updated_at: new Date().toISOString(),
+      },
+      { onConflict: "session_id" },
+    );
+  if (profileError) throw profileError;
 
   return versionedUrl;
 }
 
 async function syncLocalAvatarIfNeeded(uri: string) {
   if (!supabase) return;
-  // The participant table is authoritative, so we do not depend on
-  // avatar_profiles existing. Retrying the upload on app startup repairs
-  // older installs whose local avatar was never published to the event.
   try {
     const sessionId = await getSessionId();
     await queueAvatarSync(uri);
     await syncAvatarToCloud(sessionId, uri);
     await clearAvatarSyncQueue();
   } catch {
-    // Keep the pending item; foreground retry handles temporary failures.
+    // Keep pending; foreground retry will try again.
   }
 }
 
@@ -157,7 +151,7 @@ async function syncPendingAvatar() {
     await syncAvatarToCloud(sessionId, pending.uri);
     await clearAvatarSyncQueue();
   } catch {
-    // Keep the pending item. The next app launch/foreground cycle retries it.
+    // Keep pending until the next foreground/launch.
   }
 }
 
@@ -177,30 +171,43 @@ export async function ensureParticipant(eventId: string, displayName: string, av
   if (!supabase || !eventId) return null;
   const sessionId = await getSessionId();
 
+  let resolvedAvatarUrl: string | null | undefined = avatarUrl;
+  if (avatarUrl !== undefined) {
+    if (avatarUrl && /^(file|content):\/\//i.test(avatarUrl)) {
+      try {
+        resolvedAvatarUrl = await syncAvatarToCloud(sessionId, avatarUrl);
+      } catch {
+        const { data } = await supabase
+          .from("profiles")
+          .select("avatar_url")
+          .eq("session_id", sessionId)
+          .maybeSingle();
+        resolvedAvatarUrl = data?.avatar_url ?? null;
+      }
+    } else {
+      await supabase
+        .from("profiles")
+        .upsert(
+          {
+            session_id: sessionId,
+            avatar_url: avatarUrl || null,
+            updated_at: new Date().toISOString(),
+          },
+          { onConflict: "session_id" },
+        );
+    }
+  }
+
   const { data: existing, error: existingError } = await supabase
     .from("participants")
-    .select("*")
+    .select("id")
     .eq("event_id", eventId)
     .eq("session_id", sessionId)
     .maybeSingle();
   if (existingError) throw existingError;
 
-  let resolvedAvatarUrl =
-    avatarUrl !== undefined && !/^(file|content):\/\//i.test(avatarUrl || "")
-      ? avatarUrl
-      : existing?.avatar_url ?? null;
-
-  if (avatarUrl && /^(file|content):\/\//i.test(avatarUrl)) {
-    try {
-      resolvedAvatarUrl = await syncAvatarToCloud(sessionId, avatarUrl);
-    } catch {
-      resolvedAvatarUrl = existing?.avatar_url ?? null;
-    }
-  }
-
   const values = {
     display_name: displayName.trim() || "Guest",
-    ...(avatarUrl !== undefined ? { avatar_url: resolvedAvatarUrl } : {}),
     last_seen_at: new Date().toISOString(),
   };
 
@@ -282,9 +289,9 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       const sessionId = await getSessionId();
       await syncAvatarToCloud(sessionId, uri);
       await clearAvatarSyncQueue();
-    } catch {
-      // Offline or temporarily unavailable: local avatar remains usable and
-      // the pending operation is retried when the app returns to the foreground.
+    } catch (error) {
+      // Local-first still works, but callers can now surface a real sync error.
+      throw error;
     }
   };
 
