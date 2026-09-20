@@ -58,40 +58,42 @@ export default function You() {
     <View style={styles.root}>
       <Screen bottomNav={<BottomNav active="you" />}>
         <View style={styles.profile}>
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="Change profile photo"
-            onPress={chooseAvatar}
-            style={({ pressed }) => [styles.avatar, pressed && styles.avatarPressed]}
-          >
-            {avatarImage ? (
-              <>
+          <View style={styles.avatarWrap}>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Change profile photo"
+              onPress={chooseAvatar}
+              style={({ pressed }) => [styles.avatar, pressed && styles.avatarPressed]}
+            >
+              {avatarImage ? (
                 <Image source={{ uri: avatarImage }} style={styles.avatarImage} />
-                <Pressable
-                  accessibilityRole="button"
-                  accessibilityLabel="Remove profile photo"
-                  onPress={() => void setAvatarImage(null)}
-                  style={styles.avatarDelete}
-                  hitSlop={6}
-                >
-                  <MaterialCommunityIcons name="trash-can-outline" size={14} color="#fff" />
-                </Pressable>
-              </>
-            ) : (
-              <>
-                <Text style={styles.avatarText}>
-                  {displayName[0]?.toUpperCase() || "M"}
-                </Text>
-                <View style={styles.avatarCamera}>
-                  <MaterialCommunityIcons
-                    name="camera-plus-outline"
-                    size={15}
-                    color={colors.white}
-                  />
-                </View>
-              </>
-            )}
-          </Pressable>
+              ) : (
+                <>
+                  <Text style={styles.avatarText}>
+                    {displayName[0]?.toUpperCase() || "M"}
+                  </Text>
+                  <View style={styles.avatarCamera}>
+                    <MaterialCommunityIcons
+                      name="camera-plus-outline"
+                      size={15}
+                      color={colors.white}
+                    />
+                  </View>
+                </>
+              )}
+            </Pressable>
+            {avatarImage ? (
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Remove profile photo"
+                onPress={() => void setAvatarImage(null)}
+                style={styles.avatarDelete}
+                hitSlop={6}
+              >
+                <MaterialCommunityIcons name="trash-can-outline" size={14} color="#fff" />
+              </Pressable>
+            ) : null}
+          </View>
 
           <View style={styles.nameRow}>
             {editingName ? (
