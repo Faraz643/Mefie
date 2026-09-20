@@ -64,8 +64,8 @@ async function clearAvatarSyncQueue() {
   await AsyncStorage.removeItem(AVATAR_PENDING_KEY);
 }
 
-async function syncAvatarToCloud(sessionId: string, uri: string | null) {
-  if (!supabase) return false;
+async function syncAvatarToCloud(sessionId: string, uri: string | null): Promise<string | null> {
+  if (!supabase) return null;
 
   if (!uri) {
     const { error: removeError } = await supabase.storage
@@ -92,7 +92,7 @@ async function syncAvatarToCloud(sessionId: string, uri: string | null) {
       .update({ avatar_url: null })
       .eq("session_id", sessionId);
 
-    return true;
+    return null;
   }
 
   if (!/^(file|content):\/\//i.test(uri)) {
@@ -113,7 +113,7 @@ async function syncAvatarToCloud(sessionId: string, uri: string | null) {
       .from("participants")
       .update({ avatar_url: uri })
       .eq("session_id", sessionId);
-    return true;
+    return uri;
   }
 
   const info = await FileSystem.getInfoAsync(uri);
@@ -158,7 +158,7 @@ async function syncAvatarToCloud(sessionId: string, uri: string | null) {
     .update({ avatar_url: versionedUrl })
     .eq("session_id", sessionId);
 
-  return true;
+  return versionedUrl;
 }
 
 async function syncLocalAvatarIfNeeded(uri: string) {
@@ -210,16 +210,36 @@ export async function getSessionId() {
 export async function ensureParticipant(eventId: string, displayName: string, avatarUrl?: string | null) {
   if (!supabase || !eventId) return null;
   const sessionId = await getSessionId();
-  const resolvedAvatarUrl =
-    avatarUrl && /^(file|content):\/\//i.test(avatarUrl)
-      ? supabase.storage.from("avatars").getPublicUrl(`avatars/${sessionId}.jpg`).data.publicUrl
-      : avatarUrl;
-  const { data: existing } = await supabase
+  let resolvedAvatarUrl = avatarUrl;
+
+  if (avatarUrl && /^(file|content):\/\//i.test(avatarUrl)) {
+    try {
+      resolvedAvatarUrl = await syncAvatarToCloud(sessionId, avatarUrl);
+    } catch {
+      const { data: profile } = await supabase
+        .from("avatar_profiles")
+        .select("avatar_url")
+        .eq("user_id", sessionId)
+        .maybeSingle();
+      resolvedAvatarUrl = profile?.avatar_url || null;
+    }
+  } else if (avatarUrl) {
+    const { data: profile } = await supabase
+      .from("avatar_profiles")
+      .select("avatar_url")
+      .eq("user_id", sessionId)
+      .maybeSingle();
+    resolvedAvatarUrl = profile?.avatar_url || avatarUrl;
+  }
+
+  const { data: existing, error: existingError } = await supabase
     .from("participants")
     .select("*")
     .eq("event_id", eventId)
     .eq("session_id", sessionId)
     .maybeSingle();
+  if (existingError) throw existingError;
+
   if (existing) {
     await supabase
       .from("participants")
@@ -231,6 +251,7 @@ export async function ensureParticipant(eventId: string, displayName: string, av
       .eq("id", existing.id);
     return existing.id;
   }
+
   const { data, error } = await supabase
     .from("participants")
     .insert({
