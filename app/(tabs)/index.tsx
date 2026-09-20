@@ -15,7 +15,7 @@ import { colors, radii, shadows } from "../../lib/theme";
 
 export default function HomeScreen() {
   const router = useRouter();
-  const { displayName, events, refreshEvents } = useApp();
+  const { displayName, avatarImage, events, refreshEvents } = useApp();
   useFocusEffect(
     useCallback(() => {
       let active = true;
@@ -38,9 +38,13 @@ export default function HomeScreen() {
               accessibilityLabel="Open profile"
               onPress={() => router.push("/you")}
             >
-              <Text style={styles.avatarText}>
-                {displayName.slice(0, 1).toUpperCase()}
-              </Text>
+              {avatarImage ? (
+                <Image source={{ uri: avatarImage }} style={styles.headerAvatarImage} />
+              ) : (
+                <Text style={styles.avatarText}>
+                  {displayName.slice(0, 1).toUpperCase()}
+                </Text>
+              )}
             </IconButton>
           }
         />
@@ -152,6 +156,7 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   avatarText: { color: colors.white, fontSize: 17, fontWeight: "700" },
+  headerAvatarImage: { width: "100%", height: "100%", borderRadius: 22 },
   eventsSection: { marginTop: 10 },
   sectionRow: {
     flexDirection: "row",
