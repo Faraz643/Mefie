@@ -45,6 +45,136 @@ type AppContextValue = {
   refreshEvents: () => Promise<void>;
 };
 
+const AVATAR_PENDING_KEY = "mefie.avatarSyncPending";
+const AVATAR_MAX_BYTES = 2 * 1024 * 1024;
+
+type PendingAvatarSync = {
+  uri: string | null;
+  lastUpdated: string;
+};
+
+async function queueAvatarSync(uri: string | null) {
+  await AsyncStorage.setItem(
+    AVATAR_PENDING_KEY,
+    JSON.stringify({ uri, lastUpdated: new Date().toISOString() } satisfies PendingAvatarSync),
+  );
+}
+
+async function clearAvatarSyncQueue() {
+  await AsyncStorage.removeItem(AVATAR_PENDING_KEY);
+}
+
+async function syncAvatarToCloud(sessionId: string, uri: string | null) {
+  if (!supabase) return false;
+
+  if (!uri) {
+    const { error: removeError } = await supabase.storage
+      .from("photos")
+      .remove([`avatars/${sessionId}.jpg`]);
+    if (removeError && removeError.message !== "Not Found") throw removeError;
+
+    const { error: profileError } = await supabase
+      .from("avatar_profiles")
+      .upsert(
+        {
+          user_id: sessionId,
+          avatar_url: null,
+          storage_path: null,
+          storage_location: "local_only",
+          last_updated: new Date().toISOString(),
+        },
+        { onConflict: "user_id" },
+      );
+    if (profileError) throw profileError;
+
+    await supabase
+      .from("participants")
+      .update({ avatar_url: null })
+      .eq("session_id", sessionId);
+
+    return true;
+  }
+
+  if (!/^(file|content):\\/\\//i.test(uri)) {
+    const { error } = await supabase
+      .from("avatar_profiles")
+      .upsert(
+        {
+          user_id: sessionId,
+          avatar_url: uri,
+          storage_path: null,
+          storage_location: "external_url",
+          last_updated: new Date().toISOString(),
+        },
+        { onConflict: "user_id" },
+      );
+    if (error) throw error;
+    await supabase
+      .from("participants")
+      .update({ avatar_url: uri })
+      .eq("session_id", sessionId);
+    return true;
+  }
+
+  const info = await FileSystem.getInfoAsync(uri);
+  if (!info.exists) throw new Error("The local avatar file no longer exists.");
+  if (typeof info.size === "number" && info.size > AVATAR_MAX_BYTES) {
+    throw new Error("Avatar must be 2 MB or smaller.");
+  }
+
+  const base64 = await FileSystem.readAsStringAsync(uri, {
+    encoding: FileSystem.EncodingType.Base64,
+  });
+  const path = `avatars/${sessionId}.jpg`;
+  const { error: uploadError } = await supabase.storage
+    .from("photos")
+    .upload(path, decode(base64), {
+      contentType: "image/jpeg",
+      cacheControl: "3600",
+      upsert: true,
+    });
+  if (uploadError) throw uploadError;
+
+  const { data } = supabase.storage.from("photos").getPublicUrl(path);
+  const versionedUrl = `${data.publicUrl}?v=${Date.now()}`;
+  const now = new Date().toISOString();
+
+  const { error: profileError } = await supabase
+    .from("avatar_profiles")
+    .upsert(
+      {
+        user_id: sessionId,
+        avatar_url: versionedUrl,
+        storage_path: path,
+        storage_location: "supabase_storage",
+        last_updated: now,
+      },
+      { onConflict: "user_id" },
+    );
+  if (profileError) throw profileError;
+
+  await supabase
+    .from("participants")
+    .update({ avatar_url: versionedUrl })
+    .eq("session_id", sessionId);
+
+  return true;
+}
+
+async function syncPendingAvatar() {
+  if (!supabase) return;
+  const raw = await AsyncStorage.getItem(AVATAR_PENDING_KEY);
+  if (!raw) return;
+  try {
+    const pending = JSON.parse(raw) as PendingAvatarSync;
+    const sessionId = await getSessionId();
+    await syncAvatarToCloud(sessionId, pending.uri);
+    await clearAvatarSyncQueue();
+  } catch {
+    // Keep the pending item. The next app launch/foreground cycle retries it.
+  }
+}
+
 const Ctx = createContext<AppContextValue | null>(null);
 
 export async function getSessionId() {
@@ -137,48 +267,20 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   };
 
   const setAvatarImage = async (uri: string | null) => {
+    // Local-first: update the device cache before attempting any network work.
     setAvatar(uri);
-    if (uri) {
-      await AsyncStorage.setItem("mefie.avatarImage", uri);
-      if (supabase) {
-        try {
-          const sessionId = await getSessionId();
-          const info = await FileSystem.getInfoAsync(uri);
-          if (info.exists) {
-            const base64 = await FileSystem.readAsStringAsync(uri, {
-              encoding: FileSystem.EncodingType.Base64,
-            });
-            const path = `avatars/${sessionId}.jpg`;
-            const { error: uploadError } = await supabase.storage
-              .from("photos")
-              .upload(path, decode(base64), {
-                contentType: "image/jpeg",
-                upsert: true,
-              });
-            if (uploadError) throw uploadError;
-            const { data } = supabase.storage.from("photos").getPublicUrl(path);
-            const avatarUrl = data.publicUrl;
-            await supabase
-              .from("participants")
-              .update({ avatar_url: avatarUrl })
-              .eq("session_id", sessionId);
-          }
-        } catch {
-          // Keep the local avatar even if cloud sync is temporarily unavailable.
-        }
-      }
-    } else {
-      await AsyncStorage.removeItem("mefie.avatarImage");
-      if (supabase) {
-        try {
-          const sessionId = await getSessionId();
-          await supabase.storage.from("photos").remove([`avatars/${sessionId}.jpg`]);
-          await supabase
-            .from("participants")
-            .update({ avatar_url: null })
-            .eq("session_id", sessionId);
-        } catch {}
-      }
+    if (uri) await AsyncStorage.setItem("mefie.avatarImage", uri);
+    else await AsyncStorage.removeItem("mefie.avatarImage");
+
+    await queueAvatarSync(uri);
+
+    try {
+      const sessionId = await getSessionId();
+      await syncAvatarToCloud(sessionId, uri);
+      await clearAvatarSyncQueue();
+    } catch {
+      // Offline or temporarily unavailable: local avatar remains usable and
+      // the pending operation is retried when the app returns to the foreground.
     }
   };
 
@@ -228,6 +330,14 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       }),
     );
     if (mountedRef.current) setEvents(enriched);
+  }, []);
+
+  useEffect(() => {
+    void syncPendingAvatar();
+    const subscription = AppState.addEventListener("change", (state) => {
+      if (state === "active") void syncPendingAvatar();
+    });
+    return () => subscription.remove();
   }, []);
 
   useEffect(() => {
