@@ -150,7 +150,7 @@ export default function EventScreen() {
     return () => {
       active = false;
     };
-  }, [id, displayName]);
+  }, [id, displayName, avatarImage]);
   useEffect(() => {
     const target =
       tab === "photos" ? photoScrollOffset.current : peopleScrollOffset.current;
