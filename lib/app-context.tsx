@@ -69,7 +69,7 @@ async function syncAvatarToCloud(sessionId: string, uri: string | null) {
 
   if (!uri) {
     const { error: removeError } = await supabase.storage
-      .from("photos")
+      .from("avatars")
       .remove([`avatars/${sessionId}.jpg`]);
     if (removeError && removeError.message !== "Not Found") throw removeError;
 
@@ -127,7 +127,7 @@ async function syncAvatarToCloud(sessionId: string, uri: string | null) {
   });
   const path = `avatars/${sessionId}.jpg`;
   const { error: uploadError } = await supabase.storage
-    .from("photos")
+    .from("avatars")
     .upload(path, decode(base64), {
       contentType: "image/jpeg",
       cacheControl: "3600",
@@ -135,7 +135,7 @@ async function syncAvatarToCloud(sessionId: string, uri: string | null) {
     });
   if (uploadError) throw uploadError;
 
-  const { data } = supabase.storage.from("photos").getPublicUrl(path);
+  const { data } = supabase.storage.from("avatars").getPublicUrl(path);
   const versionedUrl = `${data.publicUrl}?v=${Date.now()}`;
   const now = new Date().toISOString();
 
