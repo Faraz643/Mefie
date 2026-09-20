@@ -2,7 +2,7 @@ import * as ImagePicker from "expo-image-picker";
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 import { useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
-import { Image, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
+import { Alert, Image, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 import { BottomNav, Screen } from "../../components/Screen";
 import { GlassCard } from "../../components/Glass";
 import { useApp } from "../../lib/app-context";
@@ -33,7 +33,16 @@ export default function You() {
       quality: 0.9,
     });
     if (!result.canceled && result.assets[0]?.uri) {
-      await setAvatarImage(result.assets[0].uri);
+      try {
+        await setAvatarImage(result.assets[0].uri);
+      } catch (e: any) {
+        Alert.alert(
+          "Photo saved on this device",
+          e?.message
+            ? `Mefie couldn't sync it to your profile yet: ${e.message}`
+            : "Mefie couldn't sync it to your profile yet. We'll retry automatically.",
+        );
+      }
     }
   };
 
