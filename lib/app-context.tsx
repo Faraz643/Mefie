@@ -94,7 +94,9 @@ async function syncAvatarToCloud(sessionId: string, uri: string | null): Promise
   const base64 = await FileSystem.readAsStringAsync(uri, {
     encoding: FileSystem.EncodingType.Base64,
   });
-  const path = `avatars/${sessionId}.jpg`;
+  // Use a new object name for every upload. This avoids requiring UPDATE
+  // permission on the legacy public photos bucket when it is used as fallback.
+  const path = `avatars/${sessionId}-${Date.now()}.jpg`;
   let bucket = "avatars";
   let { error: uploadError } = await supabase.storage
     .from(bucket)
