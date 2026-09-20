@@ -230,7 +230,25 @@ export default function HomeScreen() {
           )}
         </View>
       </Screen>
-      {selecting ? (\n        <View style={styles.selectionToolbar}>\n          <Pressable onPress={cancelSelection} style={styles.selectionClose} accessibilityLabel="Cancel selection">\n            <MaterialCommunityIcons name="close" size={21} color={colors.white} />\n          </Pressable>\n          <View style={styles.selectionCount}>\n            <Text style={styles.selectionCountText}>{selectedIds.length}</Text>\n          </View>\n          <Pressable\n            onPress={confirmDelete}\n            disabled={!selectedIds.length || deleting}\n            style={[styles.selectionDelete, !selectedIds.length && styles.selectionDeleteDisabled]}\n            accessibilityLabel="Delete selected events"\n          >\n            <MaterialCommunityIcons name="trash-can-outline" size={21} color={colors.white} />\n          </Pressable>\n        </View>\n      ) : null}\n      <BottomNav active="home" />
+      {selecting ? (
+        <View style={styles.selectionToolbar}>
+          <Pressable onPress={cancelSelection} style={styles.selectionClose} accessibilityLabel="Cancel selection">
+            <MaterialCommunityIcons name="close" size={21} color={colors.white} />
+          </Pressable>
+          <View style={styles.selectionCount}>
+            <Text style={styles.selectionCountText}>{selectedIds.length}</Text>
+          </View>
+          <Pressable
+            onPress={confirmDelete}
+            disabled={!selectedIds.length || deleting}
+            style={[styles.selectionDelete, !selectedIds.length && styles.selectionDeleteDisabled]}
+            accessibilityLabel="Delete selected events"
+          >
+            <MaterialCommunityIcons name="trash-can-outline" size={21} color={colors.white} />
+          </Pressable>
+        </View>
+      ) : null}
+      <BottomNav active="home" />
     </View>
   );
 }
@@ -280,7 +298,16 @@ const styles = StyleSheet.create({
     rowGap: 12,
     marginHorizontal: -8,
   },
-  eventCardSelected: { borderWidth: 2, borderColor: "rgba(255,255,255,0.9)" },\n  selectionBadge: { position: "absolute", top: 10, right: 10, zIndex: 3, width: 26, height: 26, borderRadius: 13, borderWidth: 1.5, borderColor: "rgba(255,255,255,0.85)", backgroundColor: "rgba(10,15,21,0.5)", alignItems: "center", justifyContent: "center" },\n  selectionBadgeSelected: { backgroundColor: colors.white, borderColor: colors.white },\n  selectionToolbar: { position: "absolute", left: 24, right: 24, bottom: 88, height: 58, borderRadius: 22, backgroundColor: "rgba(20,27,36,0.94)", borderWidth: 1, borderColor: "rgba(255,255,255,0.12)", flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 7, zIndex: 20 },\n  selectionClose: { width: 44, height: 44, borderRadius: 16, alignItems: "center", justifyContent: "center" },\n  selectionCount: { minWidth: 34, height: 34, borderRadius: 17, alignItems: "center", justifyContent: "center", backgroundColor: "rgba(255,255,255,0.1)" },\n  selectionCountText: { color: colors.white, fontSize: 15, fontWeight: "800" },\n  selectionDelete: { width: 44, height: 44, borderRadius: 16, alignItems: "center", justifyContent: "center", backgroundColor: "rgba(185,28,28,0.95)" },\n  selectionDeleteDisabled: { opacity: 0.4 },\n  eventCard: {
+  eventCardSelected: { borderWidth: 2, borderColor: "rgba(255,255,255,0.9)" },
+  selectionBadge: { position: "absolute", top: 10, right: 10, zIndex: 3, width: 26, height: 26, borderRadius: 13, borderWidth: 1.5, borderColor: "rgba(255,255,255,0.85)", backgroundColor: "rgba(10,15,21,0.5)", alignItems: "center", justifyContent: "center" },
+  selectionBadgeSelected: { backgroundColor: colors.white, borderColor: colors.white },
+  selectionToolbar: { position: "absolute", left: 24, right: 24, bottom: 88, height: 58, borderRadius: 22, backgroundColor: "rgba(20,27,36,0.94)", borderWidth: 1, borderColor: "rgba(255,255,255,0.12)", flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 7, zIndex: 20 },
+  selectionClose: { width: 44, height: 44, borderRadius: 16, alignItems: "center", justifyContent: "center" },
+  selectionCount: { minWidth: 34, height: 34, borderRadius: 17, alignItems: "center", justifyContent: "center", backgroundColor: "rgba(255,255,255,0.1)" },
+  selectionCountText: { color: colors.white, fontSize: 15, fontWeight: "800" },
+  selectionDelete: { width: 44, height: 44, borderRadius: 16, alignItems: "center", justifyContent: "center", backgroundColor: "rgba(185,28,28,0.95)" },
+  selectionDeleteDisabled: { opacity: 0.4 },
+  eventCard: {
     width: "48%",
     height: 170,
     borderRadius: radii.card,
