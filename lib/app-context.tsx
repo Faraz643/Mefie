@@ -68,51 +68,20 @@ async function syncAvatarToCloud(sessionId: string, uri: string | null): Promise
   if (!supabase) return null;
 
   if (!uri) {
-    const { error: removeError } = await supabase.storage
-      .from("avatars")
-      .remove([`avatars/${sessionId}.jpg`]);
-    if (removeError && removeError.message !== "Not Found") throw removeError;
-
-    const { error: profileError } = await supabase
-      .from("avatar_profiles")
-      .upsert(
-        {
-          user_id: sessionId,
-          avatar_url: null,
-          storage_path: null,
-          storage_location: "local_only",
-          last_updated: new Date().toISOString(),
-        },
-        { onConflict: "user_id" },
-      );
-    if (profileError) throw profileError;
-
-    await supabase
+    const { error } = await supabase
       .from("participants")
       .update({ avatar_url: null })
       .eq("session_id", sessionId);
-
+    if (error) throw error;
     return null;
   }
 
-  if (!/^(file|content):\/\//i.test(uri)) {
+  if (!/^(file|content):\\/\\//i.test(uri)) {
     const { error } = await supabase
-      .from("avatar_profiles")
-      .upsert(
-        {
-          user_id: sessionId,
-          avatar_url: uri,
-          storage_path: null,
-          storage_location: "external_url",
-          last_updated: new Date().toISOString(),
-        },
-        { onConflict: "user_id" },
-      );
-    if (error) throw error;
-    await supabase
       .from("participants")
       .update({ avatar_url: uri })
       .eq("session_id", sessionId);
+    if (error) throw error;
     return uri;
   }
 
@@ -135,8 +104,6 @@ async function syncAvatarToCloud(sessionId: string, uri: string | null): Promise
       upsert: true,
     });
 
-  // Fall back to the original public photos bucket so cross-device avatars
-  // still work even when the dedicated avatars migration has not been run.
   if (uploadError) {
     bucket = "photos";
     const fallback = await supabase.storage
@@ -151,32 +118,14 @@ async function syncAvatarToCloud(sessionId: string, uri: string | null): Promise
   if (uploadError) throw uploadError;
 
   const { data } = supabase.storage.from(bucket).getPublicUrl(path);
-  const versionedUrl = `${data.publicUrl}?v=${Date.now()}`;
-  const now = new Date().toISOString();
+  if (!data.publicUrl) throw new Error("Could not create a public avatar URL.");
 
-  // The participant row is the event-level source of truth for avatars.
-  // Update it immediately after the Storage upload so other event members can
-  // render the avatar even if the optional profile metadata write is unavailable.
+  const versionedUrl = `${data.publicUrl}?v=${Date.now()}`;
   const { error: participantError } = await supabase
     .from("participants")
     .update({ avatar_url: versionedUrl })
     .eq("session_id", sessionId);
   if (participantError) throw participantError;
-
-  // Keep the profile index in sync as a reusable cross-event cache. A profile
-  // metadata failure must not hide an otherwise successful avatar upload.
-  await supabase
-    .from("avatar_profiles")
-    .upsert(
-      {
-        user_id: sessionId,
-        avatar_url: versionedUrl,
-        storage_path: path,
-        storage_location: "supabase_storage",
-        last_updated: now,
-      },
-      { onConflict: "user_id" },
-    );
 
   return versionedUrl;
 }
@@ -230,27 +179,6 @@ export async function getSessionId() {
 export async function ensureParticipant(eventId: string, displayName: string, avatarUrl?: string | null) {
   if (!supabase || !eventId) return null;
   const sessionId = await getSessionId();
-  let resolvedAvatarUrl = avatarUrl;
-
-  if (avatarUrl && /^(file|content):\/\//i.test(avatarUrl)) {
-    try {
-      resolvedAvatarUrl = await syncAvatarToCloud(sessionId, avatarUrl);
-    } catch {
-      const { data: profile } = await supabase
-        .from("avatar_profiles")
-        .select("avatar_url")
-        .eq("user_id", sessionId)
-        .maybeSingle();
-      resolvedAvatarUrl = profile?.avatar_url || null;
-    }
-  } else if (avatarUrl) {
-    const { data: profile } = await supabase
-      .from("avatar_profiles")
-      .select("avatar_url")
-      .eq("user_id", sessionId)
-      .maybeSingle();
-    resolvedAvatarUrl = profile?.avatar_url || avatarUrl;
-  }
 
   const { data: existing, error: existingError } = await supabase
     .from("participants")
@@ -260,15 +188,31 @@ export async function ensureParticipant(eventId: string, displayName: string, av
     .maybeSingle();
   if (existingError) throw existingError;
 
+  let resolvedAvatarUrl =
+    avatarUrl !== undefined && !/^(file|content):\\/\\//i.test(avatarUrl || "")
+      ? avatarUrl
+      : existing?.avatar_url ?? null;
+
+  if (avatarUrl && /^(file|content):\\/\\//i.test(avatarUrl)) {
+    try {
+      resolvedAvatarUrl = await syncAvatarToCloud(sessionId, avatarUrl);
+    } catch {
+      resolvedAvatarUrl = existing?.avatar_url ?? null;
+    }
+  }
+
+  const values = {
+    display_name: displayName.trim() || "Guest",
+    ...(avatarUrl !== undefined ? { avatar_url: resolvedAvatarUrl } : {}),
+    last_seen_at: new Date().toISOString(),
+  };
+
   if (existing) {
-    await supabase
+    const { error } = await supabase
       .from("participants")
-      .update({
-        display_name: displayName.trim() || "Guest",
-        ...(avatarUrl !== undefined ? { avatar_url: resolvedAvatarUrl } : {}),
-        last_seen_at: new Date().toISOString(),
-      })
+      .update(values)
       .eq("id", existing.id);
+    if (error) throw error;
     return existing.id;
   }
 
@@ -277,8 +221,7 @@ export async function ensureParticipant(eventId: string, displayName: string, av
     .insert({
       event_id: eventId,
       session_id: sessionId,
-      display_name: displayName.trim() || "Guest",
-      ...(avatarUrl !== undefined ? { avatar_url: resolvedAvatarUrl } : {}),
+      ...values,
     })
     .select("id")
     .single();
