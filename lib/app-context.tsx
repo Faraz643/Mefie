@@ -132,21 +132,16 @@ async function syncAvatarToCloud(sessionId: string, uri: string | null): Promise
 
 async function syncLocalAvatarIfNeeded(uri: string) {
   if (!supabase) return;
+  // The participant table is authoritative, so we do not depend on
+  // avatar_profiles existing. Retrying the upload on app startup repairs
+  // older installs whose local avatar was never published to the event.
   try {
     const sessionId = await getSessionId();
-    const { data: profile } = await supabase
-      .from("avatar_profiles")
-      .select("storage_location, storage_path")
-      .eq("user_id", sessionId)
-      .maybeSingle();
-
-    if (!profile || profile.storage_location !== "supabase_storage" || !profile.storage_path?.startsWith("avatars/")) {
-      await queueAvatarSync(uri);
-      await syncAvatarToCloud(sessionId, uri);
-      await clearAvatarSyncQueue();
-    }
+    await queueAvatarSync(uri);
+    await syncAvatarToCloud(sessionId, uri);
+    await clearAvatarSyncQueue();
   } catch {
-    // Keep local avatar; foreground retry handles temporary failures.
+    // Keep the pending item; foreground retry handles temporary failures.
   }
 }
 
