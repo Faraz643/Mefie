@@ -172,12 +172,14 @@ export default function JoinEventScreen() {
           pressed && styles.pressed,
         ]}
       >
-        <MaterialCommunityIcons
-          name="qrcode-scan"
-          size={25}
-          color={colors.white}
-        />
-        <Text style={styles.scanLabel}>Scan QR Code</Text>
+        <View style={styles.scanContent}>
+          <MaterialCommunityIcons
+            name="qrcode-scan"
+            size={25}
+            color={colors.white}
+          />
+          <Text style={styles.scanLabel}>Scan QR Code</Text>
+        </View>
       </Pressable>
     </Screen>
   );
@@ -244,7 +246,6 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(30,35,42,0.58)",
     borderWidth: 1,
     borderColor: "rgba(255,255,255,0.18)",
-    ...shadows,
   },
   scanContent: {
     flex: 1,
