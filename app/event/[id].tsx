@@ -23,7 +23,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { BackButton } from "../../components/Screen";
 import { IconButton } from "../../components/Glass";
 import { colors, shadows } from "../../lib/theme";
-import { ensureParticipant, supabase, useApp } from "../../lib/app-context";
+import { ensureParticipant, getSessionId, supabase, useApp } from "../../lib/app-context";
 
 function gradientForName(name: string): [string, string] {
   const palettes: [string, string][] = [
@@ -78,6 +78,7 @@ export default function EventScreen() {
   const [selectionMode, setSelectionMode] = useState(false);
   const [actionBusy, setActionBusy] = useState(false);
   const [error, setError] = useState("");
+  const [isCreator, setIsCreator] = useState(false);
   /* PROFILE PHOTO LOGIC DISABLED — session avatar loading kept here for future use.
   useEffect(() => {
     void getSessionId().then(setSessionId);
@@ -89,6 +90,7 @@ export default function EventScreen() {
     (async () => {
       if (!supabase) return;
       try {
+        const sessionId = await getSessionId();
         await ensureParticipant(String(id), displayName);
         const [eventResult, photosResult, participantsResult] = await Promise.all([
           supabase.from("events").select("*").eq("id", id).single(),
@@ -149,6 +151,7 @@ export default function EventScreen() {
         */
         if (active) {
           setEvent(eventResult.data);
+          setIsCreator(eventResult.data?.creator_session_id === sessionId);
           setPhotos(photosResult.data || []);
           setPeople(mergedPeople);
         }
@@ -277,6 +280,54 @@ export default function EventScreen() {
       scrollRef.current?.scrollTo({ y: target, animated: false }),
     );
   }, [tab]);
+  const deleteEvent = () => {
+    if (!isCreator || actionBusy) return;
+    Alert.alert(
+      "Delete event?",
+      "This will permanently remove the event and all of its photos for everyone.",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Delete event",
+          style: "destructive",
+          onPress: () => {
+            void (async () => {
+              if (!supabase) return;
+              setActionBusy(true);
+              try {
+                const paths = photos.map((photo) => photo.storage_path).filter(Boolean);
+                if (paths.length) {
+                  const { error: storageError } = await supabase.storage
+                    .from("photos")
+                    .remove(paths);
+                  if (storageError) throw storageError;
+                }
+                const { data, error: deleteError } = await supabase.rpc(
+                  "delete_event_as_creator",
+                  {
+                    p_event_id: String(id),
+                    p_creator_session_id: await getSessionId(),
+                  },
+                );
+                if (deleteError) throw deleteError;
+                if (!data) {
+                  throw new Error("Only the event creator can delete this event.");
+                }
+                router.replace("/events");
+              } catch (e: any) {
+                Alert.alert(
+                  "Could not delete event",
+                  e?.message || "Please try again.",
+                );
+              } finally {
+                setActionBusy(false);
+              }
+            })();
+          },
+        },
+      ],
+    );
+  };
   const invite = async () => {
     const link = `https://mefie.app/e/${event?.invite_code || ""}`;
     await Share.share({
@@ -481,13 +532,24 @@ ${link}`,
         >
           <View style={styles.top}>
             <BackButton />
-            <IconButton plain accessibilityLabel="Invite friends" onPress={invite}>
-              <MaterialCommunityIcons
-                name="link-variant"
-                size={21}
-                color={colors.white}
-              />
-            </IconButton>
+            <View style={styles.headerActions}>
+              {isCreator ? (
+                <IconButton plain accessibilityLabel="Delete event" onPress={deleteEvent}>
+                  <MaterialCommunityIcons
+                    name="trash-can-outline"
+                    size={20}
+                    color="rgba(255,255,255,.92)"
+                  />
+                </IconButton>
+              ) : null}
+              <IconButton plain accessibilityLabel="Invite friends" onPress={invite}>
+                <MaterialCommunityIcons
+                  name="link-variant"
+                  size={21}
+                  color={colors.white}
+                />
+              </IconButton>
+            </View>
           </View>
           <Animated.View
             style={{ transform: [{ translateY: heroInfoTranslate }] }}
@@ -742,6 +804,7 @@ const styles = StyleSheet.create({
   backgroundImage: { ...StyleSheet.absoluteFillObject, resizeMode: "cover" },
   heroContent: { minHeight: HERO_HEIGHT, paddingHorizontal: 20 },
   top: { flexDirection: "row", justifyContent: "space-between" },
+  headerActions: { flexDirection: "row", alignItems: "center", gap: 6 },
   heroInfo: { paddingTop: 29, paddingBottom: 2 },
   title: {
     color: colors.white,
