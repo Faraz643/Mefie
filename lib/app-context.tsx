@@ -8,7 +8,7 @@ import React, {
   useState,
 } from "react";
 import { createClient } from "@supabase/supabase-js";
-import { View, Text } from "react-native";
+import { AppState, View, Text } from "react-native";
 import * as FileSystem from "expo-file-system";
 import { decode } from "base64-arraybuffer";
 
