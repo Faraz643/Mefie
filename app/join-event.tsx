@@ -5,6 +5,7 @@ import { useRouter } from "expo-router";
 import React, { useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { Screen } from "../components/Screen";
+import { useGlassTarget } from "../components/Glass";
 import { GlassButton, GlassCard, GlassInput } from "../components/Glass";
 import { colors, shadows } from "../lib/theme";
 import { ensureParticipant, supabase, useApp } from "../lib/app-context";
@@ -22,6 +23,7 @@ export default function JoinEventScreen() {
   const [scanning, setScanning] = useState(false);
   const [error, setError] = useState("");
   const [perm, request] = useCameraPermissions();
+  const blurTarget = useGlassTarget();
 
   const join = async (value = link) => {
     setError("");
@@ -163,24 +165,34 @@ export default function JoinEventScreen() {
         <View style={styles.orLine} />
       </View>
 
-      <BlurView intensity={78} tint="dark" style={styles.scanBlur}>
-        <Pressable
-          onPress={startScan}
-          focusable={false}
-          android_ripple={{ color: "transparent" }}
-          style={({ pressed }) => [
-            styles.scanButton,
-            pressed && styles.pressed,
-          ]}
-        >
+      <Pressable
+        onPress={startScan}
+        focusable={false}
+        android_ripple={{ color: "transparent" }}
+        style={({ pressed }) => [
+          styles.scanSurface,
+          pressed && styles.pressed,
+        ]}
+      >
+        <BlurView
+          {...(blurTarget
+            ? { blurTarget, blurMethod: "dimezisBlurView" as const }
+            : { blurMethod: "none" as const })}
+          intensity={34}
+          tint="dark"
+          pointerEvents="none"
+          style={StyleSheet.absoluteFillObject}
+        />
+        <View pointerEvents="none" style={styles.scanFrost} />
+        <View pointerEvents="none" style={styles.scanContent}>
           <MaterialCommunityIcons
             name="qrcode-scan"
             size={25}
             color={colors.white}
           />
           <Text style={styles.scanLabel}>Scan QR Code</Text>
-        </Pressable>
-      </BlurView>
+        </View>
+      </Pressable>
     </Screen>
   );
 }
@@ -239,20 +251,21 @@ const styles = StyleSheet.create({
     marginHorizontal: 4,
     marginTop: -5,
   },
-  scanBlur: {
+  scanSurface: {
     height: 76,
     borderRadius: 20,
     overflow: "hidden",
-    backgroundColor: "rgba(220,225,232,.20)",
+    backgroundColor: "rgba(30,35,42,0.34)",
     borderWidth: 1,
-    borderColor: "rgba(255,255,255,.16)",
+    borderColor: "rgba(255,255,255,0.22)",
     ...shadows,
   },
-  scanButton: {
-    height: 76,
-    borderRadius: 20,
-    backgroundColor: "transparent",
-    borderWidth: 0,
+  scanFrost: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: "rgba(255,255,255,0.065)",
+  },
+  scanContent: {
+    flex: 1,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
