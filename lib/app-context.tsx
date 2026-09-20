@@ -173,25 +173,10 @@ export async function getSessionId() {
   return id;
 }
 
-export async function ensureParticipant(eventId: string, displayName: string, avatarUrl?: string | null) {
+/* PROFILE PHOTO ARGUMENT/SYNC REMOVED FROM ACTIVE PATH. The previous avatar-aware implementation remains commented above.
+export async function ensureParticipant(eventId: string, displayName: string) {
   if (!supabase || !eventId) return null;
   const sessionId = await getSessionId();
-
-  let resolvedAvatarUrl: string | null | undefined = avatarUrl;
-  if (avatarUrl !== undefined) {
-    if (avatarUrl && /^(file|content):\/\//i.test(avatarUrl)) {
-      try {
-        resolvedAvatarUrl = await syncAvatarToCloud(sessionId, avatarUrl);
-      } catch {
-        const { data } = await supabase
-          .from("profiles")
-          .select("avatar_url")
-          .eq("session_id", sessionId)
-          .maybeSingle();
-        resolvedAvatarUrl = data?.avatar_url ?? null;
-      }
-    }
-  }
 
   const { error: profileIdentityError } = await supabase
     .from("profiles")
@@ -199,7 +184,6 @@ export async function ensureParticipant(eventId: string, displayName: string, av
       {
         session_id: sessionId,
         display_name: displayName.trim() || "Guest",
-        ...(resolvedAvatarUrl !== undefined ? { avatar_url: resolvedAvatarUrl } : {}),
         updated_at: new Date().toISOString(),
       },
       { onConflict: "session_id" },
@@ -240,7 +224,57 @@ export async function ensureParticipant(eventId: string, displayName: string, av
   if (error) throw error;
   return data.id;
 }
+*/
+export async function ensureParticipant(eventId: string, displayName: string) {
+  if (!supabase || !eventId) return null;
+  const sessionId = await getSessionId();
 
+  const { error: profileIdentityError } = await supabase
+    .from("profiles")
+    .upsert(
+      {
+        session_id: sessionId,
+        display_name: displayName.trim() || "Guest",
+        updated_at: new Date().toISOString(),
+      },
+      { onConflict: "session_id" },
+    );
+  if (profileIdentityError) throw profileIdentityError;
+
+  const { data: existing, error: existingError } = await supabase
+    .from("participants")
+    .select("id")
+    .eq("event_id", eventId)
+    .eq("session_id", sessionId)
+    .maybeSingle();
+  if (existingError) throw existingError;
+
+  const values = {
+    display_name: displayName.trim() || "Guest",
+    last_seen_at: new Date().toISOString(),
+  };
+
+  if (existing) {
+    const { error } = await supabase
+      .from("participants")
+      .update(values)
+      .eq("id", existing.id);
+    if (error) throw error;
+    return existing.id;
+  }
+
+  const { data, error } = await supabase
+    .from("participants")
+    .insert({
+      event_id: eventId,
+      session_id: sessionId,
+      ...values,
+    })
+    .select("id")
+    .single();
+  if (error) throw error;
+  return data.id;
+}
 export async function getParticipantId(eventId: string) {
   if (!supabase) return null;
   const sessionId = await getSessionId();
@@ -354,6 +388,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     if (mountedRef.current) setEvents(enriched);
   }, []);
 
+  /* PROFILE PHOTO RETRY LOGIC DISABLED.
   useEffect(() => {
     void syncPendingAvatar();
     const subscription = AppState.addEventListener("change", (state) => {
@@ -361,6 +396,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     });
     return () => subscription.remove();
   }, []);
+  */
 
   useEffect(() => {
     refreshEvents();
