@@ -1,4 +1,5 @@
 import { BlurView } from "expo-blur";
+import { LinearGradient } from "expo-linear-gradient";
 import { useFocusEffect, useRouter } from "expo-router";
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 import React, { useCallback, useState } from "react";
@@ -15,7 +16,7 @@ import { colors, radii, shadows } from "../../lib/theme";
 
 export default function HomeScreen() {
   const router = useRouter();
-  const { displayName, avatarImage, events, refreshEvents } = useApp();
+  const { displayName, events, refreshEvents } = useApp();
   const [selecting, setSelecting] = useState(false);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [deleting, setDeleting] = useState(false);
@@ -159,7 +160,7 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   avatarText: { color: colors.white, fontSize: 17, fontWeight: "700" },
-  headerAvatarImage: { width: "100%", height: "100%", borderRadius: 22 },
+  headerAvatar: { width: "100%", height: "100%", borderRadius: 22, alignItems: "center", justifyContent: "center" },
   eventsSection: { marginTop: 10 },
   sectionRow: {
     flexDirection: "row",
