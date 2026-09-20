@@ -109,11 +109,14 @@ export default function EventScreen() {
 
         let avatarProfiles: any[] = [];
         if (sessionIds.length) {
-          const { data: profiles, error: profileError } = await supabase
+          // Participants carry the event-visible avatar URL. The profile table
+          // is only an optional cross-event cache, so an unavailable profile
+          // table must never prevent event avatars from rendering.
+          const { data: profiles } = await supabase
             .from("avatar_profiles")
             .select("user_id, avatar_url, last_updated")
             .in("user_id", sessionIds);
-          if (!profileError) avatarProfiles = profiles || [];
+          avatarProfiles = profiles || [];
         }
 
         const profileByUser = new Map(
@@ -170,7 +173,9 @@ export default function EventScreen() {
               setPeople((curr) =>
                 curr.some((x) => x.id === payload.new.id)
                   ? curr.map((x) =>
-                      x.id === payload.new.id ? { ...x, ...payload.new } : x,
+                      x.id === payload.new.id
+                        ? { ...x, ...payload.new }
+                        : x,
                     )
                   : [...curr, payload.new],
               );
