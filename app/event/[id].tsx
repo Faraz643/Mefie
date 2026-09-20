@@ -319,9 +319,9 @@ export default function EventScreen() {
     <View style={styles.root}>
       <View pointerEvents="none" style={styles.background}>
         <Image source={{ uri: heroSource }} style={styles.backgroundImage} />
-        <BlurView
-          intensity={35}
-          tint="dark"
+        <LinearGradient
+          colors={["rgba(4,9,14,.00)", "rgba(4,9,14,.03)", "rgba(8,16,23,.58)"]}
+          locations={[0, 0.48, 1]}
           style={StyleSheet.absoluteFillObject}
         />
         <LinearGradient
