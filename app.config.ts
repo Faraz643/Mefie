@@ -44,6 +44,7 @@ export default ({ config }: { config: any }) => ({
     android: {
       ...config.expo?.android,
       package: "app.mefie.mobile",
+      softwareKeyboardLayoutMode: "resize",
       intentFilters: [
         {
           action: "VIEW",
