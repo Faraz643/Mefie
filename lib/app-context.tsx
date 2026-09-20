@@ -83,6 +83,7 @@ export async function ensureParticipant(eventId: string, displayName: string, av
       event_id: eventId,
       session_id: sessionId,
       display_name: displayName.trim() || "Guest",
+      ...(avatarUrl !== undefined ? { avatar_url: avatarUrl } : {}),
     })
     .select("id")
     .single();
