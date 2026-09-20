@@ -1,8 +1,8 @@
 import { BlurView } from "expo-blur";
 import { useFocusEffect, useRouter } from "expo-router";
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
-import React, { useCallback } from "react";
-import { Image, Pressable, StyleSheet, Text, View } from "react-native";
+import React, { useCallback, useState } from "react";
+import { Alert, Image, Pressable, StyleSheet, Text, View } from "react-native";
 import { BottomNav, Header, Screen } from "../../components/Screen";
 import {
   GlassAction,
@@ -10,12 +10,15 @@ import {
   SectionTitle,
   IconButton,
 } from "../../components/Glass";
-import { useApp } from "../../lib/app-context";
+import { deleteEventsAsCreator, getSessionId, useApp } from "../../lib/app-context";
 import { colors, radii, shadows } from "../../lib/theme";
 
 export default function HomeScreen() {
   const router = useRouter();
   const { displayName, avatarImage, events, refreshEvents } = useApp();
+  const [selecting, setSelecting] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [deleting, setDeleting] = useState(false);
   useFocusEffect(
     useCallback(() => {
       let active = true;
@@ -95,7 +98,7 @@ export default function HomeScreen() {
             </GlassCard>
           ) : (
             <View style={styles.grid}>
-              {events.slice(0, 4).map((e) => (
+              {events.slice(0, 4).map((e) => {\n                const selected = selectedIds.includes(e.id);\n                return (
                 <Pressable
                   key={e.id}
                   onPress={() =>
@@ -106,7 +109,7 @@ export default function HomeScreen() {
                   }
                   style={styles.eventCard}
                 >
-                  <View style={styles.cover}>
+                  {selecting && e.creatorSessionId ? (\n                    <View style={[styles.selectionBadge, selected && styles.selectionBadgeSelected]}>\n                      {selected ? <MaterialCommunityIcons name="check" size={15} color={colors.black} /> : null}\n                    </View>\n                  ) : null}\n                  <View style={styles.cover}>
                     {e.cover ? (
                       <Image
                         source={{ uri: e.cover }}
