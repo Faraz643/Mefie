@@ -223,7 +223,6 @@ export default function EventScreen() {
                   ? curr
                   : [...curr, payload.new],
               );
-              void refreshPeopleFromProfiles();
             } else if (payload.eventType === "DELETE") {
               setPeople((curr) => curr.filter((x) => x.id !== payload.old.id));
             } else {
@@ -232,7 +231,6 @@ export default function EventScreen() {
                   x.id === payload.new.id ? { ...x, ...payload.new } : x,
                 ),
               );
-              void refreshPeopleFromProfiles();
             }
           },
         )
