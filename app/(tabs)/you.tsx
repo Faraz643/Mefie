@@ -37,18 +37,20 @@ export default function You() {
           <MenuRow icon="help-circle-outline" label="Help & feedback" />
         </GlassCard>
         <GlassCard style={styles.backgroundCard}>
-          <View style={styles.backgroundHeader}>
+          <View style={styles.backgroundContent}>
+            <View style={styles.backgroundHeader}>
             <View style={styles.backgroundIcon}><MaterialCommunityIcons name="image-outline" size={20} color={colors.white} /></View>
             <View style={styles.backgroundCopy}><Text style={styles.backgroundTitle}>App background</Text><Text style={styles.backgroundSub}>Choose a photo from your phone</Text></View>
           </View>
-          {backgroundImage ? <Image source={{ uri: backgroundImage }} style={styles.preview} resizeMode="cover" /> : null}
-          <View style={styles.chooseButtonSpacing}>
+            {backgroundImage ? <Image source={{ uri: backgroundImage }} style={styles.preview} resizeMode="cover" /> : null}
+            <View style={styles.chooseButtonSpacing}>
             <Pressable onPress={chooseBackground} style={({ pressed }) => [styles.chooseButton, pressed && styles.chooseButtonPressed]}>
               <MaterialCommunityIcons name="image-plus" size={20} color={colors.black} />
               <Text style={styles.chooseButtonText}>{backgroundImage ? "Change background" : "Choose background photo"}</Text>
             </Pressable>
+            </View>
+            {backgroundImage ? <Pressable onPress={() => setBackgroundImage(null)} style={styles.removeButton}><Text style={styles.removeText}>Use default background</Text></Pressable> : null}
           </View>
-          {backgroundImage ? <Pressable onPress={() => setBackgroundImage(null)} style={styles.removeButton}><Text style={styles.removeText}>Use default background</Text></Pressable> : null}
         </GlassCard>
         {editing ? (
           <GlassCard><GlassInput label="Display name" value={name} onChangeText={setName} /><View style={{ marginTop: 14 }}><GlassButton primary label="Save" onPress={async () => { await setDisplayName(name); setEditing(false); }} /></View></GlassCard>
@@ -74,7 +76,8 @@ const styles = StyleSheet.create({
   menuRow: { minHeight: 54, flexDirection: "row", alignItems: "center", paddingHorizontal: 16 },
   rowText: { flex: 1, color: "#fff", fontSize: 16, fontWeight: "600", marginLeft: 13 },
   div: { height: 1, backgroundColor: colors.line, marginHorizontal: 18 },
-  backgroundCard: { gap: 14 },
+  backgroundCard: {},
+  backgroundContent: { gap: 14 },
   backgroundHeader: { flexDirection: "row", alignItems: "center" },
   backgroundIcon: { width: 40, height: 40, borderRadius: 12, backgroundColor: "rgba(255,255,255,.10)", alignItems: "center", justifyContent: "center" },
   backgroundCopy: { flex: 1, marginLeft: 12 },
