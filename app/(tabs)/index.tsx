@@ -50,7 +50,7 @@ export default function HomeScreen() {
       };
     }, [refreshEvents]),
   );
-  const selectableEvents = events.filter(
+  const ownedEvents = events.filter(
     (event) => event.creatorSessionId === sessionId,
   );
 
@@ -62,10 +62,9 @@ export default function HomeScreen() {
     );
   };
 
-  const startSelection = () => {
-    if (selectableEvents.length === 0) return;
-    setSelectedIds([]);
+  const enterSelection = (id: string) => {
     setSelecting(true);
+    setSelectedIds([id]);
   };
 
   const cancelSelection = () => {
@@ -157,28 +156,19 @@ export default function HomeScreen() {
         <View style={styles.eventsSection}>
           <View style={styles.sectionRow}>
             <SectionTitle>{selecting ? `${selectedIds.length} selected` : "Your events"}</SectionTitle>
-            {events.length > 0 ? (
-              selecting ? (
-                <Pressable onPress={cancelSelection}>
-                  <Text style={styles.seeAll}>Cancel</Text>
-                </Pressable>
-              ) : (
-                <View style={styles.sectionActions}>
-                  {selectableEvents.length > 0 ? (
-                    <Pressable onPress={startSelection}>
-                      <Text style={styles.seeAll}>Select</Text>
-                    </Pressable>
-                  ) : null}
-                  <Pressable onPress={() => router.push("/events")}>
-                    <Text style={styles.seeAll}>
-                      See all <Text style={styles.seeArrow}>›</Text>
-                    </Text>
-                  </Pressable>
-                </View>
-              )
+            {ownedEvents.length > 0 && !selecting ? (
+              <Pressable onPress={() => router.push("/events")}>
+                <Text style={styles.seeAll}>
+                  See all <Text style={styles.seeArrow}>›</Text>
+                </Text>
+              </Pressable>
+            ) : selecting ? (
+              <Pressable onPress={cancelSelection}>
+                <Text style={styles.seeAll}>Cancel</Text>
+              </Pressable>
             ) : null}
           </View>
-          {events.length === 0 ? (
+          {ownedEvents.length === 0 ? (
             <GlassCard>
               <Text style={styles.emptyTitle}>Your moments start here.</Text>
               <Text style={styles.emptySub}>
@@ -187,14 +177,18 @@ export default function HomeScreen() {
             </GlassCard>
           ) : (
             <View style={styles.grid}>
-              {events.slice(0, 4).map((e) => {
+              {ownedEvents.slice(0, 4).map((e) => {
                 const selected = selectedIds.includes(e.id);
                 return (
                 <Pressable
                   key={e.id}
+                  onLongPress={() => {
+                    if (!selecting) enterSelection(e.id);
+                  }}
+                  delayLongPress={450}
                   onPress={() => {
                     if (selecting) {
-                      if (e.creatorSessionId === sessionId) toggleSelected(e.id);
+                      toggleSelected(e.id);
                       return;
                     }
                     router.push({
@@ -202,9 +196,9 @@ export default function HomeScreen() {
                       params: { id: e.id },
                     });
                   }}
-                  style={styles.eventCard}
+                  style={[styles.eventCard, selected && styles.eventCardSelected]}
                 >
-                  {selecting && e.creatorSessionId ? (
+                  {selecting ? (
                     <View style={[styles.selectionBadge, selected && styles.selectionBadgeSelected]}>
                       {selected ? <MaterialCommunityIcons name="check" size={15} color={colors.black} /> : null}
                     </View>
@@ -236,7 +230,7 @@ export default function HomeScreen() {
           )}
         </View>
       </Screen>
-      <BottomNav active="home" />
+      {selecting ? (\n        <View style={styles.selectionToolbar}>\n          <Pressable onPress={cancelSelection} style={styles.selectionClose} accessibilityLabel="Cancel selection">\n            <MaterialCommunityIcons name="close" size={21} color={colors.white} />\n          </Pressable>\n          <View style={styles.selectionCount}>\n            <Text style={styles.selectionCountText}>{selectedIds.length}</Text>\n          </View>\n          <Pressable\n            onPress={confirmDelete}\n            disabled={!selectedIds.length || deleting}\n            style={[styles.selectionDelete, !selectedIds.length && styles.selectionDeleteDisabled]}\n            accessibilityLabel="Delete selected events"\n          >\n            <MaterialCommunityIcons name="trash-can-outline" size={21} color={colors.white} />\n          </Pressable>\n        </View>\n      ) : null}\n      <BottomNav active="home" />
     </View>
   );
 }
@@ -286,7 +280,7 @@ const styles = StyleSheet.create({
     rowGap: 12,
     marginHorizontal: -8,
   },
-  eventCard: {
+  eventCardSelected: { borderWidth: 2, borderColor: "rgba(255,255,255,0.9)" },\n  selectionBadge: { position: "absolute", top: 10, right: 10, zIndex: 3, width: 26, height: 26, borderRadius: 13, borderWidth: 1.5, borderColor: "rgba(255,255,255,0.85)", backgroundColor: "rgba(10,15,21,0.5)", alignItems: "center", justifyContent: "center" },\n  selectionBadgeSelected: { backgroundColor: colors.white, borderColor: colors.white },\n  selectionToolbar: { position: "absolute", left: 24, right: 24, bottom: 88, height: 58, borderRadius: 22, backgroundColor: "rgba(20,27,36,0.94)", borderWidth: 1, borderColor: "rgba(255,255,255,0.12)", flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 7, zIndex: 20 },\n  selectionClose: { width: 44, height: 44, borderRadius: 16, alignItems: "center", justifyContent: "center" },\n  selectionCount: { minWidth: 34, height: 34, borderRadius: 17, alignItems: "center", justifyContent: "center", backgroundColor: "rgba(255,255,255,0.1)" },\n  selectionCountText: { color: colors.white, fontSize: 15, fontWeight: "800" },\n  selectionDelete: { width: 44, height: 44, borderRadius: 16, alignItems: "center", justifyContent: "center", backgroundColor: "rgba(185,28,28,0.95)" },\n  selectionDeleteDisabled: { opacity: 0.4 },\n  eventCard: {
     width: "48%",
     height: 170,
     borderRadius: radii.card,
