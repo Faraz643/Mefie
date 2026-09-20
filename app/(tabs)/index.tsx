@@ -54,7 +54,8 @@ export default function HomeScreen() {
         />
         <View style={styles.hero}>
           <Text style={styles.greeting}>Hey {displayName} 👋</Text>
-          <Text style={styles.title}>Same moments.{`\n`}Everyone's view.</Text>
+          <Text style={styles.title}>Same moments.{`
+`}Everyone's view.</Text>
         </View>
         <GlassAction
           primary
@@ -99,18 +100,29 @@ export default function HomeScreen() {
             </GlassCard>
           ) : (
             <View style={styles.grid}>
-              {events.slice(0, 4).map((e) => {\n                const selected = selectedIds.includes(e.id);\n                return (
+              {events.slice(0, 4).map((e) => {
+                const selected = selectedIds.includes(e.id);
+                return (
                 <Pressable
                   key={e.id}
-                  onPress={() =>
+                  onPress={() => {
+                    if (selecting) {
+                      if (e.creatorSessionId) toggleSelected(e.id);
+                      return;
+                    }
                     router.push({
                       pathname: "/event/[id]",
                       params: { id: e.id },
-                    })
-                  }
+                    });
+                  }}
                   style={styles.eventCard}
                 >
-                  {selecting && e.creatorSessionId ? (\n                    <View style={[styles.selectionBadge, selected && styles.selectionBadgeSelected]}>\n                      {selected ? <MaterialCommunityIcons name="check" size={15} color={colors.black} /> : null}\n                    </View>\n                  ) : null}\n                  <View style={styles.cover}>
+                  {selecting && e.creatorSessionId ? (
+                    <View style={[styles.selectionBadge, selected && styles.selectionBadgeSelected]}>
+                      {selected ? <MaterialCommunityIcons name="check" size={15} color={colors.black} /> : null}
+                    </View>
+                  ) : null}
+                  <View style={styles.cover}>
                     {e.cover ? (
                       <Image
                         source={{ uri: e.cover }}
@@ -131,7 +143,8 @@ export default function HomeScreen() {
                     </BlurView>
                   </View>
                 </Pressable>
-              ))}
+                );
+              })}
             </View>
           )}
         </View>
