@@ -56,7 +56,7 @@ export default function EventScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { id } = useLocalSearchParams<{ id: string }>();
-  const { displayName } = useApp();
+  const { displayName, avatarImage } = useApp();
   const scrollY = useRef(new Animated.Value(0)).current;
   const scrollRef = useRef<ScrollView>(null);
   const photoScrollOffset = useRef(0);
@@ -74,7 +74,7 @@ export default function EventScreen() {
     (async () => {
       if (!supabase) return;
       try {
-        await ensureParticipant(String(id), displayName);
+        await ensureParticipant(String(id), displayName, avatarImage);
         const [{ data: e }, { data: p }, { data: pt }] = await Promise.all([
           supabase.from("events").select("*").eq("id", id).single(),
           supabase
@@ -85,7 +85,7 @@ export default function EventScreen() {
             .limit(200),
           supabase
             .from("participants")
-            .select("*, users(avatar_url)")
+            .select("*")
             .eq("event_id", id)
             .order("joined_at", { ascending: true }),
         ]);
@@ -379,7 +379,7 @@ export default function EventScreen() {
               </Text>
               <View style={styles.avatars}>
                 {visiblePeople.map((person, index) => {
-                  const avatarUrl = person.users?.avatar_url;
+                  const avatarUrl = person.avatar_url;
                   return (
                     <View
                       key={person.id || index}
