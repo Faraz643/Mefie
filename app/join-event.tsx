@@ -251,9 +251,8 @@ const styles = StyleSheet.create({
   scanButton: {
     height: 76,
     borderRadius: 20,
-    backgroundColor: "rgba(220,225,232,.20)",
-    borderWidth: 1,
-    borderColor: "rgba(255,255,255,.38)",
+    backgroundColor: "transparent",
+    borderWidth: 0,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
