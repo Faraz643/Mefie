@@ -174,24 +174,12 @@ export default function JoinEventScreen() {
           pressed && styles.pressed,
         ]}
       >
-        <BlurView
-          {...(blurTarget
-            ? { blurTarget, blurMethod: "dimezisBlurView" as const }
-            : { blurMethod: "none" as const })}
-          intensity={34}
-          tint="dark"
-          pointerEvents="none"
-          style={StyleSheet.absoluteFillObject}
+        <MaterialCommunityIcons
+          name="qrcode-scan"
+          size={25}
+          color={colors.white}
         />
-        <View pointerEvents="none" style={styles.scanFrost} />
-        <View pointerEvents="none" style={styles.scanContent}>
-          <MaterialCommunityIcons
-            name="qrcode-scan"
-            size={25}
-            color={colors.white}
-          />
-          <Text style={styles.scanLabel}>Scan QR Code</Text>
-        </View>
+        <Text style={styles.scanLabel}>Scan QR Code</Text>
       </Pressable>
     </Screen>
   );
@@ -255,14 +243,10 @@ const styles = StyleSheet.create({
     height: 76,
     borderRadius: 20,
     overflow: "hidden",
-    backgroundColor: "rgba(30,35,42,0.34)",
+    backgroundColor: "rgba(30,35,42,0.58)",
     borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.22)",
+    borderColor: "rgba(255,255,255,0.18)",
     ...shadows,
-  },
-  scanFrost: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: "rgba(255,255,255,0.065)",
   },
   scanContent: {
     flex: 1,
