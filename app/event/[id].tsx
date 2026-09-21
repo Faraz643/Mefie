@@ -419,7 +419,7 @@ export default function EventScreen() {
     if (!link) return;
     await Share.share({
       message: temporary
-        ? `Temporary invite for ${event?.name || "this Mefie event"} 📸
+        ? `Quick access link for ${event?.name || "this Mefie event"} 📸
 This invite expires in 5 minutes.
 
 ${link}`
@@ -960,7 +960,7 @@ ${link}`,
               <View>
                 <Text style={styles.inviteEyebrow}>EVENT INVITES</Text>
                 <Text style={styles.inviteSheetTitle}>
-                  {inviteSlide === 0 ? "Invite to this event" : "Temporary invite"}
+                  {inviteSlide === 0 ? "Invite to this event" : "Quick access"}
                 </Text>
               </View>
               <Pressable style={styles.inviteClose} onPress={closeInvites}>
@@ -1010,7 +1010,7 @@ ${link}`,
                       ) : (
                         <>
                           <MaterialCommunityIcons name="timer-plus-outline" size={19} color={colors.black} />
-                          <Text style={styles.primaryInviteText}>Temporary invite</Text>
+                          <Text style={styles.primaryInviteText}>Quick access</Text>
                         </>
                       )}
                     </Pressable>
@@ -1030,7 +1030,7 @@ ${link}`,
                 {temporaryInvite && temporarySecondsLeft > 0 ? (
                   <>
                     <Text style={styles.inviteDescription}>
-                      Anyone with this temporary QR or link can join. It automatically expires after 5 minutes.
+                      Anyone with this QR or link can join the event. The link is available for 5 minutes; joining does not expire your membership.
                     </Text>
                     <View style={styles.qrFrame}>
                       <QRCode
@@ -1062,7 +1062,7 @@ ${link}`,
                         ) : (
                           <>
                             <MaterialCommunityIcons name="refresh" size={19} color={colors.black} />
-                            <Text style={styles.primaryInviteText}>New 5-min invite</Text>
+                            <Text style={styles.primaryInviteText}>New 5-min link</Text>
                           </>
                         )}
                       </Pressable>
@@ -1071,15 +1071,15 @@ ${link}`,
                 ) : (
                   <View style={styles.expiredInvite}>
                     <MaterialCommunityIcons name="timer-off-outline" size={42} color="rgba(255,255,255,.82)" />
-                    <Text style={styles.expiredTitle}>Temporary invite expired</Text>
-                    <Text style={styles.expiredText}>Create a new one to generate another 5-minute QR and link.</Text>
+                    <Text style={styles.expiredTitle}>Access link expired</Text>
+                    <Text style={styles.expiredText}>Create a new access link to generate another 5-minute QR and link.</Text>
                     <Pressable style={styles.primaryInviteButton} onPress={createTemporaryInvite} disabled={temporaryInviteBusy}>
                       {temporaryInviteBusy ? (
                         <ActivityIndicator color={colors.black} />
                       ) : (
                         <>
                           <MaterialCommunityIcons name="timer-plus-outline" size={19} color={colors.black} />
-                          <Text style={styles.primaryInviteText}>Create new invite</Text>
+                          <Text style={styles.primaryInviteText}>Create new access link</Text>
                         </>
                       )}
                     </Pressable>
