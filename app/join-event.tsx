@@ -1,5 +1,5 @@
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
-import { CameraView, useCameraPermissions } from "expo-camera";
+import { Camera, useCameraDevice, useCameraPermission, useCodeScanner } from "react-native-vision-camera";
 import { useRouter } from "expo-router";
 import React, { useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
@@ -30,7 +30,18 @@ export default function JoinEventScreen() {
   const [link, setLink] = useState("");
   const [scanning, setScanning] = useState(false);
   const [error, setError] = useState("");
-  const [perm, request] = useCameraPermissions();
+  const { hasPermission, canRequestPermission, requestPermission } = useCameraPermission();
+  const scannerDevice = useCameraDevice("back");
+  const codeScanner = useCodeScanner({
+    codeTypes: ["qr"],
+    onCodeScanned: (codes) => {
+      const data = codes[0]?.value;
+      if (!data) return;
+      setScanning(false);
+      setLink(data);
+      void join(data);
+    },
+  });
 
   const join = async (value = link) => {
     setError("");
@@ -81,16 +92,19 @@ export default function JoinEventScreen() {
   const startScan = async () => {
     setError("");
     try {
-      const current = perm?.granted
-        ? perm
-        : await request();
+      const granted = hasPermission || (canRequestPermission && await requestPermission());
 
-      if (!current.granted) {
+      if (!granted) {
         setError(
-          current.canAskAgain
+          canRequestPermission
             ? "Camera permission is required to scan a QR code."
             : "Camera access is blocked. Enable it in Android Settings for Mefie."
         );
+        return;
+      }
+
+      if (!scannerDevice) {
+        setError("No camera is available on this device.");
         return;
       }
 
@@ -103,15 +117,11 @@ export default function JoinEventScreen() {
   if (scanning)
     return (
       <View style={styles.scanner}>
-        <CameraView
+        <Camera
           style={StyleSheet.absoluteFill}
-          facing="back"
-          barcodeScannerSettings={{ barcodeTypes: ["qr"] }}
-          onBarcodeScanned={({ data }) => {
-            setScanning(false);
-            setLink(data);
-            void join(data);
-          }}
+          device={scannerDevice}
+          isActive={scanning}
+          codeScanner={codeScanner}
         />
         <View style={styles.scanOverlay}>
           <View style={styles.scanTop}>
