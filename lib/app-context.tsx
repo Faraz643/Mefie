@@ -251,7 +251,11 @@ export async function ensureParticipant(
   return data.id;
 }
 */
-export async function ensureParticipant(eventId: string, displayName: string) {
+export async function ensureParticipant(
+  eventId: string,
+  displayName: string,
+  allowRemovedMember = false,
+) {
   if (!supabase || !eventId) return null;
   const sessionId = await getSessionId();
 
@@ -262,7 +266,9 @@ export async function ensureParticipant(eventId: string, displayName: string) {
     .maybeSingle();
   if (eventAccessError) throw eventAccessError;
   if (!eventAccess) return null;
-  if ((eventAccess.removed_session_ids || []).includes(sessionId)) {
+
+  const removedSessionIds = eventAccess.removed_session_ids || [];
+  if (removedSessionIds.includes(sessionId) && !allowRemovedMember) {
     return null;
   }
 
@@ -310,6 +316,18 @@ export async function ensureParticipant(eventId: string, displayName: string) {
     .select("id")
     .single();
   if (error) throw error;
+
+  if (removedSessionIds.includes(sessionId) && allowRemovedMember) {
+    const { error: clearRemovedError } = await supabase.rpc(
+      "clear_event_removed_member",
+      {
+        p_event_id: eventId,
+        p_session_id: sessionId,
+      },
+    );
+    if (clearRemovedError) throw clearRemovedError;
+  }
+
   return data.id;
 }
 export async function deleteEventsAsCreator(eventIds: string[]) {
