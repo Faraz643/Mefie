@@ -275,7 +275,7 @@ export default function CameraScreen() {
           <View style={styles.statusPill}>
             <MaterialCommunityIcons name="cloud-upload-outline" size={15} color="#fff" />
             <Text style={styles.statusText}>
-              {queueSummary.queued + queueSummary.uploading}{" "}
+              {String(queueSummary.queued + queueSummary.uploading)}{" "}
               {queueSummary.queued + queueSummary.uploading === 1 ? "photo" : "photos"} sharing
             </Text>
           </View>
