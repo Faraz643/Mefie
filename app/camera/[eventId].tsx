@@ -54,7 +54,7 @@ export default function CameraScreen() {
     mountedRef.current = true;
     void startPhotoUploadQueue();
     const unsubscribe = subscribePhotoUploadQueue(() => {
-      setQueueVersion((value) => value + 1);
+      if (mountedRef.current) setQueueVersion((value) => value + 1);
     });
     return () => {
       mountedRef.current = false;
@@ -260,8 +260,11 @@ export default function CameraScreen() {
         style={StyleSheet.absoluteFill}
         facing={facing}
         flash={flash}
-        onCameraReady={() => setCameraReady(true)}
+        onCameraReady={() => {
+          if (mountedRef.current) setCameraReady(true);
+        }}
         onMountError={(error) => {
+          if (!mountedRef.current) return;
           setCameraReady(false);
           setMessage(error.message || "Could not start the camera.");
         }}
