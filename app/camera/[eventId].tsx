@@ -201,40 +201,45 @@ export default function CameraScreen() {
       inFlightCaptures.current = Math.max(0, inFlightCaptures.current - 1);
     };
 
-    const capturePromise = photoOutput.capturePhotoToFile(
-      {
-        flashMode: effectiveFlash,
-        enableDistortionCorrection: false,
-        enableShutterSound: true,
-      },
-      {
-        onDidCapturePhoto: releaseCaptureSlot,
-      },
-    );
+    try {
+      const capturePromise = photoOutput.capturePhotoToFile(
+        {
+          flashMode: effectiveFlash,
+          enableDistortionCorrection: false,
+          enableShutterSound: true,
+        },
+        {
+          onDidCapturePhoto: releaseCaptureSlot,
+        },
+      );
 
-    void capturePromise
-      .then((photo) => {
-        releaseCaptureSlot();
+      void capturePromise
+        .then((photo) => {
+          releaseCaptureSlot();
 
-        const uri = photo.filePath.startsWith("file://")
-          ? photo.filePath
-          : `file://${photo.filePath}`;
+          const uri = photo.filePath.startsWith("file://")
+            ? photo.filePath
+            : `file://${photo.filePath}`;
 
-        void enqueuePhotoUpload({
-          id: createUploadId(),
-          eventId: String(eventId),
-          participantId,
-          uri,
-          width: photo.width,
-          height: photo.height,
-        }).catch((error: any) => {
-          showMessage(error?.message || "Photo could not be queued.");
+          void enqueuePhotoUpload({
+            id: createUploadId(),
+            eventId: String(eventId),
+            participantId,
+            uri,
+            width: photo.width,
+            height: photo.height,
+          }).catch((error: any) => {
+            showMessage(error?.message || "Photo could not be queued.");
+          });
+        })
+        .catch((error: any) => {
+          releaseCaptureSlot();
+          showMessage(error?.message || "Could not capture the photo.");
         });
-      })
-      .catch((error: any) => {
-        releaseCaptureSlot();
-        showMessage(error?.message || "Could not capture the photo.");
-      });
+    } catch (error: any) {
+      releaseCaptureSlot();
+      showMessage(error?.message || "Could not capture the photo.");
+    }
   };
 
   const pick = async () => {
