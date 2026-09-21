@@ -10,12 +10,6 @@
       "expo-router",
       "expo-font",
       [
-        "expo-camera",
-        {
-          "cameraPermission": "Mefie needs camera access to capture shared moments."
-        }
-      ],
-      [
         "expo-image-picker",
         {
           "photosPermission": "Mefie needs photo access to save and share your moments."
@@ -25,25 +19,45 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "app.mefie.mobile",
-      "associatedDomains": ["applinks:mefie.app"]
+      "associatedDomains": [
+        "applinks:mefie.app"
+      ],
+      "infoPlist": {
+        "NSCameraUsageDescription": "Mefie needs camera access to capture shared moments."
+      }
     },
     "android": {
       "package": "app.mefie.mobile",
-      "permissions": ["CAMERA"],
+      "permissions": [
+        "CAMERA"
+      ],
       "intentFilters": [
         {
           "action": "VIEW",
           "autoVerify": true,
           "data": [
-            { "scheme": "https", "host": "mefie.app", "pathPrefix": "/e" },
-            { "scheme": "https", "host": "mefie.app", "pathPrefix": "/rejoin" }
+            {
+              "scheme": "https",
+              "host": "mefie.app",
+              "pathPrefix": "/e"
+            },
+            {
+              "scheme": "https",
+              "host": "mefie.app",
+              "pathPrefix": "/rejoin"
+            }
           ],
-          "category": ["BROWSABLE", "DEFAULT"]
+          "category": [
+            "BROWSABLE",
+            "DEFAULT"
+          ]
         }
       ]
     },
     "extra": {
-      "router": { "origin": false }
+      "router": {
+        "origin": false
+      }
     }
   }
 }
