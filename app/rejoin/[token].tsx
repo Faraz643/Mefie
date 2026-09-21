@@ -1,0 +1,128 @@
+import { useLocalSearchParams, useRouter } from "expo-router";
+import React, { useEffect, useState } from "react";
+import { StyleSheet, Text } from "react-native";
+import { GlassButton, GlassCard, GlassInput } from "../../components/Glass";
+import { Screen } from "../../components/Screen";
+import { colors } from "../../lib/theme";
+import { ensureParticipant, supabase, useApp } from "../../lib/app-context";
+
+export default function TemporaryInviteRoute() {
+  const router = useRouter();
+  const { token } = useLocalSearchParams<{ token: string }>();
+  const { displayName } = useApp();
+  const [name, setName] = useState(displayName || "");
+  const [event, setEvent] = useState<any>(null);
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let active = true;
+    const load = async () => {
+      setLoading(true);
+      setError("");
+      if (!supabase) {
+        if (active) {
+          setError("Cloud connection is not configured.");
+          setLoading(false);
+        }
+        return;
+      }
+      try {
+        const { data, error: lookupError } = await supabase.rpc(
+          "resolve_event_temporary_invite",
+          { p_token: String(token || "") },
+        );
+        if (lookupError) throw lookupError;
+        const row = Array.isArray(data) ? data[0] : data;
+        if (!row?.event_id) {
+          if (active) setError("This temporary invite has expired or is no longer valid.");
+          return;
+        }
+        if (active) {
+          setEvent({ id: row.event_id, name: row.event_name });
+        }
+      } catch (e: any) {
+        if (active) setError(e?.message || "Could not open this invite.");
+      } finally {
+        if (active) setLoading(false);
+      }
+    };
+    void load();
+    return () => {
+      active = false;
+    };
+  }, [token]);
+
+  const join = async () => {
+    if (!name.trim() || !event) {
+      setError("Enter your name to join.");
+      return;
+    }
+    setError("");
+    try {
+      const participantId = await ensureParticipant(event.id, name, true);
+      if (!participantId) {
+        setError("This temporary invite is no longer valid.");
+        return;
+      }
+      router.replace({ pathname: "/event/[id]", params: { id: event.id } });
+    } catch (e: any) {
+      setError(e?.message || "Could not join this event.");
+    }
+  };
+
+  return (
+    <Screen>
+      <Text style={styles.kicker}>TEMPORARY INVITE</Text>
+      <Text style={styles.title}>{event?.name || "Mefie event"}</Text>
+      <Text style={styles.sub}>
+        This invite works for 5 minutes. Anyone with the link or QR can join while it is active.
+      </Text>
+      {event ? (
+        <GlassCard>
+          <GlassInput
+            label="Your name"
+            value={name}
+            onChangeText={setName}
+            placeholder="Aman"
+          />
+        </GlassCard>
+      ) : null}
+      {error ? <Text style={styles.error}>{error}</Text> : null}
+      {event ? (
+        <GlassButton primary label="Join event" onPress={join} />
+      ) : (
+        <GlassButton
+          label={loading ? "Opening invite..." : "Back to Mefie"}
+          onPress={() => router.replace("/")}
+        />
+      )}
+    </Screen>
+  );
+}
+
+const styles = StyleSheet.create({
+  kicker: {
+    color: colors.muted,
+    fontSize: 12,
+    fontWeight: "800",
+    marginTop: 50,
+  },
+  title: {
+    color: colors.white,
+    fontSize: 34,
+    fontWeight: "800",
+    marginTop: 8,
+  },
+  sub: {
+    color: colors.muted,
+    fontSize: 15,
+    lineHeight: 22,
+    marginTop: 8,
+  },
+  error: {
+    color: "#FFB4B4",
+    fontSize: 13,
+    marginBottom: 12,
+  },
+});
