@@ -17,7 +17,7 @@ import {
   Text,
   View,
   ActivityIndicator,
-  ScrollView,
+  SectionList,
   Modal,
   type NativeScrollEvent,
   type NativeSyntheticEvent,
@@ -47,7 +47,7 @@ export default function EventScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { displayName } = useApp();
   const scrollY = useRef(new Animated.Value(0)).current;
-  const scrollRef = useRef<ScrollView>(null);
+  const scrollRef = useRef<SectionList<any>>(null);
   const photoScrollOffset = useRef(0);
   const peopleScrollOffset = useRef(0);
   const [event, setEvent] = useState<any>(null);
@@ -452,6 +452,9 @@ ${link}`,
   };
   const galleryPhotos = photos;
   const realPhotos = photos;
+  const photoRows = Array.from({ length: Math.ceil(galleryPhotos.length / 3) }, (_, rowIndex) =>
+    galleryPhotos.slice(rowIndex * 3, rowIndex * 3 + 3),
+  );
   const toggleSelection = (photoId: string) => {
     setSelectedIds((current) =>
       current.includes(photoId)
@@ -603,73 +606,52 @@ ${link}`,
           style={StyleSheet.absoluteFillObject}
         />
       </View>
-      <Animated.ScrollView
+      <Animated.SectionList
+        key={tab}
         ref={scrollRef}
         style={styles.scroll}
         contentContainerStyle={{ paddingBottom: insets.bottom + 112 }}
         showsVerticalScrollIndicator={false}
-        stickyHeaderIndices={[1]}
+        stickySectionHeadersEnabled
         scrollEventThrottle={16}
         bounces
-        onScroll={Animated.event(
-          [{ nativeEvent: { contentOffset: { y: scrollY } } }],
-          {
-            useNativeDriver: true,
-            listener: (event: NativeSyntheticEvent<NativeScrollEvent>) => {
-              const offset = event.nativeEvent.contentOffset.y;
-              if (tab === "photos")
-                photoScrollOffset.current = Math.max(0, offset);
-              else peopleScrollOffset.current = Math.max(0, offset);
-            },
-          },
-        )}
-      >
-        <Animated.View
-          style={[
-            styles.heroContent,
-            { paddingTop: insets.top + 15, opacity: heroOpacity },
-          ]}
-        >
-          <View style={styles.top}>
-            <BackButton />
-            <View style={styles.headerActions}>
-              {isCreator ? (
-                <IconButton plain accessibilityLabel="Delete event" onPress={deleteEvent}>
-                  <MaterialCommunityIcons
-                    name="trash-can-outline"
-                    size={20}
-                    color="rgba(255,255,255,.92)"
-                  />
-                </IconButton>
-              ) : null}
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel="Open event QR and invites"
-                onPress={openInvites}
-                style={styles.inviteHeaderButton}
-              >
-                <MaterialCommunityIcons
-                  name="qrcode"
-                  size={23}
-                  color="#FFFFFF"
-                />
-                <Text style={styles.inviteHeaderText}>Invite</Text>
-              </Pressable>
-            </View>
-          </View>
+        sections={[{ title: tab, data: tab === "photos" ? photoRows : people }]}
+        ListHeaderComponent={
           <Animated.View
-            style={{ transform: [{ translateY: heroInfoTranslate }] }}
+            style={[
+              styles.heroContent,
+              { paddingTop: insets.top + 15, opacity: heroOpacity },
+            ]}
           >
-            <View style={styles.heroInfo}>
-              <Text style={styles.title} numberOfLines={1}>
-                {title}
-              </Text>
-              <Text style={styles.meta}>
-                {people.length} people · {photos.length} photos
-              </Text>
-              <View style={styles.avatars}>
-                {visiblePeople.map((person, index) => {
-                  return (
+            <View style={styles.top}>
+              <BackButton />
+              <View style={styles.headerActions}>
+                {isCreator ? (
+                  <IconButton plain accessibilityLabel="Delete event" onPress={deleteEvent}>
+                    <MaterialCommunityIcons
+                      name="trash-can-outline"
+                      size={20}
+                      color="rgba(255,255,255,.92)"
+                    />
+                  </IconButton>
+                ) : null}
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel="Open event QR and invites"
+                  onPress={openInvites}
+                  style={styles.inviteHeaderButton}
+                >
+                  <MaterialCommunityIcons name="qrcode" size={23} color="#FFFFFF" />
+                  <Text style={styles.inviteHeaderText}>Invite</Text>
+                </Pressable>
+              </View>
+            </View>
+            <Animated.View style={{ transform: [{ translateY: heroInfoTranslate }] }}>
+              <View style={styles.heroInfo}>
+                <Text style={styles.title} numberOfLines={1}>{title}</Text>
+                <Text style={styles.meta}>{people.length} people · {photos.length} photos</Text>
+                <View style={styles.avatars}>
+                  {visiblePeople.map((person, index) => (
                     <LinearGradient
                       key={person.id || index}
                       colors={gradientForName(person.display_name)}
@@ -679,174 +661,111 @@ ${link}`,
                         {(person.display_name || "?")[0].toUpperCase()}
                       </Text>
                     </LinearGradient>
+                  ))}
+                  {people.length > 5 ? (
+                    <View style={[styles.avatar, styles.avatarOverlap, styles.moreAvatar]}>
+                      <Text style={styles.moreText}>+{people.length - 5}</Text>
+                    </View>
+                  ) : null}
+                </View>
+              </View>
+            </Animated.View>
+          </Animated.View>
+        }
+        renderSectionHeader={() => (
+          <View style={styles.tabsSticky}>
+            {selectionMode ? (
+              <View style={styles.selectionHeader}>
+                <Pressable onPress={exitSelection}><Text style={styles.selectionSide}>Cancel</Text></Pressable>
+                <Text style={styles.selectionCount}>{selectedIds.length} selected</Text>
+                <Pressable onPress={selectAll}><Text style={styles.selectionSide}>Select all</Text></Pressable>
+              </View>
+            ) : (
+              <BlurView intensity={58} tint="dark" style={styles.tabs}>
+                <View style={styles.tabsContent}>
+                  <Pressable onPress={() => selectTab("photos")} style={[styles.tab, tab === "photos" && styles.activeTab]}>
+                    <MaterialCommunityIcons name="image-multiple-outline" size={18} color={tab === "photos" ? colors.black : "rgba(255,255,255,.96)"} />
+                    <Text style={tab === "photos" ? styles.activeTabText : styles.tabText}>Photos</Text>
+                  </Pressable>
+                  <Pressable onPress={() => selectTab("people")} style={[styles.tab, tab === "people" && styles.activeTab]}>
+                    <MaterialCommunityIcons name="account-group-outline" size={18} color={tab === "people" ? colors.black : "rgba(255,255,255,.94)"} />
+                    <Text style={tab === "people" ? styles.activeTabText : styles.tabText}>People</Text>
+                  </Pressable>
+                </View>
+              </BlurView>
+            )}
+          </View>
+        )}
+        renderItem={({ item, index: rowIndex }) => {
+          if (tab === "photos") {
+            const row = item as any[];
+            return (
+              <View style={styles.photoRow}>
+                {row.map((photo, columnIndex) => {
+                  const photoIndex = rowIndex * 3 + columnIndex;
+                  const selected = selectedIds.includes(photo.id);
+                  return (
+                    <Pressable
+                      key={photo.id || photoIndex}
+                      disabled={photo.placeholder}
+                      style={[styles.photo, selected && styles.selectedPhoto]}
+                      onPress={() =>
+                        selectionMode
+                          ? toggleSelection(photo.id)
+                          : router.push({
+                              pathname: "/photo/[id]",
+                              params: { id: photo.id, eventId: id, index: String(photoIndex) },
+                            })
+                      }
+                      onLongPress={() => enterSelection(photo.id)}
+                      delayLongPress={280}
+                    >
+                      <Image source={{ uri: photo.public_url }} style={styles.photoImage} />
+                      {selectionMode && !photo.placeholder ? (
+                        <View style={[styles.check, selected && styles.checkSelected]}>
+                          <MaterialCommunityIcons
+                            name={selected ? "check" : "circle-outline"}
+                            size={selected ? 19 : 20}
+                            color={selected ? colors.white : "rgba(255,255,255,.95)"}
+                          />
+                        </View>
+                      ) : null}
+                    </Pressable>
                   );
                 })}
-                {people.length > 5 ? (
-                  <View
-                    style={[
-                      styles.avatar,
-                      styles.avatarOverlap,
-                      styles.moreAvatar,
-                    ]}
-                  >
-                    <Text style={styles.moreText}>+{people.length - 5}</Text>
-                  </View>
-                ) : null}
               </View>
-            </View>
-          </Animated.View>
-        </Animated.View>
-        <View style={styles.tabsSticky}>
-          {selectionMode ? (
-            <View style={styles.selectionHeader}>
-              <Pressable onPress={exitSelection}>
-                <Text style={styles.selectionSide}>Cancel</Text>
-              </Pressable>
-              <Text style={styles.selectionCount}>
-                {selectedIds.length} selected
-              </Text>
-              <Pressable onPress={selectAll}>
-                <Text style={styles.selectionSide}>Select all</Text>
-              </Pressable>
-            </View>
-          ) : (
-            <BlurView
-              intensity={58}
-              tint="dark"
-              style={styles.tabs}
-            >
-              <View style={styles.tabsContent}>
-                <Pressable
-                  onPress={() => selectTab("photos")}
-                  style={[styles.tab, tab === "photos" && styles.activeTab]}
-                >
-                  <MaterialCommunityIcons
-                    name="image-multiple-outline"
-                    size={18}
-                    color={
-                      tab === "photos" ? colors.black : "rgba(255,255,255,.96)"
-                    }
-                  />
-                  <Text
-                    style={
-                      tab === "photos" ? styles.activeTabText : styles.tabText
-                    }
-                  >
-                    Photos
-                  </Text>
-                </Pressable>
-                <Pressable
-                  onPress={() => selectTab("people")}
-                  style={[styles.tab, tab === "people" && styles.activeTab]}
-                >
-                  <MaterialCommunityIcons
-                    name="account-group-outline"
-                    size={18}
-                    color={
-                      tab === "people" ? colors.black : "rgba(255,255,255,.94)"
-                    }
-                  />
-                  <Text
-                    style={
-                      tab === "people" ? styles.activeTabText : styles.tabText
-                    }
-                  >
-                    People
-                  </Text>
-                </Pressable>
+            );
+          }
+          const person = item as any;
+          return (
+            <View style={styles.person}>
+              <LinearGradient colors={gradientForName(person.display_name)} style={styles.personAvatar}>
+                <Text style={styles.avatarText}>{(person.display_name || "?")[0].toUpperCase()}</Text>
+              </LinearGradient>
+              <View style={styles.personDetails}>
+                <Text style={styles.personName}>{person.display_name}</Text>
+                <Text style={styles.personMeta}>Joined {new Date(person.joined_at).toLocaleDateString()}</Text>
               </View>
-            </BlurView>
-          )}
-        </View>
-        <View style={styles.gallery}>
-          {error ? <Text style={styles.error}>{error}</Text> : null}
-          {tab === "photos" ? (
-            <View style={styles.grid}>
-              {galleryPhotos.map((photo, index) => {
-                const selected = selectedIds.includes(photo.id);
-                return (
-                  <Pressable
-                    key={photo.id || index}
-                    disabled={photo.placeholder}
-                    style={[styles.photo, selected && styles.selectedPhoto]}
-                    onPress={() =>
-                      selectionMode
-                        ? toggleSelection(photo.id)
-                        : router.push({
-                            pathname: "/photo/[id]",
-                            params: {
-                              id: photo.id,
-                              eventId: id,
-                              index: String(index),
-                            },
-                          })
-                    }
-                    onLongPress={() => enterSelection(photo.id)}
-                    delayLongPress={280}
-                  >
-                    <Image
-                      source={{ uri: photo.public_url }}
-                      style={styles.photoImage}
-                    />
-                    {selectionMode && !photo.placeholder ? (
-                      <View
-                        style={[styles.check, selected && styles.checkSelected]}
-                      >
-                        <MaterialCommunityIcons
-                          name={selected ? "check" : "circle-outline"}
-                          size={selected ? 19 : 20}
-                          color={
-                            selected ? colors.white : "rgba(255,255,255,.95)"
-                          }
-                        />
-                      </View>
-                    ) : null}
-                  </Pressable>
-                );
-              })}
+              {isCreator && person.session_id !== (event?.creator_session_id || "") ? (
+                <Pressable onPress={() => removeMember(person)} disabled={actionBusy} style={styles.removeMemberButton} accessibilityLabel={`Remove ${person.display_name || "member"}`}>
+                  <MaterialCommunityIcons name="account-remove-outline" size={20} color="rgba(255,255,255,.82)" />
+                </Pressable>
+              ) : null}
             </View>
-          ) : (
-            <View style={styles.peopleList}>
-              {people.map((person) => {
-                return (
-                  <View key={person.id} style={styles.person}>
-                    <LinearGradient
-                      colors={gradientForName(person.display_name)}
-                      style={styles.personAvatar}
-                    >
-                      <Text style={styles.avatarText}>
-                        {(person.display_name || "?")[0].toUpperCase()}
-                      </Text>
-                    </LinearGradient>
-                    <View style={styles.personDetails}>
-                      <Text style={styles.personName}>
-                        {person.display_name}
-                      </Text>
-                      <Text style={styles.personMeta}>
-                        Joined {new Date(person.joined_at).toLocaleDateString()}
-                      </Text>
-                    </View>
-                    {isCreator && person.session_id !== (event?.creator_session_id || "") ? (
-                      <Pressable
-                        onPress={() => removeMember(person)}
-                        disabled={actionBusy}
-                        style={styles.removeMemberButton}
-                        accessibilityLabel={`Remove ${person.display_name || "member"}`}
-                      >
-                        <MaterialCommunityIcons
-                          name="account-remove-outline"
-                          size={20}
-                          color="rgba(255,255,255,.82)"
-                        />
-                      </Pressable>
-                    ) : null}
-                  </View>
-                );
-              })}
-            </View>
-          )}
-        </View>
-      </Animated.ScrollView>
+          );
+        }}
+        onScroll={Animated.event(
+          [{ nativeEvent: { contentOffset: { y: scrollY } } }],
+          {
+            useNativeDriver: true,
+            listener: (event: NativeSyntheticEvent<NativeScrollEvent>) => {
+              const offset = event.nativeEvent.contentOffset.y;
+              if (tab === "photos") photoScrollOffset.current = Math.max(0, offset);
+              else peopleScrollOffset.current = Math.max(0, offset);
+            },
+          },
+        )}
+      />
       {selectionMode ? (
         <View
           style={[
@@ -1166,6 +1085,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     paddingTop: 0,
     backgroundColor: "transparent",
+  },
+  photoRow: {
+    flexDirection: "row",
+    paddingHorizontal: 10,
+    marginBottom: 4,
+    gap: 0,
   },
   grid: {
     flexDirection: "row",
