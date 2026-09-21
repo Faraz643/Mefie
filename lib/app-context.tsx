@@ -178,6 +178,17 @@ export async function ensureParticipant(eventId: string, displayName: string) {
   if (!supabase || !eventId) return null;
   const sessionId = await getSessionId();
 
+  const { data: eventAccess, error: eventAccessError } = await supabase
+    .from("events")
+    .select("id,removed_session_ids")
+    .eq("id", eventId)
+    .maybeSingle();
+  if (eventAccessError) throw eventAccessError;
+  if (!eventAccess) return null;
+  if ((eventAccess.removed_session_ids || []).includes(sessionId)) {
+    return null;
+  }
+
   const { error: profileIdentityError } = await supabase
     .from("profiles")
     .upsert(
