@@ -37,6 +37,9 @@ function gradientForName(name: string): [string, string] {
   return palettes[hash % palettes.length];
 }
 
+const HERO_HEIGHT = 250;
+const TAB_HEIGHT = 52;
+
 export default function EventScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
