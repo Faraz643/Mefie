@@ -266,7 +266,12 @@ export default function EventScreen() {
     const target =
       tab === "photos" ? photoScrollOffset.current : peopleScrollOffset.current;
     requestAnimationFrame(() =>
-      scrollRef.current?.scrollTo({ y: target, animated: false }),
+      scrollRef.current?.scrollToLocation({
+      sectionIndex: 0,
+      itemIndex: 0,
+      viewOffset: Math.max(0, target),
+      animated: false,
+    }),
     );
   }, [tab]);
   const removeMember = (participant: any) => {
