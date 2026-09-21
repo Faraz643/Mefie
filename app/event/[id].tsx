@@ -280,6 +280,45 @@ export default function EventScreen() {
       scrollRef.current?.scrollTo({ y: target, animated: false }),
     );
   }, [tab]);
+  const removeMember = (participant: any) => {
+    if (!isCreator || actionBusy || participant.session_id === undefined) return;
+    if (participant.session_id === undefined) return;
+    Alert.alert(
+      "Remove member?",
+      `Remove ${participant.display_name || "this person"} from this event?`,
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Remove",
+          style: "destructive",
+          onPress: () => {
+            void (async () => {
+              if (!supabase) return;
+              setActionBusy(true);
+              try {
+                const { data, error: removeError } = await supabase.rpc(
+                  "remove_event_member_as_creator",
+                  {
+                    p_event_id: String(id),
+                    p_creator_session_id: await getSessionId(),
+                    p_participant_id: participant.id,
+                  },
+                );
+                if (removeError) throw removeError;
+                if (!data) throw new Error("Only the event creator can remove members.");
+                setPeople((current) => current.filter((person) => person.id !== participant.id));
+              } catch (e: any) {
+                Alert.alert("Could not remove member", e?.message || "Please try again.");
+              } finally {
+                setActionBusy(false);
+              }
+            })();
+          },
+        },
+      ],
+    );
+  };
+
   const deleteEvent = () => {
     if (!isCreator || actionBusy) return;
     Alert.alert(
@@ -712,7 +751,7 @@ ${link}`,
                         {(person.display_name || "?")[0].toUpperCase()}
                       </Text>
                     </LinearGradient>
-                    <View>
+                    <View style={styles.personDetails}>
                       <Text style={styles.personName}>
                         {person.display_name}
                       </Text>
@@ -720,6 +759,20 @@ ${link}`,
                         Joined {new Date(person.joined_at).toLocaleDateString()}
                       </Text>
                     </View>
+                    {isCreator && person.session_id !== (event?.creator_session_id || "") ? (
+                      <Pressable
+                        onPress={() => removeMember(person)}
+                        disabled={actionBusy}
+                        style={styles.removeMemberButton}
+                        accessibilityLabel={`Remove ${person.display_name || "member"}`}
+                      >
+                        <MaterialCommunityIcons
+                          name="account-remove-outline"
+                          size={20}
+                          color="rgba(255,255,255,.82)"
+                        />
+                      </Pressable>
+                    ) : null}
                   </View>
                 );
               })}
@@ -943,8 +996,10 @@ const styles = StyleSheet.create({
   },
   // PROFILE PHOTO STYLE DISABLED — kept for future image avatars.
   /* personAvatarImage: { width: "100%", height: "100%" }, */
+  personDetails: { flex: 1 },
   personName: { color: colors.white, fontWeight: "800", fontSize: 15 },
   personMeta: { color: colors.muted, fontSize: 12, marginTop: 3 },
+  removeMemberButton: { width: 42, height: 42, borderRadius: 21, alignItems: "center", justifyContent: "center", backgroundColor: "rgba(255,255,255,.08)", borderWidth: 1, borderColor: "rgba(255,255,255,.10)" },
   selectionBar: {
     position: "absolute",
     left: 18,
