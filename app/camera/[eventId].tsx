@@ -22,7 +22,6 @@ import {
   startPhotoUploadQueue,
   subscribePhotoUploadQueue,
 } from "../../lib/photo-upload-queue";
-const PHOTO_BUCKET = "photos";
 export default function CameraScreen() {
   const router = useRouter();
   const { eventId } = useLocalSearchParams<{ eventId: string }>();
@@ -32,6 +31,7 @@ export default function CameraScreen() {
   const [flash, setFlash] = useState<"off" | "on">("off");
   const [cameraReady, setCameraReady] = useState(false);
   const [membershipReady, setMembershipReady] = useState(false);
+  const [participantId, setParticipantId] = useState<string | null>(null);
   const [membershipError, setMembershipError] = useState("");
   const [capturing, setCapturing] = useState(false);
   const [pickerBusy, setPickerBusy] = useState(false);
@@ -65,12 +65,14 @@ export default function CameraScreen() {
         const existing = await getParticipantId(String(eventId));
         if (cancelled) return;
         if (existing) {
+          setParticipantId(existing);
           setMembershipReady(true);
           return;
         }
         const created = await ensureParticipant(String(eventId), displayName);
         if (cancelled) return;
         if (!created) throw new Error("Could not join this event.");
+        setParticipantId(created);
         setMembershipReady(true);
       } catch (error: any) {
         if (!cancelled) setMembershipError(error?.message || "Could not connect to this event.");
@@ -97,6 +99,10 @@ export default function CameraScreen() {
     if (messageTimer.current) clearTimeout(messageTimer.current);
     messageTimer.current = setTimeout(() => setMessage(""), 1100);
   };
+
+  const queueSummary = getPhotoQueueSummary(
+    eventId ? String(eventId) : undefined,
+  );
   if (!perm)
     return (
       <View style={styles.center}>
@@ -145,7 +151,6 @@ export default function CameraScreen() {
         skipProcessing: true,
       });
       if (!photo?.uri) throw new Error("Could not capture the photo.");
-      const participantId = await getParticipantId(String(eventId));
       if (!participantId) throw new Error("Your event connection was lost. Please try again.");
       await enqueuePhotoUpload({
         id: `1789974623598-${Math.random().toString(36).slice(2, 12)}`,
@@ -179,7 +184,6 @@ export default function CameraScreen() {
       });
       if (result.canceled || !result.assets?.[0]) return;
       const image = result.assets[0];
-      const participantId = await getParticipantId(String(eventId));
       if (!participantId) {
         showMessage("Your event connection was lost. Please try again.");
         return;
@@ -245,6 +249,7 @@ export default function CameraScreen() {
               void ensureParticipant(String(eventId), displayName)
                 .then((id) => {
                   if (!id) throw new Error("Could not join this event.");
+                  setParticipantId(id);
                   setMembershipReady(true);
                 })
                 .catch((error: any) => {
