@@ -303,7 +303,7 @@ const styles = StyleSheet.create({
     alignItems: "flex-start",
   },
   nameRow: {
-    width: 78,
+    width: 260,
     height: 34,
     marginTop: 8,
     flexDirection: "row",
@@ -325,10 +325,10 @@ const styles = StyleSheet.create({
     lineHeight: 30,
     fontWeight: "800",
     letterSpacing: -0.5,
-    flexShrink: 1,
+    flexShrink: 0,
   },
   nameInput: {
-    width: 78,
+    width: 220,
     height: 34,
     color: "#fff",
     fontSize: 24,
