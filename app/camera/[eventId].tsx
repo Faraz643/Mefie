@@ -154,13 +154,11 @@ export default function CameraScreen() {
       </View>
     );
   const capture = async () => {
-    // Use an immediate ref lock as well as React state. State updates are batched,
-    // so rapid taps can otherwise enter this handler several times before
-    // disabled={capturing} reaches the native button.
+    // This lock is intentionally a ref: it changes synchronously and does not
+    // require a React render before the next tap sees the locked state.
     if (
       captureLock.current ||
       !ref.current ||
-      capturing ||
       !cameraReady ||
       !membershipReady ||
       !eventId
