@@ -738,7 +738,7 @@ ${link}`,
 
           if (item.type === "photo") {
             const selected = selectedIds.includes(item.id);
-            const photoIndex = galleryPhotos.findIndex((photo) => photo.id === item.id);
+            const photoIndex = Math.max(0, index - 1);
             return (
               <Pressable
                 disabled={item.placeholder}
