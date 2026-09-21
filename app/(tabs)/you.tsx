@@ -82,11 +82,10 @@ export default function You() {
                 onSubmitEditing={saveName}
                 onBlur={saveName}
                 autoFocus
-                selectTextOnFocus
                 returnKeyType="done"
                 placeholder="Your name"
                 placeholderTextColor="rgba(255,255,255,.45)"
-                selectionColor="#FFFFFF"
+                selectionColor="#7C83FF"
                 style={styles.nameInput}
               />
             ) : (
@@ -303,11 +302,12 @@ const styles = StyleSheet.create({
     minHeight: 34,
   },
   editNameButton: {
-    width: 28,
-    height: 28,
+    width: 24,
+    height: 24,
     alignItems: "center",
     justifyContent: "center",
-    marginRight: 6,
+    marginLeft: 5,
+    marginRight: 0,
   },
   title: {
     color: "#fff",
