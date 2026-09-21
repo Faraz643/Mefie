@@ -23,7 +23,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { BackButton } from "../../components/Screen";
 import { IconButton } from "../../components/Glass";
 import { colors, shadows } from "../../lib/theme";
-import { ensureParticipant, getSessionId, supabase, useApp } from "../../lib/app-context";
+import { getParticipantId, getSessionId, supabase, useApp } from "../../lib/app-context";
 
 function gradientForName(name: string): [string, string] {
   const palettes: [string, string][] = [
@@ -91,9 +91,9 @@ export default function EventScreen() {
       if (!supabase) return;
       try {
         const sessionId = await getSessionId();
-        const participantId = await ensureParticipant(String(id), displayName);
+        const participantId = await getParticipantId(String(id));
         if (!participantId) {
-          if (active) router.replace("/events");
+          if (active) router.replace("/join-event");
           return;
         }
         const [eventResult, photosResult, participantsResult] = await Promise.all([
