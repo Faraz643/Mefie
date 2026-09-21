@@ -70,44 +70,48 @@ export default function You() {
     <View style={styles.root}>
       <Screen bottomNav={<BottomNav active="you" />}>
         <View style={styles.profile}>
-          {/* PROFILE PHOTO LOGIC DISABLED — replaced with a deterministic gradient avatar. */}
-          <LinearGradient colors={gradientForName(displayName)} style={styles.avatar}>
-            <Text style={styles.avatarText}>{displayName[0]?.toUpperCase() || "M"}</Text>
-          </LinearGradient>
-          <View style={styles.nameRow}>
-            {editingName ? (
-              <TextInput
-                value={name}
-                onChangeText={setName}
-                onSubmitEditing={saveName}
-                onBlur={saveName}
-                autoFocus
-                returnKeyType="done"
-                placeholder="Your name"
-                placeholderTextColor="rgba(255,255,255,.45)"
-                selectionColor="#7C83FF"
-                style={styles.nameInput}
-              />
-            ) : (
-              <>
-                <Text style={styles.title}>{displayName}</Text>
-                <Pressable
-                  accessibilityRole="button"
-                  accessibilityLabel="Edit name"
-                  onPress={() => setEditingName(true)}
-                  hitSlop={8}
-                  style={styles.editNameButton}
-                >
-                  <MaterialCommunityIcons
-                    name="pencil-outline"
-                    size={17}
-                    color="rgba(255,255,255,.82)"
-                  />
-                </Pressable>
-              </>
-            )}
-          </View>
+          <View style={styles.profileColumn}>
+            {/* PROFILE PHOTO LOGIC DISABLED — replaced with a deterministic gradient avatar. */}
+            <LinearGradient colors={gradientForName(displayName)} style={styles.avatar}>
+              <Text style={styles.avatarText}>{displayName[0]?.toUpperCase() || "M"}</Text>
+            </LinearGradient>
 
+            <View style={styles.nameRow}>
+              {editingName ? (
+                <TextInput
+                  value={name}
+                  onChangeText={setName}
+                  onSubmitEditing={saveName}
+                  onBlur={saveName}
+                  autoFocus
+                  returnKeyType="done"
+                  placeholder="Your name"
+                  placeholderTextColor="rgba(255,255,255,.45)"
+                  selectionColor="#7C83FF"
+                  style={styles.nameInput}
+                />
+              ) : (
+                <>
+                  <Text style={styles.title} numberOfLines={1}>
+                    {displayName}
+                  </Text>
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel="Edit name"
+                    onPress={() => setEditingName(true)}
+                    hitSlop={8}
+                    style={styles.editNameButton}
+                  >
+                    <MaterialCommunityIcons
+                      name="pencil-outline"
+                      size={16}
+                      color="rgba(255,255,255,.82)"
+                    />
+                  </Pressable>
+                </>
+              )}
+            </View>
+          </View>
         </View>
 
         <GlassCard style={styles.menu}>
@@ -294,39 +298,48 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   */
+  profileColumn: {
+    width: 78,
+    alignItems: "flex-start",
+  },
   nameRow: {
     width: 78,
-    alignSelf: "center",
+    height: 34,
+    marginTop: 8,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "flex-start",
-    marginTop: 8,
-    minHeight: 34,
+    overflow: "visible",
   },
   editNameButton: {
-    width: 24,
-    height: 24,
+    width: 22,
+    height: 22,
+    marginLeft: 4,
+    flexShrink: 0,
     alignItems: "center",
     justifyContent: "center",
-    marginLeft: 5,
-    marginRight: 0,
   },
   title: {
     color: "#fff",
     fontSize: 24,
+    lineHeight: 30,
     fontWeight: "800",
     letterSpacing: -0.5,
+    flexShrink: 1,
   },
   nameInput: {
+    width: 78,
+    height: 34,
     color: "#fff",
     fontSize: 24,
+    lineHeight: 30,
     fontWeight: "800",
-    minWidth: 120,
-    paddingVertical: 0,
-    paddingHorizontal: 0,
+    padding: 0,
+    margin: 0,
     borderWidth: 0,
     backgroundColor: "transparent",
-    textAlign: "center",
+    textAlign: "left",
+    includeFontPadding: false,
   },
   menu: {},
   menuRow: {
