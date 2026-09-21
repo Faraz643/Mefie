@@ -35,7 +35,7 @@
           "action": "VIEW",
           "autoVerify": true,
           "data": [
-            { "scheme": "https", "host": "mefie.app", "pathPrefix": "/e" }
+            { "scheme": "https", "host": "mefie.app", "pathPrefix": "/e" },\n            { "scheme": "https", "host": "mefie.app", "pathPrefix": "/rejoin" }
           ],
           "category": ["BROWSABLE", "DEFAULT"]
         }
