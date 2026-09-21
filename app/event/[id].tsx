@@ -592,16 +592,7 @@ ${link}`,
       <View style={styles.root}>
       <View pointerEvents="none" style={styles.background}>
         <ExpoImage source={{ uri: heroSource }} style={styles.backgroundImage} contentFit="cover" cachePolicy="memory-disk" priority="low" />
-        <LinearGradient
-          colors={["rgba(4,9,14,.00)", "rgba(4,9,14,.03)", "rgba(8,16,23,.58)"]}
-          locations={[0, 0.48, 1]}
-          style={StyleSheet.absoluteFillObject}
-        />
-        <LinearGradient
-          colors={["rgba(4,9,14,.02)", "rgba(4,9,14,.08)", "rgba(8,16,23,.72)"]}
-          locations={[0, 0.48, 1]}
-          style={StyleSheet.absoluteFillObject}
-        />
+
       </View>
       <FlashList
         key={tab}
@@ -1031,8 +1022,8 @@ ${link}`,
   );
 }
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: "#081017" },
-  scroll: { flex: 1, zIndex: 0, elevation: 0 },
+  root: { flex: 1, backgroundColor: "#FFFFFF" },
+  scroll: { flex: 1, zIndex: 0, elevation: 0, backgroundColor: "#FFFFFF" },
   background: { ...StyleSheet.absoluteFillObject, overflow: "hidden" },
   backgroundImage: { ...StyleSheet.absoluteFillObject, resizeMode: "cover" },
   heroContent: { minHeight: HERO_HEIGHT, paddingHorizontal: 20 },
@@ -1076,7 +1067,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingTop: 13,
     paddingBottom: 5,
-    backgroundColor: "transparent",
+    backgroundColor: "#FFFFFF",
     zIndex: 10,
   },
   tabs: {
@@ -1113,7 +1104,7 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 1 },
     elevation: 4,
   },
-  tabText: { color: "rgba(255,255,255,.94)", fontSize: 16, fontWeight: "700" },
+  tabText: { color: "#111111", fontSize: 16, fontWeight: "700" },
   activeTabText: { color: colors.black, fontSize: 16, fontWeight: "800" },
   selectionHeader: {
     height: 68,
@@ -1128,7 +1119,7 @@ const styles = StyleSheet.create({
     position: "relative",
     paddingHorizontal: 10,
     paddingTop: 0,
-    backgroundColor: "transparent",
+    backgroundColor: "#FFFFFF",
   },
   photoRow: {
     flexDirection: "row",
