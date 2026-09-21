@@ -1,5 +1,5 @@
-// PROFILE PHOTO LOGIC DISABLED FOR NOW:
-// import * as ImagePicker from "expo-image-picker";
+import * as ImagePicker from "expo-image-picker";
+// PROFILE PHOTO LOGIC DISABLED FOR NOW: avatar photo picking remains disabled.
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
