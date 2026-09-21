@@ -48,14 +48,17 @@ export default function CameraScreen() {
   const [, setQueueVersion] = useState(0);
   const ref = useRef<CameraView>(null);
   const captureLock = useRef(false);
+  const mountedRef = useRef(false);
   const messageTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
+    mountedRef.current = true;
     void startPhotoUploadQueue();
     const unsubscribe = subscribePhotoUploadQueue(() => {
       setQueueVersion((value) => value + 1);
     });
     return () => {
+      mountedRef.current = false;
       unsubscribe();
       if (messageTimer.current) clearTimeout(messageTimer.current);
     };
@@ -104,6 +107,7 @@ export default function CameraScreen() {
   }, [request]);
 
   const showMessage = (value: string) => {
+    if (!mountedRef.current) return;
     setMessage(value);
     if (messageTimer.current) clearTimeout(messageTimer.current);
     messageTimer.current = setTimeout(() => setMessage(""), 1100);
@@ -181,7 +185,7 @@ export default function CameraScreen() {
       });
 
       captureLock.current = false;
-      setCapturing(false);
+      if (mountedRef.current) setCapturing(false);
 
       void pictureRef
         .savePictureAsync({ quality: 0.85 })
@@ -206,7 +210,7 @@ export default function CameraScreen() {
         });
     } catch (error: any) {
       captureLock.current = false;
-      setCapturing(false);
+      if (mountedRef.current) setCapturing(false);
       showMessage(error?.message || "Could not capture the photo.");
     }
   };
@@ -308,8 +312,9 @@ export default function CameraScreen() {
           <View style={styles.statusPill}>
             <MaterialCommunityIcons name="cloud-upload-outline" size={15} color="#fff" />
             <Text style={styles.statusText}>
-              {String(queueSummary.queued + queueSummary.uploading)}{" "}
-              {queueSummary.queued + queueSummary.uploading === 1 ? "photo" : "photos"} sharing
+              {String(queueSummary.queued + queueSummary.uploading) + " " +
+                (queueSummary.queued + queueSummary.uploading === 1 ? "photo" : "photos") +
+                " sharing"}
             </Text>
           </View>
         ) : queueSummary.failed > 0 ? (
