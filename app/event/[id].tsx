@@ -37,6 +37,7 @@ function gradientForName(name: string): [string, string] {
   return palettes[hash % palettes.length];
 }
 
+const fallbackPhoto = "https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=1200&q=85";
 const HERO_HEIGHT = 250;
 const TAB_HEIGHT = 52;
 
