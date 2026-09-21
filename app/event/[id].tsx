@@ -18,8 +18,6 @@ import {
   View,
   ActivityIndicator,
   Modal,
-  type NativeScrollEvent,
-  type NativeSyntheticEvent,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { FlashList, type FlashListRef } from "@shopify/flash-list";
@@ -267,12 +265,10 @@ export default function EventScreen() {
     const target =
       tab === "photos" ? photoScrollOffset.current : peopleScrollOffset.current;
     requestAnimationFrame(() =>
-      scrollRef.current?.scrollToLocation({
-      sectionIndex: 0,
-      itemIndex: 0,
-      viewOffset: Math.max(0, target),
-      animated: false,
-    }),
+      scrollRef.current?.scrollToOffset({
+        offset: Math.max(0, target),
+        animated: false,
+      }),
     );
   }, [tab]);
   const removeMember = (participant: any) => {
@@ -827,15 +823,18 @@ ${link}`,
         }}
         onScroll={Animated.event(
           [{ nativeEvent: { contentOffset: { y: scrollY } } }],
-          {
-            useNativeDriver: true,
-            listener: (event: NativeSyntheticEvent<NativeScrollEvent>) => {
-              const offset = event.nativeEvent.contentOffset.y;
-              if (tab === "photos") photoScrollOffset.current = Math.max(0, offset);
-              else peopleScrollOffset.current = Math.max(0, offset);
-            },
-          },
+          { useNativeDriver: true },
         )}
+        onScrollEndDrag={(event) => {
+          const offset = Math.max(0, event.nativeEvent.contentOffset.y);
+          if (tab === "photos") photoScrollOffset.current = offset;
+          else peopleScrollOffset.current = offset;
+        }}
+        onMomentumScrollEnd={(event) => {
+          const offset = Math.max(0, event.nativeEvent.contentOffset.y);
+          if (tab === "photos") photoScrollOffset.current = offset;
+          else peopleScrollOffset.current = offset;
+        })
       />
       {selectionMode ? (
         <View
