@@ -12,7 +12,7 @@ export default ({ config }: { config: any }) => ({
       "expo-router",
       "expo-asset",
       [
-        "expo-camera",
+        "react-native-vision-camera",
         {
           cameraPermission:
             "Mefie needs camera access to capture shared moments.",
@@ -29,7 +29,7 @@ export default ({ config }: { config: any }) => ({
         "expo-media-library",
         {
           photosPermission:
-            "Mefie needs photo access to save your shared moments.",
+            "Mefie needs permission to save shared moments to your photo library.",
           savePhotosPermission:
             "Mefie needs permission to save shared moments to your photo library.",
         },
