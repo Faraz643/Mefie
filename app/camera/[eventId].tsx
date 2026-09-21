@@ -22,6 +22,14 @@ import {
   startPhotoUploadQueue,
   subscribePhotoUploadQueue,
 } from "../../lib/photo-upload-queue";
+function createUploadId() {
+  return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, (character) => {
+    const random = Math.floor(Math.random() * 16);
+    const value = character === "x" ? random : (random & 0x3) | 0x8;
+    return value.toString(16);
+  });
+}
+
 export default function CameraScreen() {
   const router = useRouter();
   const { eventId } = useLocalSearchParams<{ eventId: string }>();
@@ -153,7 +161,7 @@ export default function CameraScreen() {
       if (!photo?.uri) throw new Error("Could not capture the photo.");
       if (!participantId) throw new Error("Your event connection was lost. Please try again.");
       await enqueuePhotoUpload({
-        id: `1789974623598-${Math.random().toString(36).slice(2, 12)}`,
+        id: createUploadId(),
         eventId: String(eventId),
         participantId,
         uri: photo.uri,
@@ -189,7 +197,7 @@ export default function CameraScreen() {
         return;
       }
       await enqueuePhotoUpload({
-        id: `1789974623598-${Math.random().toString(36).slice(2, 12)}`,
+        id: createUploadId(),
         eventId: String(eventId),
         participantId,
         uri: image.uri,
