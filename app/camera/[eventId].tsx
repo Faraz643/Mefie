@@ -41,7 +41,6 @@ export default function CameraScreen() {
   const [membershipReady, setMembershipReady] = useState(false);
   const [participantId, setParticipantId] = useState<string | null>(null);
   const [membershipError, setMembershipError] = useState("");
-  const [capturing, setCapturing] = useState(false);
   const [pickerBusy, setPickerBusy] = useState(false);
   const [message, setMessage] = useState("");
   const [permissionBusy, setPermissionBusy] = useState(false);
@@ -170,26 +169,21 @@ export default function CameraScreen() {
     }
 
     captureLock.current = true;
-    setCapturing(true);
     void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     try {
-      if (!participantId) throw new Error("Your event connection was lost. Please try again.");
+      if (!participantId) {
+        captureLock.current = false;
+        showMessage("Your event connection was lost. Please try again.");
+        return;
+      }
 
-      // Capture into the native PictureRef first. This is the fast path: the
-      // shutter is released as soon as the camera frame is captured, without
-      // waiting for JPEG encoding/file saving. Saving and queueing happen after
-      // the shutter is already available for the next tap.
-      const pictureRef = await ref.current.takePictureAsync({
-        pictureRef: true,
+      // Use the documented fast-save path. With onPictureSaved, Expo resolves
+      // takePictureAsync as soon as the capture has been handed to native save,
+      // instead of making React wait for JPEG/file processing. The callback then
+      // hands the resulting file to the durable upload queue.
+      const capturePromise = ref.current.takePictureAsync({
         skipProcessing: true,
-      });
-
-      captureLock.current = false;
-      if (mountedRef.current) setCapturing(false);
-
-      void pictureRef
-        .savePictureAsync({ quality: 0.85 })
-        .then((photo) => {
+        onPictureSaved: (photo) => {
           if (!photo?.uri) {
             showMessage("Photo could not be saved.");
             return;
@@ -204,13 +198,21 @@ export default function CameraScreen() {
           }).catch((error: any) => {
             showMessage(error?.message || "Photo could not be queued.");
           });
+        },
+      });
+
+      // Do not put a spinner on the shutter. The native camera owns the capture
+      // operation; our ref lock alone prevents duplicate calls while it is busy.
+      void capturePromise
+        .then(() => {
+          captureLock.current = false;
         })
         .catch((error: any) => {
-          showMessage(error?.message || "Photo could not be saved.");
+          captureLock.current = false;
+          showMessage(error?.message || "Could not capture the photo.");
         });
     } catch (error: any) {
       captureLock.current = false;
-      if (mountedRef.current) setCapturing(false);
       showMessage(error?.message || "Could not capture the photo.");
     }
   };
@@ -351,19 +353,15 @@ export default function CameraScreen() {
           <Pressable
             accessibilityLabel="Take photo"
             onPress={capture}
-            disabled={!cameraReady || !membershipReady || capturing}
+            disabled={!cameraReady || !membershipReady}
             style={[
               styles.shutter,
               (!cameraReady || !membershipReady) && styles.shutterDisabled,
             ]}
           >
-            {capturing ? (
-              <ActivityIndicator color="#111" />
-            ) : (
-              <View style={styles.shutterInner}>
-                <MaterialCommunityIcons name="camera-outline" size={27} color="#111" />
-              </View>
-            )}
+            <View style={styles.shutterInner}>
+              <MaterialCommunityIcons name="camera-outline" size={27} color="#111" />
+            </View>
           </Pressable>
 
           <Pressable
