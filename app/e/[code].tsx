@@ -35,7 +35,11 @@ export default function InviteRoute() {
       return;
     }
     try {
-      await ensureParticipant(event.id, name);
+      const participantId = await ensureParticipant(event.id, name);
+      if (!participantId) {
+        setError("You were removed from this event. Use a temporary invite to rejoin.");
+        return;
+      }
       router.replace({ pathname: "/event/[id]", params: { id: event.id } });
     } catch (e: any) {
       setError(e?.message || "Could not join this event.");
