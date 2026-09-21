@@ -47,6 +47,7 @@ set search_path = public
 as $$
 declare
   deleted_count integer;
+  removed_session_id text;
 begin
   if p_creator_session_id is null or length(trim(p_creator_session_id)) = 0 then
     return false;
