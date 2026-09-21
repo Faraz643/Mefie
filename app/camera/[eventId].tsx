@@ -1,12 +1,18 @@
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
-import { CameraView, useCameraPermissions } from "expo-camera";
 import * as Haptics from "expo-haptics";
 import * as ImagePicker from "expo-image-picker";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import React, { useEffect, useRef, useState } from "react";
+import {
+  Camera,
+  useCameraDevice,
+  useCameraPermission,
+  usePhotoOutput,
+} from "react-native-vision-camera";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator,
   AppState,
+  AppStateStatus,
   Linking,
   Pressable,
   StyleSheet,
@@ -22,6 +28,9 @@ import {
   startPhotoUploadQueue,
   subscribePhotoUploadQueue,
 } from "../../lib/photo-upload-queue";
+
+const MAX_IN_FLIGHT_CAPTURES = 4;
+
 function createUploadId() {
   return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, (character) => {
     const random = Math.floor(Math.random() * 16);
@@ -34,7 +43,8 @@ export default function CameraScreen() {
   const router = useRouter();
   const { eventId } = useLocalSearchParams<{ eventId: string }>();
   const { displayName } = useApp();
-  const [perm, request] = useCameraPermissions();
+  const { hasPermission, requestPermission } = useCameraPermission();
+
   const [facing, setFacing] = useState<"front" | "back">("back");
   const [flash, setFlash] = useState<"off" | "on">("off");
   const [cameraReady, setCameraReady] = useState(false);
@@ -44,18 +54,35 @@ export default function CameraScreen() {
   const [pickerBusy, setPickerBusy] = useState(false);
   const [message, setMessage] = useState("");
   const [permissionBusy, setPermissionBusy] = useState(false);
+  const [appActive, setAppActive] = useState(AppState.currentState === "active");
   const [, setQueueVersion] = useState(0);
-  const ref = useRef<CameraView>(null);
-  const captureLock = useRef(false);
+
   const mountedRef = useRef(false);
   const messageTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const inFlightCaptures = useRef(0);
+
+  const device = useCameraDevice(facing, {
+    physicalDevices: ["wide-angle"],
+  });
+
+  const photoOutput = usePhotoOutput({
+    quality: 0.85,
+    qualityPrioritization: "speed",
+  });
+
+  const effectiveFlash = useMemo(
+    () => (flash === "on" && device?.hasFlash ? "on" : "off"),
+    [device?.hasFlash, flash],
+  );
 
   useEffect(() => {
     mountedRef.current = true;
     void startPhotoUploadQueue();
+
     const unsubscribe = subscribePhotoUploadQueue(() => {
       if (mountedRef.current) setQueueVersion((value) => value + 1);
     });
+
     return () => {
       mountedRef.current = false;
       unsubscribe();
@@ -65,63 +92,186 @@ export default function CameraScreen() {
 
   useEffect(() => {
     let cancelled = false;
+
     const prepareMembership = async () => {
       if (!supabase || !eventId) {
-        setMembershipError("Cloud connection is not configured.");
+        if (!cancelled) setMembershipError("Cloud connection is not configured.");
         return;
       }
-      setMembershipReady(false);
-      setMembershipError("");
+
+      if (!cancelled) {
+        setMembershipReady(false);
+        setMembershipError("");
+      }
+
       try {
         const existing = await getParticipantId(String(eventId));
         if (cancelled) return;
+
         if (existing) {
           setParticipantId(existing);
           setMembershipReady(true);
           return;
         }
+
         const created = await ensureParticipant(String(eventId), displayName);
         if (cancelled) return;
+
         if (!created) throw new Error("Could not join this event.");
+
         setParticipantId(created);
         setMembershipReady(true);
       } catch (error: any) {
-        if (!cancelled) setMembershipError(error?.message || "Could not connect to this event.");
+        if (!cancelled) {
+          setMembershipError(error?.message || "Could not connect to this event.");
+        }
       }
     };
+
     void prepareMembership();
+
     return () => {
       cancelled = true;
     };
   }, [displayName, eventId]);
 
   useEffect(() => {
-    const subscription = AppState.addEventListener("change", async (state) => {
-      if (state === "active") {
-        await request();
-        void startPhotoUploadQueue();
-      }
+    const subscription = AppState.addEventListener("change", (state: AppStateStatus) => {
+      const active = state === "active";
+      if (mountedRef.current) setAppActive(active);
+      if (active) void startPhotoUploadQueue();
     });
+
     return () => subscription.remove();
-  }, [request]);
+  }, []);
+
+  useEffect(() => {
+    if (hasPermission && device) {
+      void photoOutput.prepareSettings([
+        { flashMode: "off" },
+        ...(device.hasFlash ? [{ flashMode: "on" as const }] : []),
+      ]);
+    }
+  }, [device, hasPermission, photoOutput]);
+
+  useEffect(() => {
+    if (facing === "front" && flash === "on" && !device?.hasFlash) {
+      setFlash("off");
+    }
+  }, [device?.hasFlash, facing, flash]);
 
   const showMessage = (value: string) => {
     if (!mountedRef.current) return;
+
     setMessage(value);
+
     if (messageTimer.current) clearTimeout(messageTimer.current);
-    messageTimer.current = setTimeout(() => setMessage(""), 1100);
+    messageTimer.current = setTimeout(() => {
+      if (mountedRef.current) setMessage("");
+    }, 1100);
   };
 
-  const queueSummary = getPhotoQueueSummary(
-    eventId ? String(eventId) : undefined,
-  );
-  if (!perm)
-    return (
-      <View style={styles.center}>
-        <ActivityIndicator color="#fff" />
-      </View>
+  const queueSummary = getPhotoQueueSummary(eventId ? String(eventId) : undefined);
+
+  const capture = () => {
+    if (
+      !hasPermission ||
+      !device ||
+      !cameraReady ||
+      !membershipReady ||
+      !eventId ||
+      !participantId ||
+      inFlightCaptures.current >= MAX_IN_FLIGHT_CAPTURES
+    ) {
+      return;
+    }
+
+    inFlightCaptures.current += 1;
+    void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+
+    let captureCountReleased = false;
+    const releaseCaptureSlot = () => {
+      if (captureCountReleased) return;
+      captureCountReleased = true;
+      inFlightCaptures.current = Math.max(0, inFlightCaptures.current - 1);
+    };
+
+    const capturePromise = photoOutput.capturePhotoToFile(
+      {
+        flashMode: effectiveFlash,
+        enableDistortionCorrection: false,
+        enableShutterSound: true,
+      },
+      {
+        onDidCapturePhoto: releaseCaptureSlot,
+      },
     );
-  if (!perm.granted)
+
+    void capturePromise
+      .then((photo) => {
+        releaseCaptureSlot();
+
+        const uri = photo.filePath.startsWith("file://")
+          ? photo.filePath
+          : `file://${photo.filePath}`;
+
+        void enqueuePhotoUpload({
+          id: createUploadId(),
+          eventId: String(eventId),
+          participantId,
+          uri,
+          width: photo.width,
+          height: photo.height,
+        }).catch((error: any) => {
+          showMessage(error?.message || "Photo could not be queued.");
+        });
+      })
+      .catch((error: any) => {
+        releaseCaptureSlot();
+        showMessage(error?.message || "Could not capture the photo.");
+      });
+  };
+
+  const pick = async () => {
+    if (pickerBusy || !membershipReady || !eventId) return;
+
+    setPickerBusy(true);
+
+    try {
+      const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (!permission.granted) {
+        showMessage("Photo library permission is required.");
+        return;
+      }
+
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ["images"],
+        quality: 0.9,
+        allowsMultipleSelection: false,
+      });
+
+      if (!result.canceled && result.assets?.[0] && participantId) {
+        const image = result.assets[0];
+
+        await enqueuePhotoUpload({
+          id: createUploadId(),
+          eventId: String(eventId),
+          participantId,
+          uri: image.uri,
+          width: image.width ?? null,
+          height: image.height ?? null,
+        });
+
+        showMessage("Photo queued");
+      }
+    } catch (error: any) {
+      showMessage(error?.message || "Could not add the photo.");
+    } finally {
+      if (mountedRef.current) setPickerBusy(false);
+    }
+  };
+
+  if (!hasPermission) {
     return (
       <View style={styles.center}>
         <MaterialCommunityIcons name="camera-outline" size={36} color="#fff" />
@@ -129,16 +279,20 @@ export default function CameraScreen() {
         <Text style={styles.sub}>
           Mefie needs the camera to capture and share moments.
         </Text>
+
         <Pressable
           disabled={permissionBusy}
           onPress={async () => {
             if (permissionBusy) return;
+
             setPermissionBusy(true);
             try {
-              const result = await request();
-              if (!result.granted && !result.canAskAgain) await Linking.openSettings();
+              const granted = await requestPermission();
+              if (!granted && mountedRef.current) {
+                await Linking.openSettings();
+              }
             } finally {
-              setPermissionBusy(false);
+              if (mountedRef.current) setPermissionBusy(false);
             }
           }}
           style={styles.cta}
@@ -146,128 +300,45 @@ export default function CameraScreen() {
           {permissionBusy ? (
             <ActivityIndicator color="#111" />
           ) : (
-            <Text style={styles.ctaText}>
-              {perm.canAskAgain ? "Allow camera" : "Open Settings"}
-            </Text>
+            <Text style={styles.ctaText}>Allow camera</Text>
           )}
         </Pressable>
       </View>
     );
-  const capture = async () => {
-    // This lock is intentionally a ref: it changes synchronously and does not
-    // require a React render before the next tap sees the locked state.
-    if (
-      captureLock.current ||
-      !ref.current ||
-      !cameraReady ||
-      !membershipReady ||
-      !eventId
-    ) {
-      return;
-    }
+  }
 
-    captureLock.current = true;
-    void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    try {
-      if (!participantId) {
-        captureLock.current = false;
-        showMessage("Your event connection was lost. Please try again.");
-        return;
-      }
-
-      // Use the documented fast-save path. With onPictureSaved, Expo resolves
-      // takePictureAsync as soon as the capture has been handed to native save,
-      // instead of making React wait for JPEG/file processing. The callback then
-      // hands the resulting file to the durable upload queue.
-      const capturePromise = ref.current.takePictureAsync({
-        skipProcessing: true,
-        onPictureSaved: (photo) => {
-          if (!photo?.uri) {
-            showMessage("Photo could not be saved.");
-            return;
-          }
-          void enqueuePhotoUpload({
-            id: createUploadId(),
-            eventId: String(eventId),
-            participantId,
-            uri: photo.uri,
-            width: photo.width ?? null,
-            height: photo.height ?? null,
-          }).catch((error: any) => {
-            showMessage(error?.message || "Photo could not be queued.");
-          });
-        },
-      });
-
-      // Do not put a spinner on the shutter. The native camera owns the capture
-      // operation; our ref lock alone prevents duplicate calls while it is busy.
-      void capturePromise
-        .then(() => {
-          captureLock.current = false;
-        })
-        .catch((error: any) => {
-          captureLock.current = false;
-          showMessage(error?.message || "Could not capture the photo.");
-        });
-    } catch (error: any) {
-      captureLock.current = false;
-      showMessage(error?.message || "Could not capture the photo.");
-    }
-  };
-
-  const pick = async () => {
-    if (pickerBusy || !membershipReady || !eventId) return;
-    const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (!permission.granted) {
-      showMessage("Photo library permission is required.");
-      return;
-    }
-    setPickerBusy(true);
-    try {
-      const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ["images"],
-        quality: 0.9,
-        allowsMultipleSelection: false,
-      });
-      if (result.canceled || !result.assets?.[0]) return;
-      const image = result.assets[0];
-      if (!participantId) {
-        showMessage("Your event connection was lost. Please try again.");
-        return;
-      }
-      await enqueuePhotoUpload({
-        id: createUploadId(),
-        eventId: String(eventId),
-        participantId,
-        uri: image.uri,
-        width: image.width ?? null,
-        height: image.height ?? null,
-      });
-      showMessage("Photo queued");
-    } catch (error: any) {
-      showMessage(error?.message || "Could not add the photo.");
-    } finally {
-      setPickerBusy(false);
-    }
-  };
+  if (!device) {
+    return (
+      <View style={styles.center}>
+        <ActivityIndicator color="#fff" />
+        <Text style={styles.sub}>Starting camera…</Text>
+      </View>
+    );
+  }
 
   return (
     <View style={styles.container}>
-      <CameraView
-        ref={ref}
+      <Camera
         style={StyleSheet.absoluteFill}
-        facing={facing}
-        flash={flash}
-        onCameraReady={() => {
+        device={device}
+        isActive={appActive && hasPermission}
+        outputs={[photoOutput]}
+        enableDistortionCorrection={false}
+        onStarted={() => {
           if (mountedRef.current) setCameraReady(true);
         }}
-        onMountError={(error) => {
+        onStopped={() => {
+          if (mountedRef.current) setCameraReady(false);
+        }}
+        onError={(error) => {
           if (!mountedRef.current) return;
           setCameraReady(false);
-          setMessage(error.message || "Could not start the camera.");
+          showMessage(error.message || "Could not start the camera.");
         }}
       />
+
       <View style={styles.scrimTop} />
+
       <View style={styles.top}>
         <Pressable
           accessibilityLabel="Close camera"
@@ -276,12 +347,12 @@ export default function CameraScreen() {
         >
           <MaterialCommunityIcons name="close" size={23} color="#fff" />
         </Pressable>
+
         <Pressable
-          accessibilityLabel={
-            flash === "on" ? "Turn flash off" : "Turn flash on"
-          }
-          onPress={() => setFlash((v) => (v === "off" ? "on" : "off"))}
-          style={styles.control}
+          accessibilityLabel={flash === "on" ? "Turn flash off" : "Turn flash on"}
+          disabled={!device.hasFlash}
+          onPress={() => setFlash((value) => (value === "off" ? "on" : "off"))}
+          style={[styles.control, !device.hasFlash && styles.controlDisabled]}
         >
           <MaterialCommunityIcons
             name={flash === "on" ? "flash" : "flash-off"}
@@ -290,33 +361,53 @@ export default function CameraScreen() {
           />
         </Pressable>
       </View>
+
       <View style={styles.bottom}>
         {membershipError ? (
           <Pressable
             onPress={() => {
+              if (!eventId) return;
+
               setMembershipError("");
               setMembershipReady(false);
+
               void ensureParticipant(String(eventId), displayName)
                 .then((id) => {
                   if (!id) throw new Error("Could not join this event.");
+                  if (!mountedRef.current) return;
                   setParticipantId(id);
                   setMembershipReady(true);
                 })
                 .catch((error: any) => {
-                  setMembershipError(error?.message || "Could not connect to this event.");
+                  if (mountedRef.current) {
+                    setMembershipError(
+                      error?.message || "Could not connect to this event.",
+                    );
+                  }
                 });
             }}
             style={styles.statusPill}
           >
-            <MaterialCommunityIcons name="cloud-alert-outline" size={15} color="#fff" />
+            <MaterialCommunityIcons
+              name="cloud-alert-outline"
+              size={15}
+              color="#fff"
+            />
             <Text style={styles.statusText}>Tap to reconnect</Text>
           </Pressable>
         ) : queueSummary.queued + queueSummary.uploading > 0 ? (
           <View style={styles.statusPill}>
-            <MaterialCommunityIcons name="cloud-upload-outline" size={15} color="#fff" />
+            <MaterialCommunityIcons
+              name="cloud-upload-outline"
+              size={15}
+              color="#fff"
+            />
             <Text style={styles.statusText}>
-              {String(queueSummary.queued + queueSummary.uploading) + " " +
-                (queueSummary.queued + queueSummary.uploading === 1 ? "photo" : "photos") +
+              {String(queueSummary.queued + queueSummary.uploading) +
+                " " +
+                (queueSummary.queued + queueSummary.uploading === 1
+                  ? "photo"
+                  : "photos") +
                 " sharing"}
             </Text>
           </View>
@@ -325,7 +416,11 @@ export default function CameraScreen() {
             onPress={() => void retryFailedPhotoUploads(String(eventId))}
             style={styles.statusPill}
           >
-            <MaterialCommunityIcons name="alert-circle-outline" size={15} color="#fff" />
+            <MaterialCommunityIcons
+              name="alert-circle-outline"
+              size={15}
+              color="#fff"
+            />
             <Text style={styles.statusText}>
               {queueSummary.failed} failed · Tap to retry
             </Text>
@@ -347,7 +442,11 @@ export default function CameraScreen() {
             {pickerBusy ? (
               <ActivityIndicator color="#fff" size="small" />
             ) : (
-              <MaterialCommunityIcons name="image-outline" size={21} color="#fff" />
+              <MaterialCommunityIcons
+                name="image-outline"
+                size={21}
+                color="#fff"
+              />
             )}
           </Pressable>
 
@@ -361,7 +460,11 @@ export default function CameraScreen() {
             ]}
           >
             <View style={styles.shutterInner}>
-              <MaterialCommunityIcons name="camera-outline" size={27} color="#111" />
+              <MaterialCommunityIcons
+                name="camera-outline"
+                size={27}
+                color="#111"
+              />
             </View>
           </Pressable>
 
@@ -369,20 +472,31 @@ export default function CameraScreen() {
             accessibilityLabel="Switch camera"
             onPress={() => {
               setCameraReady(false);
+              setFlash("off");
               setFacing((value) => (value === "back" ? "front" : "back"));
             }}
             style={styles.sideControl}
           >
-            <MaterialCommunityIcons name="camera-flip-outline" size={21} color="#fff" />
+            <MaterialCommunityIcons
+              name="camera-flip-outline"
+              size={21}
+              color="#fff"
+            />
           </Pressable>
         </View>
 
         <Text style={styles.mode}>
-          {!cameraReady ? "STARTING CAMERA…" : !membershipReady ? "CONNECTING…" : "PHOTO"}
+          {!cameraReady
+            ? "STARTING CAMERA…"
+            : !membershipReady
+              ? "CONNECTING…"
+              : "PHOTO"}
         </Text>
-      </View>    </View>
+      </View>
+    </View>
   );
 }
+
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#000" },
   scrimTop: {
@@ -411,6 +525,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
+  controlDisabled: { opacity: 0.45 },
   bottom: {
     position: "absolute",
     bottom: 28,
