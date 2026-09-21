@@ -1,7 +1,5 @@
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 import { CameraView, useCameraPermissions } from "expo-camera";
-import * as FileSystem from "expo-file-system/legacy";
-import { decode } from "base64-arraybuffer";
 import * as Haptics from "expo-haptics";
 import * as ImagePicker from "expo-image-picker";
 import { useLocalSearchParams, useRouter } from "expo-router";
@@ -15,8 +13,15 @@ import {
   Text,
   View,
 } from "react-native";
-import { ensureParticipant, supabase, useApp } from "../../lib/app-context";
+import { ensureParticipant, getParticipantId, supabase, useApp } from "../../lib/app-context";
 import { colors } from "../../lib/theme";
+import {
+  enqueuePhotoUpload,
+  getPhotoQueueSummary,
+  retryFailedPhotoUploads,
+  startPhotoUploadQueue,
+  subscribePhotoUploadQueue,
+} from "../../lib/photo-upload-queue";
 const PHOTO_BUCKET = "photos";
 export default function CameraScreen() {
   const router = useRouter();
@@ -25,18 +30,73 @@ export default function CameraScreen() {
   const [perm, request] = useCameraPermissions();
   const [facing, setFacing] = useState<"front" | "back">("back");
   const [flash, setFlash] = useState<"off" | "on">("off");
-  const [busy, setBusy] = useState(false);
   const [cameraReady, setCameraReady] = useState(false);
+  const [membershipReady, setMembershipReady] = useState(false);
+  const [membershipError, setMembershipError] = useState("");
+  const [capturing, setCapturing] = useState(false);
+  const [pickerBusy, setPickerBusy] = useState(false);
   const [message, setMessage] = useState("");
   const [permissionBusy, setPermissionBusy] = useState(false);
+  const [, setQueueVersion] = useState(0);
   const ref = useRef<CameraView>(null);
+  const messageTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    void startPhotoUploadQueue();
+    const unsubscribe = subscribePhotoUploadQueue(() => {
+      setQueueVersion((value) => value + 1);
+    });
+    return () => {
+      unsubscribe();
+      if (messageTimer.current) clearTimeout(messageTimer.current);
+    };
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    const prepareMembership = async () => {
+      if (!supabase || !eventId) {
+        setMembershipError("Cloud connection is not configured.");
+        return;
+      }
+      setMembershipReady(false);
+      setMembershipError("");
+      try {
+        const existing = await getParticipantId(String(eventId));
+        if (cancelled) return;
+        if (existing) {
+          setMembershipReady(true);
+          return;
+        }
+        const created = await ensureParticipant(String(eventId), displayName);
+        if (cancelled) return;
+        if (!created) throw new Error("Could not join this event.");
+        setMembershipReady(true);
+      } catch (error: any) {
+        if (!cancelled) setMembershipError(error?.message || "Could not connect to this event.");
+      }
+    };
+    void prepareMembership();
+    return () => {
+      cancelled = true;
+    };
+  }, [displayName, eventId]);
 
   useEffect(() => {
     const subscription = AppState.addEventListener("change", async (state) => {
-      if (state === "active") await request();
+      if (state === "active") {
+        await request();
+        void startPhotoUploadQueue();
+      }
     });
     return () => subscription.remove();
   }, [request]);
+
+  const showMessage = (value: string) => {
+    setMessage(value);
+    if (messageTimer.current) clearTimeout(messageTimer.current);
+    messageTimer.current = setTimeout(() => setMessage(""), 1100);
+  };
   if (!perm)
     return (
       <View style={styles.center}>
@@ -75,125 +135,71 @@ export default function CameraScreen() {
         </Pressable>
       </View>
     );
-  const upload = async (uri: string, width?: number, height?: number) => {
-    if (!supabase) throw new Error("Cloud connection is not configured.");
-    if (!eventId) throw new Error("Event ID is missing.");
-    setMessage("Joining event…");
-    const participantId = await ensureParticipant(String(eventId), displayName);
-    if (!participantId) throw new Error("Could not join this event.");
-    setMessage("Reading photo…");
-    let localUri = uri;
-    let temporaryUri: string | undefined;
-    try {
-      if (uri.startsWith("content://")) {
-        temporaryUri = `${FileSystem.cacheDirectory}mefie-upload-${Date.now()}.jpg`;
-        await FileSystem.copyAsync({ from: uri, to: temporaryUri });
-        localUri = temporaryUri;
-      }
-      const info = await FileSystem.getInfoAsync(localUri);
-      if (!info.exists)
-        throw new Error("The photo file no longer exists on the device.");
-      const base64 = await FileSystem.readAsStringAsync(localUri, {
-        encoding: FileSystem.EncodingType.Base64,
-      });
-      if (!base64) throw new Error("Could not read the captured photo.");
-      const body = decode(base64);
-      const path = `${eventId}/${Date.now()}-${Math.random().toString(36).slice(2, 10)}.jpg`;
-      setMessage("Uploading…");
-      const { error: uploadError } = await supabase.storage
-        .from(PHOTO_BUCKET)
-        .upload(path, body, {
-          contentType: "image/jpeg",
-          upsert: false,
-          cacheControl: "3600",
-        });
-      if (uploadError)
-        throw new Error(`Photo upload failed: ${uploadError.message}`);
-      const { data: urlData } = supabase.storage
-        .from(PHOTO_BUCKET)
-        .getPublicUrl(path);
-      setMessage("Saving photo…");
-      const { error: insertError } = await supabase.from("photos").insert({
-        event_id: eventId,
-        participant_id: participantId,
-        storage_path: path,
-        original_filename: `mefie-${Date.now()}.jpg`,
-        file_size: body.byteLength,
-        width: width || null,
-        height: height || null,
-        public_url: urlData.publicUrl,
-      });
-      if (insertError) {
-        await supabase.storage
-          .from(PHOTO_BUCKET)
-          .remove([path])
-          .catch(() => undefined);
-        throw new Error(`Photo record failed: ${insertError.message}`);
-      }
-    } catch (error: any) {
-      const msg = error?.message || String(error) || "Photo upload failed.";
-      if (msg.includes("Network request failed"))
-        throw new Error(
-          "Could not reach photo storage. Check the phone internet connection and try again.",
-        );
-      throw error;
-    } finally {
-      if (temporaryUri)
-        await FileSystem.deleteAsync(temporaryUri, { idempotent: true }).catch(
-          () => undefined,
-        );
-    }
-  };
   const capture = async () => {
-    if (!ref.current || busy || !cameraReady) return;
-    setBusy(true);
-    setMessage("");
-    await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    if (!ref.current || capturing || !cameraReady || !membershipReady || !eventId) return;
+    setCapturing(true);
+    void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     try {
-      await new Promise((resolve) => setTimeout(resolve, 250));
-      if (!ref.current) throw new Error("Camera is not ready.");
       const photo = await ref.current.takePictureAsync({
-        quality: 0.8,
+        quality: 0.85,
         skipProcessing: true,
       });
       if (!photo?.uri) throw new Error("Could not capture the photo.");
-      await upload(photo.uri, photo.width, photo.height);
-      await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      setMessage("Shared ✓");
-    } catch (e: any) {
-      setMessage(
-        e?.message || "Could not capture the photo. Please try again.",
-      );
+      const participantId = await getParticipantId(String(eventId));
+      if (!participantId) throw new Error("Your event connection was lost. Please try again.");
+      await enqueuePhotoUpload({
+        id: `1789974623598-${Math.random().toString(36).slice(2, 12)}`,
+        eventId: String(eventId),
+        participantId,
+        uri: photo.uri,
+        width: photo.width ?? null,
+        height: photo.height ?? null,
+      });
+      showMessage("Photo queued");
+    } catch (error: any) {
+      showMessage(error?.message || "Could not capture the photo.");
     } finally {
-      setBusy(false);
+      setCapturing(false);
     }
   };
+
   const pick = async () => {
-    if (busy) return;
+    if (pickerBusy || !membershipReady || !eventId) return;
     const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (!permission.granted) {
-      setMessage("Photo library permission is required.");
+      showMessage("Photo library permission is required.");
       return;
     }
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ["images"],
-      quality: 0.9,
-      allowsMultipleSelection: false,
-    });
-    if (result.canceled || !result.assets?.[0]) return;
-    setBusy(true);
-    setMessage("");
+    setPickerBusy(true);
     try {
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ["images"],
+        quality: 0.9,
+        allowsMultipleSelection: false,
+      });
+      if (result.canceled || !result.assets?.[0]) return;
       const image = result.assets[0];
-      await upload(image.uri, image.width, image.height);
-      setMessage("Shared ✓");
-      await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    } catch (e: any) {
-      setMessage(e?.message || "Upload failed.");
+      const participantId = await getParticipantId(String(eventId));
+      if (!participantId) {
+        showMessage("Your event connection was lost. Please try again.");
+        return;
+      }
+      await enqueuePhotoUpload({
+        id: `1789974623598-${Math.random().toString(36).slice(2, 12)}`,
+        eventId: String(eventId),
+        participantId,
+        uri: image.uri,
+        width: image.width ?? null,
+        height: image.height ?? null,
+      });
+      showMessage("Photo queued");
+    } catch (error: any) {
+      showMessage(error?.message || "Could not add the photo.");
     } finally {
-      setBusy(false);
+      setPickerBusy(false);
     }
   };
+
   return (
     <View style={styles.container}>
       <CameraView
@@ -231,62 +237,98 @@ export default function CameraScreen() {
         </Pressable>
       </View>
       <View style={styles.bottom}>
-        {message ? (
-          <View style={styles.message}>
-            <MaterialCommunityIcons name="star" size={15} color="#fff" />
-            <Text style={styles.messageText}>{message}</Text>
+        {membershipError ? (
+          <Pressable
+            onPress={() => {
+              setMembershipError("");
+              setMembershipReady(false);
+              void ensureParticipant(String(eventId), displayName)
+                .then((id) => {
+                  if (!id) throw new Error("Could not join this event.");
+                  setMembershipReady(true);
+                })
+                .catch((error: any) => {
+                  setMembershipError(error?.message || "Could not connect to this event.");
+                });
+            }}
+            style={styles.statusPill}
+          >
+            <MaterialCommunityIcons name="cloud-alert-outline" size={15} color="#fff" />
+            <Text style={styles.statusText}>Tap to reconnect</Text>
+          </Pressable>
+        ) : queueSummary.queued + queueSummary.uploading > 0 ? (
+          <View style={styles.statusPill}>
+            <MaterialCommunityIcons name="cloud-upload-outline" size={15} color="#fff" />
+            <Text style={styles.statusText}>
+              {queueSummary.queued + queueSummary.uploading}{" "}
+              {queueSummary.queued + queueSummary.uploading === 1 ? "photo" : "photos"} sharing
+            </Text>
+          </View>
+        ) : queueSummary.failed > 0 ? (
+          <Pressable
+            onPress={() => void retryFailedPhotoUploads(String(eventId))}
+            style={styles.statusPill}
+          >
+            <MaterialCommunityIcons name="alert-circle-outline" size={15} color="#fff" />
+            <Text style={styles.statusText}>
+              {queueSummary.failed} failed · Tap to retry
+            </Text>
+          </Pressable>
+        ) : message ? (
+          <View style={styles.statusPill}>
+            <MaterialCommunityIcons name="check" size={15} color="#fff" />
+            <Text style={styles.statusText}>{message}</Text>
           </View>
         ) : null}
+
         <View style={styles.row}>
           <Pressable
             accessibilityLabel="Choose photo"
             onPress={pick}
+            disabled={pickerBusy || !membershipReady}
             style={styles.sideControl}
           >
-            <MaterialCommunityIcons
-              name="image-outline"
-              size={21}
-              color="#fff"
-            />
+            {pickerBusy ? (
+              <ActivityIndicator color="#fff" size="small" />
+            ) : (
+              <MaterialCommunityIcons name="image-outline" size={21} color="#fff" />
+            )}
           </Pressable>
+
           <Pressable
             accessibilityLabel="Take photo"
             onPress={capture}
-            disabled={!cameraReady || busy}
-            style={[styles.shutter, !cameraReady && styles.shutterDisabled]}
+            disabled={!cameraReady || !membershipReady || capturing}
+            style={[
+              styles.shutter,
+              (!cameraReady || !membershipReady) && styles.shutterDisabled,
+            ]}
           >
-            {busy ? (
+            {capturing ? (
               <ActivityIndicator color="#111" />
             ) : (
               <View style={styles.shutterInner}>
-                <MaterialCommunityIcons
-                  name="camera-outline"
-                  size={27}
-                  color="#111"
-                />
+                <MaterialCommunityIcons name="camera-outline" size={27} color="#111" />
               </View>
             )}
           </Pressable>
+
           <Pressable
             accessibilityLabel="Switch camera"
             onPress={() => {
               setCameraReady(false);
-              setFacing((v) => (v === "back" ? "front" : "back"));
+              setFacing((value) => (value === "back" ? "front" : "back"));
             }}
             style={styles.sideControl}
           >
-            <MaterialCommunityIcons
-              name="camera-flip-outline"
-              size={21}
-              color="#fff"
-            />
+            <MaterialCommunityIcons name="camera-flip-outline" size={21} color="#fff" />
           </Pressable>
         </View>
+
         <Text style={styles.mode}>
-          {cameraReady ? "PHOTO" : "STARTING CAMERA…"}
+          {!cameraReady ? "STARTING CAMERA…" : !membershipReady ? "CONNECTING…" : "PHOTO"}
         </Text>
-      </View>
-    </View>
+      </View>    </View>
   );
 }
 const styles = StyleSheet.create({
@@ -368,12 +410,11 @@ const styles = StyleSheet.create({
     fontWeight: "800",
     letterSpacing: 1,
   },
-  message: {
+  statusPill: {
     maxWidth: "88%",
     flexDirection: "row",
     alignItems: "center",
     gap: 7,
-    color: "#fff",
     backgroundColor: "rgba(10,14,18,.62)",
     paddingHorizontal: 15,
     paddingVertical: 9,
@@ -382,7 +423,7 @@ const styles = StyleSheet.create({
     borderColor: "rgba(255,255,255,.16)",
     marginBottom: 14,
   },
-  messageText: { color: "#fff", fontWeight: "700", fontSize: 13 },
+  statusText: { color: "#fff", fontWeight: "700", fontSize: 13 },
   center: {
     flex: 1,
     backgroundColor: "#0A0F15",
