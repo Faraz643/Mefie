@@ -36,6 +36,7 @@ let processing = false;
 let timer: ReturnType<typeof setTimeout> | null = null;
 let appStateSubscription: { remove: () => void } | null = null;
 const listeners = new Set<() => void>();
+let persistChain = Promise.resolve();
 
 function notify() {
   for (const listener of listeners) listener();
@@ -72,9 +73,12 @@ async function loadQueue() {
   return loadingPromise;
 }
 
-async function persistQueue() {
-  await AsyncStorage.setItem(QUEUE_KEY, JSON.stringify(jobs));
-  notify();
+function persistQueue() {
+  const snapshot = JSON.stringify(jobs);
+  persistChain = persistChain
+    .then(() => AsyncStorage.setItem(QUEUE_KEY, snapshot))
+    .then(() => notify());
+  return persistChain;
 }
 
 function durableUri(job: PhotoUploadJob) {
@@ -244,16 +248,23 @@ export async function enqueuePhotoUpload(
 ) {
   await loadQueue();
 
-  jobs.push({
+  const job: PhotoUploadJob = {
     ...input,
     createdAt: Date.now(),
     attempts: 0,
     nextAttemptAt: Date.now(),
     status: "queued",
-  });
+  };
 
-  // Keep capture non-blocking. Persistence and upload start immediately in the background.
-  void persistQueue();
+  // Make the captured file durable before the job is persisted. This prevents a
+  // temporary camera URI from becoming a lost upload if the app is backgrounded
+  // or terminated immediately after the shutter is pressed.
+  job.uri = await ensureDurableFile(job);
+  jobs.push(job);
+
+  // Serialize persistence so rapid consecutive captures cannot overwrite each
+  // other's AsyncStorage snapshots. Uploading still runs independently.
+  await persistQueue();
   void processQueue();
 }
 
