@@ -160,13 +160,15 @@ export default function CameraScreen() {
       });
       if (!photo?.uri) throw new Error("Could not capture the photo.");
       if (!participantId) throw new Error("Your event connection was lost. Please try again.");
-      await enqueuePhotoUpload({
+      void enqueuePhotoUpload({
         id: createUploadId(),
         eventId: String(eventId),
         participantId,
         uri: photo.uri,
         width: photo.width ?? null,
         height: photo.height ?? null,
+      }).catch((error: any) => {
+        showMessage(error?.message || "Photo could not be queued.");
       });
       showMessage("Photo queued");
     } catch (error: any) {
