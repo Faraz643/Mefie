@@ -834,7 +834,7 @@ ${link}`,
           const offset = Math.max(0, event.nativeEvent.contentOffset.y);
           if (tab === "photos") photoScrollOffset.current = offset;
           else peopleScrollOffset.current = offset;
-        })
+        }}
       />
       {selectionMode ? (
         <View
