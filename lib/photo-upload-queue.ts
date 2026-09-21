@@ -51,7 +51,13 @@ async function loadQueue() {
       if (raw) {
         const parsed = JSON.parse(raw);
         if (Array.isArray(parsed)) {
-          jobs = parsed.filter((job) => job?.id && job?.eventId && job?.participantId && job?.uri);
+          jobs = parsed
+            .filter((job) => job?.id && job?.eventId && job?.participantId && job?.uri)
+            .map((job) => ({
+              ...job,
+              status: job.status === "failed" ? "failed" : "queued",
+              nextAttemptAt: Math.min(job.nextAttemptAt || Date.now(), Date.now()),
+            }));
         }
       }
     } catch {
@@ -114,7 +120,6 @@ async function processJob(jobId: string) {
   if (!job || job.status === "failed") return;
 
   job.status = "uploading";
-  await persistQueue();
 
   try {
     if (!supabase) throw new Error("Cloud connection is not configured.");
@@ -247,7 +252,8 @@ export async function enqueuePhotoUpload(
     status: "queued",
   });
 
-  await persistQueue();
+  // Keep capture non-blocking. Persistence and upload start immediately in the background.
+  void persistQueue();
   void processQueue();
 }
 
