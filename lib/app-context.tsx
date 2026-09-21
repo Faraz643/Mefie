@@ -240,6 +240,17 @@ export async function ensureParticipant(eventId: string, displayName: string) {
   if (!supabase || !eventId) return null;
   const sessionId = await getSessionId();
 
+  const { data: eventAccess, error: eventAccessError } = await supabase
+    .from("events")
+    .select("id,removed_session_ids")
+    .eq("id", eventId)
+    .maybeSingle();
+  if (eventAccessError) throw eventAccessError;
+  if (!eventAccess) return null;
+  if ((eventAccess.removed_session_ids || []).includes(sessionId)) {
+    return null;
+  }
+
   const { error: profileIdentityError } = await supabase
     .from("profiles")
     .upsert(
@@ -387,10 +398,24 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
   const refreshEvents = useCallback(async () => {
     if (!supabase) return;
+    const sessionId = await getSessionId();
+    const { data: memberships, error: membershipError } = await supabase
+      .from("participants")
+      .select("event_id")
+      .eq("session_id", sessionId);
+    if (membershipError) throw membershipError;
+
+    const eventIds = [...new Set((memberships ?? []).map((row) => row.event_id))];
+    if (!eventIds.length) {
+      if (mountedRef.current) setEvents([]);
+      return;
+    }
+
     const { data } = await supabase
       .from("events")
       .select("id,name,created_at,creator_session_id")
       .eq("status", "active")
+      .in("id", eventIds)
       .order("created_at", { ascending: false })
       .limit(20);
     if (!data || !mountedRef.current) return;
