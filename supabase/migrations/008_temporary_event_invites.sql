@@ -47,7 +47,7 @@ begin
     raise exception 'Only the event creator can create a temporary invite';
   end if;
 
-  new_token := encode(gen_random_bytes(24), 'hex');
+  new_token := md5(gen_random_uuid()::text || clock_timestamp()::text || random()::text);
   new_expires_at := now() + interval '5 minutes';
 
   insert into public.event_temporary_invites(event_id, token, expires_at)
