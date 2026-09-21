@@ -43,7 +43,7 @@ export default function CameraScreen() {
   const router = useRouter();
   const { eventId } = useLocalSearchParams<{ eventId: string }>();
   const { displayName } = useApp();
-  const { hasPermission, requestPermission } = useCameraPermission();
+  const { hasPermission, canRequestPermission, requestPermission } = useCameraPermission();
 
   const [facing, setFacing] = useState<"front" | "back">("back");
   const [flash, setFlash] = useState<"off" | "on">("off");
@@ -291,8 +291,13 @@ export default function CameraScreen() {
 
             setPermissionBusy(true);
             try {
+              if (!canRequestPermission) {
+                await Linking.openSettings();
+                return;
+              }
+
               const granted = await requestPermission();
-              if (!granted && mountedRef.current) {
+              if (!granted && !canRequestPermission && mountedRef.current) {
                 await Linking.openSettings();
               }
             } finally {
@@ -304,7 +309,9 @@ export default function CameraScreen() {
           {permissionBusy ? (
             <ActivityIndicator color="#111" />
           ) : (
-            <Text style={styles.ctaText}>Allow camera</Text>
+            <Text style={styles.ctaText}>
+              {canRequestPermission ? "Allow camera" : "Open Settings"}
+            </Text>
           )}
         </Pressable>
       </View>
