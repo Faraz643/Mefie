@@ -68,6 +68,7 @@ export default function CameraScreen() {
   const device = preferredDevice ?? fallbackDevice;
 
   const photoOutput = usePhotoOutput({
+    containerFormat: "jpeg",
     quality: 0.85,
     qualityPrioritization: device?.supportsSpeedQualityPrioritization
       ? "speed"
