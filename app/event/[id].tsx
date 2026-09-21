@@ -618,7 +618,8 @@ ${link}`,
     extrapolate: "clamp",
   });
   return (
-    <View style={styles.root}>
+    <>
+      <View style={styles.root}>
       <View pointerEvents="none" style={styles.background}>
         <Image source={{ uri: heroSource }} style={styles.backgroundImage} />
         <LinearGradient
@@ -1087,6 +1088,7 @@ ${link}`,
           </View>
         </View>
       </Modal>
+    </>
   );
 }
 const styles = StyleSheet.create({
