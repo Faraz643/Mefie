@@ -672,13 +672,19 @@ ${link}`,
                   />
                 </IconButton>
               ) : null}
-              <IconButton plain accessibilityLabel="Event QR and invites" onPress={openInvites}>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Open event QR and invites"
+                onPress={openInvites}
+                style={styles.inviteHeaderButton}
+              >
                 <MaterialCommunityIcons
                   name="qrcode"
-                  size={21}
-                  color={colors.white}
+                  size={23}
+                  color="#FFFFFF"
                 />
-              </IconButton>
+                <Text style={styles.inviteHeaderText}>Invite</Text>
+              </Pressable>
             </View>
           </View>
           <Animated.View
@@ -1282,6 +1288,29 @@ const styles = StyleSheet.create({
   },
   disabledDelete: { opacity: 0.35 },
   deleteText: { color: "#fff", fontSize: 14, fontWeight: "800" },
+  inviteHeaderButton: {
+    height: 42,
+    minWidth: 88,
+    paddingHorizontal: 12,
+    borderRadius: 21,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 7,
+    backgroundColor: "rgba(15,23,31,.72)",
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,.28)",
+    shadowColor: "#000",
+    shadowOpacity: 0.22,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 6,
+  },
+  inviteHeaderText: {
+    color: "#FFFFFF",
+    fontSize: 13,
+    fontWeight: "800",
+  },
   inviteModalBackdrop: {
     flex: 1,
     backgroundColor: "rgba(0,0,0,.62)",
