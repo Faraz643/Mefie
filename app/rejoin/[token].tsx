@@ -73,10 +73,10 @@ export default function TemporaryInviteRoute() {
 
   return (
     <Screen>
-      <Text style={styles.kicker}>TEMPORARY INVITE</Text>
+      <Text style={styles.kicker}>QUICK ACCESS</Text>
       <Text style={styles.title}>{event?.name || "Mefie event"}</Text>
       <Text style={styles.sub}>
-        This invite works for 5 minutes. Anyone with the link or QR can join while it is active.
+        This access link is valid for 5 minutes. Anyone with the link or QR can join the event while it is active. Once you join, you stay in the event.
       </Text>
       {event ? (
         <GlassCard>
