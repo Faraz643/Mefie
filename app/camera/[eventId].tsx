@@ -61,13 +61,17 @@ export default function CameraScreen() {
   const messageTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const inFlightCaptures = useRef(0);
 
-  const device = useCameraDevice(facing, {
+  const preferredDevice = useCameraDevice(facing, {
     physicalDevices: ["wide-angle"],
   });
+  const fallbackDevice = useCameraDevice(facing);
+  const device = preferredDevice ?? fallbackDevice;
 
   const photoOutput = usePhotoOutput({
     quality: 0.85,
-    qualityPrioritization: "speed",
+    qualityPrioritization: device?.supportsSpeedQualityPrioritization
+      ? "speed"
+      : "balanced",
   });
 
   const effectiveFlash = useMemo(
