@@ -48,7 +48,11 @@ export default function JoinEventScreen() {
       return;
     }
     try {
-      const participantId = await ensureParticipant(data.id, displayName);\n      if (!participantId) {\n        setError("This invite is no longer valid for your account.");\n        return;\n      }
+      const participantId = await ensureParticipant(data.id, displayName);
+      if (!participantId) {
+        setError("This invite is no longer valid for your account.");
+        return;
+      }
       router.replace({ pathname: "/event/[id]", params: { id: data.id } });
     } catch (e: any) {
       setError(e?.message || "Could not join the event.");
