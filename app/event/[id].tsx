@@ -37,33 +37,6 @@ function gradientForName(name: string): [string, string] {
   return palettes[hash % palettes.length];
 }
 
-const fallbackPhoto =
-  "https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=1200&q=85";
-const HERO_HEIGHT = 250;
-const TAB_HEIGHT = 52;
-const PLACEHOLDER_PHOTOS = [
-  "https://images.unsplash.com/photo-1500534623283-312aade485b7?auto=format&fit=crop&w=700&q=88",
-  "https://images.unsplash.com/photo-1511497584788-876760111969?auto=format&fit=crop&w=700&q=88",
-  "https://images.unsplash.com/photo-1501785888041-af3ef285b470?auto=format&fit=crop&w=700&q=88",
-  "https://images.unsplash.com/photo-1519681393784-d120267933ba?auto=format&fit=crop&w=700&q=88",
-  "https://images.unsplash.com/photo-1493246507139-91e8fad9978e?auto=format&fit=crop&w=700&q=88",
-  "https://images.unsplash.com/photo-1470770841072-f978cf4d019e?auto=format&fit=crop&w=700&q=88",
-  "https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&w=700&q=88",
-  "https://images.unsplash.com/photo-1495567720989-cebdbdd97913?auto=format&fit=crop&w=700&q=88",
-  "https://images.unsplash.com/photo-1500534314209-a25ddb2bd429?auto=format&fit=crop&w=700&q=88",
-  "https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?auto=format&fit=crop&w=700&q=88",
-  "https://images.unsplash.com/photo-1526481280695-3c687fd5432c?auto=format&fit=crop&w=700&q=88",
-  "https://images.unsplash.com/photo-1521292270410-a8c4d716d518?auto=format&fit=crop&w=700&q=88",
-  "https://images.unsplash.com/photo-1526772662000-3f88f10405ff?auto=format&fit=crop&w=700&q=88",
-  "https://images.unsplash.com/photo-1530789253388-582c481c54b0?auto=format&fit=crop&w=700&q=88",
-  "https://images.unsplash.com/photo-1500534623283-312aade485b7?auto=format&fit=crop&w=700&q=82&sat=-12",
-  "https://images.unsplash.com/photo-1519681393784-d120267933ba?auto=format&fit=crop&w=700&q=82&sat=12",
-  "https://images.unsplash.com/photo-1501785888041-af3ef285b470?auto=format&fit=crop&w=700&q=82&sat=-8",
-  "https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&w=700&q=82&sat=8",
-  "https://images.unsplash.com/photo-1470770841072-f978cf4d019e?auto=format&fit=crop&w=700&q=82&sat=-10",
-  "https://images.unsplash.com/photo-1493246507139-91e8fad9978e?auto=format&fit=crop&w=700&q=82&sat=10",
-];
-
 export default function EventScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
@@ -473,16 +446,9 @@ ${link}`,
     else peopleScrollOffset.current = Math.max(0, peopleScrollOffset.current);
     setTab(nextTab);
   };
-  const galleryPhotos = photos.length
-    ? photos
-    : PLACEHOLDER_PHOTOS.map((url, index) => ({
-        id: `placeholder-${index}`,
-        public_url: url,
-        placeholder: true,
-      }));
+  const galleryPhotos = photos;
   const realPhotos = photos;
   const toggleSelection = (photoId: string) => {
-    if (photoId.startsWith("placeholder-")) return;
     setSelectedIds((current) =>
       current.includes(photoId)
         ? current.filter((v) => v !== photoId)
@@ -490,7 +456,7 @@ ${link}`,
     );
   };
   const enterSelection = (photoId?: string) => {
-    if (!photoId || photoId.startsWith("placeholder-")) return;
+    if (!photoId) return;
     setSelectionMode(true);
     setSelectedIds((current) =>
       current.includes(photoId) ? current : [...current, photoId],
