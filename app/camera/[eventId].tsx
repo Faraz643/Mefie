@@ -171,14 +171,23 @@ export default function CameraScreen() {
     try {
       if (!participantId) throw new Error("Your event connection was lost. Please try again.");
 
-      // Expo can return from takePictureAsync immediately when onPictureSaved is
-      // supplied. That keeps the shutter feeling like a native camera while the
-      // actual file save and upload hand off to the background queue.
-      await ref.current.takePictureAsync({
+      // Capture into the native PictureRef first. This is the fast path: the
+      // shutter is released as soon as the camera frame is captured, without
+      // waiting for JPEG encoding/file saving. Saving and queueing happen after
+      // the shutter is already available for the next tap.
+      const pictureRef = await ref.current.takePictureAsync({
+        pictureRef: true,
         skipProcessing: true,
-        onPictureSaved: (photo) => {
+      });
+
+      captureLock.current = false;
+      setCapturing(false);
+
+      void pictureRef
+        .savePictureAsync({ quality: 0.85 })
+        .then((photo) => {
           if (!photo?.uri) {
-            showMessage("Photo could not be captured.");
+            showMessage("Photo could not be saved.");
             return;
           }
           void enqueuePhotoUpload({
@@ -191,13 +200,14 @@ export default function CameraScreen() {
           }).catch((error: any) => {
             showMessage(error?.message || "Photo could not be queued.");
           });
-        },
-      });
+        })
+        .catch((error: any) => {
+          showMessage(error?.message || "Photo could not be saved.");
+        });
     } catch (error: any) {
-      showMessage(error?.message || "Could not capture the photo.");
-    } finally {
       captureLock.current = false;
       setCapturing(false);
+      showMessage(error?.message || "Could not capture the photo.");
     }
   };
 
