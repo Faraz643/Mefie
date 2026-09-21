@@ -1,7 +1,7 @@
 import { BlurView } from "expo-blur";
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 import { Asset } from "expo-asset";
-import Clipboard from "expo-clipboard";
+import * as Clipboard from "expo-clipboard";
 import QRCode from "react-native-qrcode-svg";
 import * as MediaLibrary from "expo-media-library";
 import { useLocalSearchParams, useRouter } from "expo-router";
