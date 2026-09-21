@@ -624,12 +624,6 @@ ${link}`,
         estimatedItemSize={112}
         drawDistance={420}
         optimizeItemArrangement
-        stickyHeaderConfig={{
-          useNativeDriver: true,
-          offset: 0,
-          zIndex: 10,
-          hideRelatedCell: true,
-        }}
         scrollEventThrottle={16}
         bounces
         data={listData}
