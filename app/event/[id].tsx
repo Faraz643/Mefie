@@ -705,80 +705,121 @@ ${link}`,
             return (
               <View style={styles.tabsSticky}>
                 {selectionMode ? (
-              <View style={styles.selectionHeader}>
-                <Pressable onPress={exitSelection}><Text style={styles.selectionSide}>Cancel</Text></Pressable>
-                <Text style={styles.selectionCount}>{selectedIds.length} selected</Text>
-                <Pressable onPress={selectAll}><Text style={styles.selectionSide}>Select all</Text></Pressable>
-              </View>
-            ) : (
-              <BlurView intensity={58} tint="dark" style={styles.tabs}>
-                <View style={styles.tabsContent}>
-                  <Pressable onPress={() => selectTab("photos")} style={[styles.tab, tab === "photos" && styles.activeTab]}>
-                    <MaterialCommunityIcons name="image-multiple-outline" size={18} color={tab === "photos" ? colors.black : "rgba(255,255,255,.96)"} />
-                    <Text style={tab === "photos" ? styles.activeTabText : styles.tabText}>Photos</Text>
-                  </Pressable>
-                  <Pressable onPress={() => selectTab("people")} style={[styles.tab, tab === "people" && styles.activeTab]}>
-                    <MaterialCommunityIcons name="account-group-outline" size={18} color={tab === "people" ? colors.black : "rgba(255,255,255,.94)"} />
-                    <Text style={tab === "people" ? styles.activeTabText : styles.tabText}>People</Text>
-                  </Pressable>
-                </View>
-              </BlurView>
-            )}
-          </View>
-        )}
-        renderItem={({ item, index: rowIndex }) => {
-          if (tab === "photos") {
-            const row = item as any[];
-            return (
-              <View style={styles.photoRow}>
-                {row.map((photo, columnIndex) => {
-                  const photoIndex = rowIndex * 3 + columnIndex;
-                  const selected = selectedIds.includes(photo.id);
-                  return (
-                    <Pressable
-                      key={photo.id || photoIndex}
-                      disabled={photo.placeholder}
-                      style={[styles.photo, selected && styles.selectedPhoto]}
-                      onPress={() =>
-                        selectionMode
-                          ? toggleSelection(photo.id)
-                          : router.push({
-                              pathname: "/photo/[id]",
-                              params: { id: photo.id, eventId: id, index: String(photoIndex) },
-                            })
-                      }
-                      onLongPress={() => enterSelection(photo.id)}
-                      delayLongPress={280}
-                    >
-                      <Image source={{ uri: photo.public_url }} style={styles.photoImage} />
-                      {selectionMode && !photo.placeholder ? (
-                        <View style={[styles.check, selected && styles.checkSelected]}>
-                          <MaterialCommunityIcons
-                            name={selected ? "check" : "circle-outline"}
-                            size={selected ? 19 : 20}
-                            color={selected ? colors.white : "rgba(255,255,255,.95)"}
-                          />
-                        </View>
-                      ) : null}
+                  <View style={styles.selectionHeader}>
+                    <Pressable onPress={exitSelection}>
+                      <Text style={styles.selectionSide}>Cancel</Text>
                     </Pressable>
-                  );
-                })}
+                    <Text style={styles.selectionCount}>{selectedIds.length} selected</Text>
+                    <Pressable onPress={selectAll}>
+                      <Text style={styles.selectionSide}>Select all</Text>
+                    </Pressable>
+                  </View>
+                ) : (
+                  <BlurView intensity={58} tint="dark" style={styles.tabs}>
+                    <View style={styles.tabsContent}>
+                      <Pressable
+                        onPress={() => selectTab("photos")}
+                        style={[styles.tab, tab === "photos" && styles.activeTab]}
+                      >
+                        <MaterialCommunityIcons
+                          name="image-multiple-outline"
+                          size={18}
+                          color={tab === "photos" ? colors.black : "rgba(255,255,255,.96)"}
+                        />
+                        <Text style={tab === "photos" ? styles.activeTabText : styles.tabText}>
+                          Photos
+                        </Text>
+                      </Pressable>
+                      <Pressable
+                        onPress={() => selectTab("people")}
+                        style={[styles.tab, tab === "people" && styles.activeTab]}
+                      >
+                        <MaterialCommunityIcons
+                          name="account-group-outline"
+                          size={18}
+                          color={tab === "people" ? colors.black : "rgba(255,255,255,.94)"}
+                        />
+                        <Text style={tab === "people" ? styles.activeTabText : styles.tabText}>
+                          People
+                        </Text>
+                      </Pressable>
+                    </View>
+                  </BlurView>
+                )}
               </View>
             );
           }
-          const person = item as any;
+
+          if (item.type === "photo") {
+            const selected = selectedIds.includes(item.id);
+            const photoIndex = index - 1;
+            return (
+              <Pressable
+                disabled={item.placeholder}
+                style={[styles.photoCell, selected && styles.selectedPhoto]}
+                onPress={() =>
+                  selectionMode
+                    ? toggleSelection(item.id)
+                    : router.push({
+                        pathname: "/photo/[id]",
+                        params: { id: item.id, eventId: id, index: String(photoIndex) },
+                      })
+                }
+                onLongPress={() => enterSelection(item.id)}
+                delayLongPress={280}
+              >
+                <ExpoImage
+                  source={{ uri: item.public_url }}
+                  style={styles.photoImage}
+                  contentFit="cover"
+                  cachePolicy="memory-disk"
+                  recyclingKey={item.id}
+                  allowDownscaling
+                  priority="low"
+                  transition={0}
+                />
+                {selectionMode && !item.placeholder ? (
+                  <View style={[styles.check, selected && styles.checkSelected]}>
+                    <MaterialCommunityIcons
+                      name={selected ? "check" : "circle-outline"}
+                      size={selected ? 19 : 20}
+                      color={selected ? colors.white : "rgba(255,255,255,.95)"}
+                    />
+                  </View>
+                ) : null}
+              </Pressable>
+            );
+          }
+
+          const person = item;
           return (
             <View style={styles.person}>
-              <LinearGradient colors={gradientForName(person.display_name)} style={styles.personAvatar}>
-                <Text style={styles.avatarText}>{(person.display_name || "?")[0].toUpperCase()}</Text>
+              <LinearGradient
+                colors={gradientForName(person.display_name)}
+                style={styles.personAvatar}
+              >
+                <Text style={styles.avatarText}>
+                  {(person.display_name || "?")[0].toUpperCase()}
+                </Text>
               </LinearGradient>
               <View style={styles.personDetails}>
                 <Text style={styles.personName}>{person.display_name}</Text>
-                <Text style={styles.personMeta}>Joined {new Date(person.joined_at).toLocaleDateString()}</Text>
+                <Text style={styles.personMeta}>
+                  Joined {new Date(person.joined_at).toLocaleDateString()}
+                </Text>
               </View>
               {isCreator && person.session_id !== (event?.creator_session_id || "") ? (
-                <Pressable onPress={() => removeMember(person)} disabled={actionBusy} style={styles.removeMemberButton} accessibilityLabel={`Remove ${person.display_name || "member"}`}>
-                  <MaterialCommunityIcons name="account-remove-outline" size={20} color="rgba(255,255,255,.82)" />
+                <Pressable
+                  onPress={() => removeMember(person)}
+                  disabled={actionBusy}
+                  style={styles.removeMemberButton}
+                  accessibilityLabel={`Remove ${person.display_name || "member"}`}
+                >
+                  <MaterialCommunityIcons
+                    name="account-remove-outline"
+                    size={20}
+                    color="rgba(255,255,255,.82)"
+                  />
                 </Pressable>
               ) : null}
             </View>
