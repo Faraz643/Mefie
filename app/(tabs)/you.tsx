@@ -338,7 +338,7 @@ const styles = StyleSheet.create({
     margin: 0,
     borderWidth: 0,
     backgroundColor: "transparent",
-    textAlign: "left",
+    textAlign: "center",
     includeFontPadding: false,
   },
   menu: {},
