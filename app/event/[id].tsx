@@ -6,7 +6,7 @@ import QRCode from "react-native-qrcode-svg";
 import * as MediaLibrary from "expo-media-library";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { LinearGradient } from "expo-linear-gradient";
-import React, { useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   Alert,
   Animated,
@@ -17,12 +17,12 @@ import {
   Text,
   View,
   ActivityIndicator,
-  SectionList,
   Modal,
   type NativeScrollEvent,
   type NativeSyntheticEvent,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { FlashList, type FlashListRef } from "@shopify/flash-list";
 import { BackButton } from "../../components/Screen";
 import { IconButton } from "../../components/Glass";
 import { colors, shadows } from "../../lib/theme";
@@ -47,7 +47,7 @@ export default function EventScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { displayName } = useApp();
   const scrollY = useRef(new Animated.Value(0)).current;
-  const scrollRef = useRef<SectionList<any>>(null);
+  const scrollRef = useRef<FlashListRef<any>>(null);
   const photoScrollOffset = useRef(0);
   const peopleScrollOffset = useRef(0);
   const [event, setEvent] = useState<any>(null);
@@ -457,8 +457,14 @@ ${link}`,
   };
   const galleryPhotos = photos;
   const realPhotos = photos;
-  const photoRows = Array.from({ length: Math.ceil(galleryPhotos.length / 3) }, (_, rowIndex) =>
-    galleryPhotos.slice(rowIndex * 3, rowIndex * 3 + 3),
+  const listData = useMemo(
+    () => [
+      { type: "tabs", key: "tabs" },
+      ...(tab === "photos"
+        ? galleryPhotos.map((photo) => ({ type: "photo", ...photo }))
+        : people.map((person) => ({ type: "person", ...person }))),
+    ],
+    [galleryPhotos, people, tab],
   );
   const toggleSelection = (photoId: string) => {
     setSelectedIds((current) =>
@@ -611,16 +617,24 @@ ${link}`,
           style={StyleSheet.absoluteFillObject}
         />
       </View>
-      <Animated.SectionList
+      <FlashList
         key={tab}
         ref={scrollRef}
         style={styles.scroll}
-        contentContainerStyle={{ paddingBottom: insets.bottom + 112 }}
+        contentContainerStyle={{ paddingBottom: insets.bottom + 112, paddingHorizontal: 8 }}
         showsVerticalScrollIndicator={false}
-        stickySectionHeadersEnabled
+        stickyHeaderIndices={[0]}
+        stickyHeaderConfig={{
+          useNativeDriver: true,
+          offset: 0,
+          zIndex: 10,
+          hideRelatedCell: true,
+        }}
         scrollEventThrottle={16}
         bounces
-        sections={[{ title: tab, data: tab === "photos" ? photoRows : people }]}
+        data={listData}
+        numColumns={3}
+        extraData={{ selectionMode, selectedIds }}
         ListHeaderComponent={
           <Animated.View
             style={[
@@ -677,9 +691,131 @@ ${link}`,
             </Animated.View>
           </Animated.View>
         }
-        renderSectionHeader={() => (
-          <View style={styles.tabsSticky}>
-            {selectionMode ? (
+        getItemType={(item) => item.type}
+        overrideItemLayout={(layout, item) => {
+          layout.span = item.type === "photo" ? 1 : 3;
+        }}
+        keyExtractor={(item, index) => item.key || item.id || `${item.type}-${index}`}
+        renderItem={({ item, index }) => {
+          if (item.type === "tabs") {
+            return (
+              <View style={styles.tabsSticky}>
+                {selectionMode ? (
+                  <View style={styles.selectionHeader}>
+                    <Pressable onPress={exitSelection}>
+                      <Text style={styles.selectionSide}>Cancel</Text>
+                    </Pressable>
+                    <Text style={styles.selectionCount}>{selectedIds.length} selected</Text>
+                    <Pressable onPress={selectAll}>
+                      <Text style={styles.selectionSide}>Select all</Text>
+                    </Pressable>
+                  </View>
+                ) : (
+                  <BlurView intensity={58} tint="dark" style={styles.tabs}>
+                    <View style={styles.tabsContent}>
+                      <Pressable onPress={() => selectTab("photos")} style={[styles.tab, tab === "photos" && styles.activeTab]}>
+                        <MaterialCommunityIcons
+                          name="image-multiple-outline"
+                          size={18}
+                          color={tab === "photos" ? colors.black : "rgba(255,255,255,.96)"}
+                        />
+                        <Text style={tab === "photos" ? styles.activeTabText : styles.tabText}>Photos</Text>
+                      </Pressable>
+                      <Pressable onPress={() => selectTab("people")} style={[styles.tab, tab === "people" && styles.activeTab]}>
+                        <MaterialCommunityIcons
+                          name="account-group-outline"
+                          size={18}
+                          color={tab === "people" ? colors.black : "rgba(255,255,255,.94)"}
+                        />
+                        <Text style={tab === "people" ? styles.activeTabText : styles.tabText}>People</Text>
+                      </Pressable>
+                    </View>
+                  </BlurView>
+                )}
+              </View>
+            );
+          }
+
+          if (item.type === "photo") {
+            const selected = selectedIds.includes(item.id);
+            const photoIndex = galleryPhotos.findIndex((photo) => photo.id === item.id);
+            return (
+              <Pressable
+                disabled={item.placeholder}
+                style={[styles.photoCell, selected && styles.selectedPhoto]}
+                onPress={() =>
+                  selectionMode
+                    ? toggleSelection(item.id)
+                    : router.push({
+                        pathname: "/photo/[id]",
+                        params: { id: item.id, eventId: id, index: String(photoIndex) },
+                      })
+                }
+                onLongPress={() => enterSelection(item.id)}
+                delayLongPress={280}
+              >
+                <Image
+                  source={{ uri: item.public_url }}
+                  style={styles.photoImage}
+                  resizeMethod="resize"
+                  fadeDuration={0}
+                />
+                {selectionMode && !item.placeholder ? (
+                  <View style={[styles.check, selected && styles.checkSelected]}>
+                    <MaterialCommunityIcons
+                      name={selected ? "check" : "circle-outline"}
+                      size={selected ? 19 : 20}
+                      color={selected ? colors.white : "rgba(255,255,255,.95)"}
+                    />
+                  </View>
+                ) : null}
+              </Pressable>
+            );
+          }
+
+          const person = item;
+          return (
+            <View style={styles.person}>
+              <LinearGradient colors={gradientForName(person.display_name)} style={styles.personAvatar}>
+                <Text style={styles.avatarText}>{(person.display_name || "?")[0].toUpperCase()}</Text>
+              </LinearGradient>
+              <View style={styles.personDetails}>
+                <Text style={styles.personName}>{person.display_name}</Text>
+                <Text style={styles.personMeta}>Joined {new Date(person.joined_at).toLocaleDateString()}</Text>
+              </View>
+              {isCreator && person.session_id !== (event?.creator_session_id || "") ? (
+                <Pressable
+                  onPress={() => removeMember(person)}
+                  disabled={actionBusy}
+                  style={styles.removeMemberButton}
+                  accessibilityLabel={`Remove ${person.display_name || "member"}`}
+                >
+                  <MaterialCommunityIcons
+                    name="account-remove-outline"
+                    size={20}
+                    color="rgba(255,255,255,.82)"
+                  />
+                </Pressable>
+              ) : null}
+            </View>
+          );
+        }}
+        onScroll={Animated.event(
+          [{ nativeEvent: { contentOffset: { y: scrollY } } }],
+          { useNativeDriver: true },
+        )}
+        onMomentumScrollEnd={(event) => {
+          const offset = event.nativeEvent.contentOffset.y;
+          if (tab === "photos") photoScrollOffset.current = Math.max(0, offset);
+          else peopleScrollOffset.current = Math.max(0, offset);
+        }}
+        onScrollEndDrag={(event) => {
+          const offset = event.nativeEvent.contentOffset.y;
+          if (tab === "photos") photoScrollOffset.current = Math.max(0, offset);
+          else peopleScrollOffset.current = Math.max(0, offset);
+        }}
+      />
+      {selectionMode ? (
               <View style={styles.selectionHeader}>
                 <Pressable onPress={exitSelection}><Text style={styles.selectionSide}>Cancel</Text></Pressable>
                 <Text style={styles.selectionCount}>{selectedIds.length} selected</Text>
@@ -1104,9 +1240,11 @@ const styles = StyleSheet.create({
     columnGap: "1.85%",
     rowGap: 4,
   },
-  photo: {
-    width: "32.1%",
+  photoCell: {
+    flex: 1,
     aspectRatio: 1,
+    marginHorizontal: 2,
+    marginBottom: 4,
     borderRadius: 10,
     overflow: "hidden",
     backgroundColor: "#26313b",
