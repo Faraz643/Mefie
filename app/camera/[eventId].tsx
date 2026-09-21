@@ -169,23 +169,30 @@ export default function CameraScreen() {
     setCapturing(true);
     void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     try {
-      const photo = await ref.current.takePictureAsync({
-        quality: 0.85,
-        skipProcessing: true,
-      });
-      if (!photo?.uri) throw new Error("Could not capture the photo.");
       if (!participantId) throw new Error("Your event connection was lost. Please try again.");
-      void enqueuePhotoUpload({
-        id: createUploadId(),
-        eventId: String(eventId),
-        participantId,
-        uri: photo.uri,
-        width: photo.width ?? null,
-        height: photo.height ?? null,
-      }).catch((error: any) => {
-        showMessage(error?.message || "Photo could not be queued.");
+
+      // Expo can return from takePictureAsync immediately when onPictureSaved is
+      // supplied. That keeps the shutter feeling like a native camera while the
+      // actual file save and upload hand off to the background queue.
+      await ref.current.takePictureAsync({
+        skipProcessing: true,
+        onPictureSaved: (photo) => {
+          if (!photo?.uri) {
+            showMessage("Photo could not be captured.");
+            return;
+          }
+          void enqueuePhotoUpload({
+            id: createUploadId(),
+            eventId: String(eventId),
+            participantId,
+            uri: photo.uri,
+            width: photo.width ?? null,
+            height: photo.height ?? null,
+          }).catch((error: any) => {
+            showMessage(error?.message || "Photo could not be queued.");
+          });
+        },
       });
-      showMessage("Photo queued");
     } catch (error: any) {
       showMessage(error?.message || "Could not capture the photo.");
     } finally {
