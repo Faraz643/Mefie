@@ -23,6 +23,7 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { FlashList, type FlashListRef } from "@shopify/flash-list";
+import { Image as ExpoImage } from "expo-image";
 import { BackButton } from "../../components/Screen";
 import { IconButton } from "../../components/Glass";
 import { colors, shadows } from "../../lib/theme";
@@ -605,7 +606,7 @@ ${link}`,
     <>
       <View style={styles.root}>
       <View pointerEvents="none" style={styles.background}>
-        <Image source={{ uri: heroSource }} style={styles.backgroundImage} />
+        <ExpoImage source={{ uri: heroSource }} style={styles.backgroundImage} contentFit="cover" cachePolicy="memory-disk" priority="low" />
         <LinearGradient
           colors={["rgba(4,9,14,.00)", "rgba(4,9,14,.03)", "rgba(8,16,23,.58)"]}
           locations={[0, 0.48, 1]}
@@ -624,6 +625,9 @@ ${link}`,
         contentContainerStyle={{ paddingBottom: insets.bottom + 112, paddingHorizontal: 8 }}
         showsVerticalScrollIndicator={false}
         stickyHeaderIndices={[0]}
+        estimatedItemSize={112}
+        drawDistance={420}
+        optimizeItemArrangement
         stickyHeaderConfig={{
           useNativeDriver: true,
           offset: 0,
@@ -701,121 +705,6 @@ ${link}`,
             return (
               <View style={styles.tabsSticky}>
                 {selectionMode ? (
-                  <View style={styles.selectionHeader}>
-                    <Pressable onPress={exitSelection}>
-                      <Text style={styles.selectionSide}>Cancel</Text>
-                    </Pressable>
-                    <Text style={styles.selectionCount}>{selectedIds.length} selected</Text>
-                    <Pressable onPress={selectAll}>
-                      <Text style={styles.selectionSide}>Select all</Text>
-                    </Pressable>
-                  </View>
-                ) : (
-                  <BlurView intensity={58} tint="dark" style={styles.tabs}>
-                    <View style={styles.tabsContent}>
-                      <Pressable onPress={() => selectTab("photos")} style={[styles.tab, tab === "photos" && styles.activeTab]}>
-                        <MaterialCommunityIcons
-                          name="image-multiple-outline"
-                          size={18}
-                          color={tab === "photos" ? colors.black : "rgba(255,255,255,.96)"}
-                        />
-                        <Text style={tab === "photos" ? styles.activeTabText : styles.tabText}>Photos</Text>
-                      </Pressable>
-                      <Pressable onPress={() => selectTab("people")} style={[styles.tab, tab === "people" && styles.activeTab]}>
-                        <MaterialCommunityIcons
-                          name="account-group-outline"
-                          size={18}
-                          color={tab === "people" ? colors.black : "rgba(255,255,255,.94)"}
-                        />
-                        <Text style={tab === "people" ? styles.activeTabText : styles.tabText}>People</Text>
-                      </Pressable>
-                    </View>
-                  </BlurView>
-                )}
-              </View>
-            );
-          }
-
-          if (item.type === "photo") {
-            const selected = selectedIds.includes(item.id);
-            const photoIndex = Math.max(0, index - 1);
-            return (
-              <Pressable
-                disabled={item.placeholder}
-                style={[styles.photoCell, selected && styles.selectedPhoto]}
-                onPress={() =>
-                  selectionMode
-                    ? toggleSelection(item.id)
-                    : router.push({
-                        pathname: "/photo/[id]",
-                        params: { id: item.id, eventId: id, index: String(photoIndex) },
-                      })
-                }
-                onLongPress={() => enterSelection(item.id)}
-                delayLongPress={280}
-              >
-                <Image
-                  source={{ uri: item.public_url }}
-                  style={styles.photoImage}
-                  resizeMethod="resize"
-                  fadeDuration={0}
-                />
-                {selectionMode && !item.placeholder ? (
-                  <View style={[styles.check, selected && styles.checkSelected]}>
-                    <MaterialCommunityIcons
-                      name={selected ? "check" : "circle-outline"}
-                      size={selected ? 19 : 20}
-                      color={selected ? colors.white : "rgba(255,255,255,.95)"}
-                    />
-                  </View>
-                ) : null}
-              </Pressable>
-            );
-          }
-
-          const person = item;
-          return (
-            <View style={styles.person}>
-              <LinearGradient colors={gradientForName(person.display_name)} style={styles.personAvatar}>
-                <Text style={styles.avatarText}>{(person.display_name || "?")[0].toUpperCase()}</Text>
-              </LinearGradient>
-              <View style={styles.personDetails}>
-                <Text style={styles.personName}>{person.display_name}</Text>
-                <Text style={styles.personMeta}>Joined {new Date(person.joined_at).toLocaleDateString()}</Text>
-              </View>
-              {isCreator && person.session_id !== (event?.creator_session_id || "") ? (
-                <Pressable
-                  onPress={() => removeMember(person)}
-                  disabled={actionBusy}
-                  style={styles.removeMemberButton}
-                  accessibilityLabel={`Remove ${person.display_name || "member"}`}
-                >
-                  <MaterialCommunityIcons
-                    name="account-remove-outline"
-                    size={20}
-                    color="rgba(255,255,255,.82)"
-                  />
-                </Pressable>
-              ) : null}
-            </View>
-          );
-        }}
-        onScroll={Animated.event(
-          [{ nativeEvent: { contentOffset: { y: scrollY } } }],
-          { useNativeDriver: true },
-        )}
-        onMomentumScrollEnd={(event) => {
-          const offset = event.nativeEvent.contentOffset.y;
-          if (tab === "photos") photoScrollOffset.current = Math.max(0, offset);
-          else peopleScrollOffset.current = Math.max(0, offset);
-        }}
-        onScrollEndDrag={(event) => {
-          const offset = event.nativeEvent.contentOffset.y;
-          if (tab === "photos") photoScrollOffset.current = Math.max(0, offset);
-          else peopleScrollOffset.current = Math.max(0, offset);
-        }}
-      />
-      {selectionMode ? (
               <View style={styles.selectionHeader}>
                 <Pressable onPress={exitSelection}><Text style={styles.selectionSide}>Cancel</Text></Pressable>
                 <Text style={styles.selectionCount}>{selectedIds.length} selected</Text>
