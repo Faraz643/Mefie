@@ -1,6 +1,8 @@
 import { BlurView } from "expo-blur";
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 import { Asset } from "expo-asset";
+import Clipboard from "expo-clipboard";
+import QRCode from "react-native-qrcode-svg";
 import * as MediaLibrary from "expo-media-library";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { LinearGradient } from "expo-linear-gradient";
@@ -16,6 +18,7 @@ import {
   View,
   ActivityIndicator,
   ScrollView,
+  Modal,
   type NativeScrollEvent,
   type NativeSyntheticEvent,
 } from "react-native";
@@ -79,6 +82,11 @@ export default function EventScreen() {
   const [actionBusy, setActionBusy] = useState(false);
   const [error, setError] = useState("");
   const [isCreator, setIsCreator] = useState(false);
+  const [inviteOpen, setInviteOpen] = useState(false);
+  const [inviteSlide, setInviteSlide] = useState<0 | 1>(0);
+  const [temporaryInvite, setTemporaryInvite] = useState<{ token: string; expiresAt: string } | null>(null);
+  const [temporaryInviteBusy, setTemporaryInviteBusy] = useState(false);
+  const [temporarySecondsLeft, setTemporarySecondsLeft] = useState(0);
   /* PROFILE PHOTO LOGIC DISABLED — session avatar loading kept here for future use.
   useEffect(() => {
     void getSessionId().then(setSessionId);
@@ -371,14 +379,92 @@ export default function EventScreen() {
       ],
     );
   };
-  const invite = async () => {
-    const link = `https://mefie.app/e/${event?.invite_code || ""}`;
+  const permanentInviteLink = event?.invite_code
+    ? `https://mefie.app/e/${event.invite_code}`
+    : "";
+
+  const temporaryInviteLink = temporaryInvite
+    ? `https://mefie.app/rejoin/${temporaryInvite.token}`
+    : "";
+
+  useEffect(() => {
+    if (!temporaryInvite) {
+      setTemporarySecondsLeft(0);
+      return;
+    }
+    const update = () => {
+      const remaining = Math.max(
+        0,
+        Math.ceil((new Date(temporaryInvite.expiresAt).getTime() - Date.now()) / 1000),
+      );
+      setTemporarySecondsLeft(remaining);
+      if (remaining === 0) setTemporaryInvite(null);
+    };
+    update();
+    const timer = setInterval(update, 1000);
+    return () => clearInterval(timer);
+  }, [temporaryInvite]);
+
+  const openInvites = () => {
+    setInviteSlide(0);
+    setInviteOpen(true);
+  };
+
+  const closeInvites = () => {
+    setInviteOpen(false);
+    setInviteSlide(0);
+  };
+
+  const shareInvite = async (link: string, temporary = false) => {
+    if (!link) return;
     await Share.share({
-      message: `Join ${event?.name || "our Mefie event"} 📸
+      message: temporary
+        ? `Temporary invite for ${event?.name || "this Mefie event"} 📸
+This invite expires in 5 minutes.
+
+${link}`
+        : `Join ${event?.name || "our Mefie event"} 📸
 Everyone's photos go into one shared album.
 
 ${link}`,
     });
+  };
+
+  const copyInvite = async (link: string) => {
+    if (!link) return;
+    await Clipboard.setStringAsync(link);
+    Alert.alert("Copied", "Invite link copied to your clipboard.");
+  };
+
+  const createTemporaryInvite = async () => {
+    if (!supabase || !isCreator || temporaryInviteBusy) return;
+    setTemporaryInviteBusy(true);
+    try {
+      const { data, error: createError } = await supabase.rpc(
+        "create_event_temporary_invite",
+        {
+          p_event_id: String(id),
+          p_creator_session_id: await getSessionId(),
+        },
+      );
+      if (createError) throw createError;
+      const row = Array.isArray(data) ? data[0] : data;
+      if (!row?.token || !row?.expires_at) {
+        throw new Error("Could not create the temporary invite.");
+      }
+      setTemporaryInvite({
+        token: row.token,
+        expiresAt: row.expires_at,
+      });
+      setInviteSlide(1);
+    } catch (e: any) {
+      Alert.alert(
+        "Could not create invite",
+        e?.message || "Please try again.",
+      );
+    } finally {
+      setTemporaryInviteBusy(false);
+    }
   };
   const selectTab = (nextTab: "photos" | "people") => {
     if (nextTab === tab) return;
@@ -585,9 +671,9 @@ ${link}`,
                   />
                 </IconButton>
               ) : null}
-              <IconButton plain accessibilityLabel="Invite friends" onPress={invite}>
+              <IconButton plain accessibilityLabel="Event QR and invites" onPress={openInvites}>
                 <MaterialCommunityIcons
-                  name="link-variant"
+                  name="qrcode"
                   size={21}
                   color={colors.white}
                 />
@@ -852,6 +938,155 @@ ${link}`,
         </Pressable>
       )}
     </View>
+
+      <Modal
+        visible={inviteOpen}
+        transparent
+        animationType="slide"
+        onRequestClose={closeInvites}
+      >
+        <View style={styles.inviteModalBackdrop}>
+          <Pressable style={StyleSheet.absoluteFillObject} onPress={closeInvites} />
+          <View style={[styles.inviteSheet, { paddingBottom: Math.max(insets.bottom + 18, 24) }]}>
+            <View style={styles.inviteHandle} />
+            <View style={styles.inviteSheetHeader}>
+              <View>
+                <Text style={styles.inviteEyebrow}>EVENT INVITES</Text>
+                <Text style={styles.inviteSheetTitle}>
+                  {inviteSlide === 0 ? "Invite to this event" : "Temporary invite"}
+                </Text>
+              </View>
+              <Pressable style={styles.inviteClose} onPress={closeInvites}>
+                <MaterialCommunityIcons name="close" size={20} color={colors.white} />
+              </Pressable>
+            </View>
+
+            {inviteSlide === 0 ? (
+              <View style={styles.inviteSlide}>
+                <Text style={styles.inviteDescription}>
+                  This permanent invite stays active while the event is active.
+                </Text>
+                <View style={styles.qrFrame}>
+                  {permanentInviteLink ? (
+                    <QRCode
+                      value={permanentInviteLink}
+                      size={210}
+                      backgroundColor="#fff"
+                      color="#0A1118"
+                    />
+                  ) : null}
+                </View>
+                <View style={styles.inviteLinkRow}>
+                  <View style={styles.inviteLinkCopy}>
+                    <MaterialCommunityIcons name="link-variant" size={18} color="rgba(255,255,255,.72)" />
+                    <Text style={styles.inviteLinkText} numberOfLines={1}>
+                      {permanentInviteLink}
+                    </Text>
+                  </View>
+                  <Pressable style={styles.copyButton} onPress={() => copyInvite(permanentInviteLink)}>
+                    <MaterialCommunityIcons name="content-copy" size={18} color={colors.white} />
+                  </Pressable>
+                </View>
+                <View style={styles.inviteActions}>
+                  <Pressable style={styles.secondaryInviteButton} onPress={() => shareInvite(permanentInviteLink)}>
+                    <MaterialCommunityIcons name="share-variant-outline" size={19} color={colors.white} />
+                    <Text style={styles.secondaryInviteText}>Share</Text>
+                  </Pressable>
+                  {isCreator ? (
+                    <Pressable
+                      style={styles.primaryInviteButton}
+                      onPress={createTemporaryInvite}
+                      disabled={temporaryInviteBusy}
+                    >
+                      {temporaryInviteBusy ? (
+                        <ActivityIndicator color={colors.black} />
+                      ) : (
+                        <>
+                          <MaterialCommunityIcons name="timer-plus-outline" size={19} color={colors.black} />
+                          <Text style={styles.primaryInviteText}>Temporary invite</Text>
+                        </>
+                      )}
+                    </Pressable>
+                  ) : null}
+                </View>
+              </View>
+            ) : (
+              <View style={styles.inviteSlide}>
+                <View style={styles.temporaryBadge}>
+                  <MaterialCommunityIcons name="clock-fast" size={17} color="#fff" />
+                  <Text style={styles.temporaryBadgeText}>
+                    {temporarySecondsLeft > 0
+                      ? `Expires in ${Math.floor(temporarySecondsLeft / 60)}:${String(temporarySecondsLeft % 60).padStart(2, "0")}`
+                      : "Expired"}
+                  </Text>
+                </View>
+                {temporaryInvite && temporarySecondsLeft > 0 ? (
+                  <>
+                    <Text style={styles.inviteDescription}>
+                      Anyone with this temporary QR or link can join. It automatically expires after 5 minutes.
+                    </Text>
+                    <View style={styles.qrFrame}>
+                      <QRCode
+                        value={temporaryInviteLink}
+                        size={210}
+                        backgroundColor="#fff"
+                        color="#0A1118"
+                      />
+                    </View>
+                    <View style={styles.inviteLinkRow}>
+                      <View style={styles.inviteLinkCopy}>
+                        <MaterialCommunityIcons name="link-variant" size={18} color="rgba(255,255,255,.72)" />
+                        <Text style={styles.inviteLinkText} numberOfLines={1}>
+                          {temporaryInviteLink}
+                        </Text>
+                      </View>
+                      <Pressable style={styles.copyButton} onPress={() => copyInvite(temporaryInviteLink)}>
+                        <MaterialCommunityIcons name="content-copy" size={18} color={colors.white} />
+                      </Pressable>
+                    </View>
+                    <View style={styles.inviteActions}>
+                      <Pressable style={styles.secondaryInviteButton} onPress={() => shareInvite(temporaryInviteLink, true)}>
+                        <MaterialCommunityIcons name="share-variant-outline" size={19} color={colors.white} />
+                        <Text style={styles.secondaryInviteText}>Share</Text>
+                      </Pressable>
+                      <Pressable style={styles.primaryInviteButton} onPress={createTemporaryInvite} disabled={temporaryInviteBusy}>
+                        {temporaryInviteBusy ? (
+                          <ActivityIndicator color={colors.black} />
+                        ) : (
+                          <>
+                            <MaterialCommunityIcons name="refresh" size={19} color={colors.black} />
+                            <Text style={styles.primaryInviteText}>New 5-min invite</Text>
+                          </>
+                        )}
+                      </Pressable>
+                    </View>
+                  </>
+                ) : (
+                  <View style={styles.expiredInvite}>
+                    <MaterialCommunityIcons name="timer-off-outline" size={42} color="rgba(255,255,255,.82)" />
+                    <Text style={styles.expiredTitle}>Temporary invite expired</Text>
+                    <Text style={styles.expiredText}>Create a new one to generate another 5-minute QR and link.</Text>
+                    <Pressable style={styles.primaryInviteButton} onPress={createTemporaryInvite} disabled={temporaryInviteBusy}>
+                      {temporaryInviteBusy ? (
+                        <ActivityIndicator color={colors.black} />
+                      ) : (
+                        <>
+                          <MaterialCommunityIcons name="timer-plus-outline" size={19} color={colors.black} />
+                          <Text style={styles.primaryInviteText}>Create new invite</Text>
+                        </>
+                      )}
+                    </Pressable>
+                  </View>
+                )}
+                <Pressable style={styles.backInvite} onPress={() => setInviteSlide(0)}>
+                  <MaterialCommunityIcons name="arrow-left" size={18} color="rgba(255,255,255,.78)" />
+                  <Text style={styles.backInviteText}>Permanent invite</Text>
+                </Pressable>
+              </View>
+            )}
+          </View>
+        </View>
+      </Modal>
   );
 }
 const styles = StyleSheet.create({
@@ -1045,6 +1280,179 @@ const styles = StyleSheet.create({
   },
   disabledDelete: { opacity: 0.35 },
   deleteText: { color: "#fff", fontSize: 14, fontWeight: "800" },
+  inviteModalBackdrop: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,.62)",
+    justifyContent: "flex-end",
+  },
+  inviteSheet: {
+    maxHeight: "91%",
+    borderTopLeftRadius: 32,
+    borderTopRightRadius: 32,
+    backgroundColor: "rgba(15,23,31,.98)",
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,.14)",
+    paddingHorizontal: 20,
+    paddingTop: 10,
+  },
+  inviteHandle: {
+    alignSelf: "center",
+    width: 42,
+    height: 5,
+    borderRadius: 3,
+    backgroundColor: "rgba(255,255,255,.22)",
+    marginBottom: 18,
+  },
+  inviteSheetHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
+  inviteEyebrow: {
+    color: "rgba(255,255,255,.48)",
+    fontSize: 10,
+    fontWeight: "800",
+    letterSpacing: 1.8,
+  },
+  inviteSheetTitle: {
+    color: colors.white,
+    fontSize: 25,
+    fontWeight: "800",
+    letterSpacing: -0.5,
+    marginTop: 4,
+  },
+  inviteClose: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: "rgba(255,255,255,.08)",
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,.10)",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  inviteSlide: {
+    alignItems: "center",
+    paddingTop: 14,
+  },
+  inviteDescription: {
+    color: "rgba(255,255,255,.65)",
+    fontSize: 13,
+    lineHeight: 19,
+    textAlign: "center",
+    maxWidth: 330,
+    marginBottom: 14,
+  },
+  qrFrame: {
+    width: 238,
+    height: 238,
+    borderRadius: 25,
+    backgroundColor: "#fff",
+    alignItems: "center",
+    justifyContent: "center",
+    padding: 14,
+    ...shadows,
+  },
+  inviteLinkRow: {
+    width: "100%",
+    marginTop: 14,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  inviteLinkCopy: {
+    flex: 1,
+    height: 50,
+    borderRadius: 16,
+    paddingHorizontal: 14,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 9,
+    backgroundColor: "rgba(255,255,255,.07)",
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,.10)",
+  },
+  inviteLinkText: {
+    flex: 1,
+    color: "rgba(255,255,255,.86)",
+    fontSize: 12,
+  },
+  copyButton: {
+    width: 50,
+    height: 50,
+    borderRadius: 16,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "rgba(255,255,255,.10)",
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,.12)",
+  },
+  inviteActions: {
+    width: "100%",
+    flexDirection: "row",
+    gap: 9,
+    marginTop: 12,
+  },
+  secondaryInviteButton: {
+    flex: 1,
+    minHeight: 52,
+    borderRadius: 18,
+    backgroundColor: "rgba(255,255,255,.08)",
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,.12)",
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 7,
+  },
+  secondaryInviteText: { color: colors.white, fontSize: 14, fontWeight: "700" },
+  primaryInviteButton: {
+    flex: 1.25,
+    minHeight: 52,
+    borderRadius: 18,
+    backgroundColor: "#fff",
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 7,
+  },
+  primaryInviteText: { color: colors.black, fontSize: 14, fontWeight: "800" },
+  temporaryBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 7,
+    borderRadius: 999,
+    paddingHorizontal: 13,
+    paddingVertical: 8,
+    backgroundColor: "rgba(255,255,255,.09)",
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,.12)",
+    marginBottom: 10,
+  },
+  temporaryBadgeText: { color: colors.white, fontSize: 12, fontWeight: "800" },
+  expiredInvite: {
+    minHeight: 300,
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 9,
+    paddingHorizontal: 25,
+  },
+  expiredTitle: { color: colors.white, fontSize: 19, fontWeight: "800", marginTop: 3 },
+  expiredText: {
+    color: "rgba(255,255,255,.60)",
+    fontSize: 13,
+    lineHeight: 19,
+    textAlign: "center",
+    marginBottom: 9,
+  },
+  backInvite: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    paddingVertical: 17,
+  },
+  backInviteText: { color: "rgba(255,255,255,.78)", fontSize: 13, fontWeight: "700" },
+
   camera: {
     position: "absolute",
     alignSelf: "center",
