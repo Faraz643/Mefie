@@ -592,13 +592,13 @@ ${link}`,
       <View style={styles.root}>
       <View pointerEvents="none" style={styles.background}>
         <ExpoImage source={{ uri: heroSource }} style={styles.backgroundImage} contentFit="cover" cachePolicy="memory-disk" priority="low" />
-        <LinearGradient
-          colors={["rgba(4,9,14,.00)", "rgba(4,9,14,.03)", "rgba(8,16,23,.58)"]}
-          locations={[0, 0.48, 1]}
+        <BlurView
+          intensity={32}
+          tint="dark"
           style={StyleSheet.absoluteFillObject}
         />
         <LinearGradient
-          colors={["rgba(4,9,14,.02)", "rgba(4,9,14,.08)", "rgba(8,16,23,.72)"]}
+          colors={["rgba(4,9,14,.18)", "rgba(4,9,14,.30)", "rgba(8,16,23,.64)"]}
           locations={[0, 0.48, 1]}
           style={StyleSheet.absoluteFillObject}
         />
