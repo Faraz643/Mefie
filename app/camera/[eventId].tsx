@@ -47,6 +47,7 @@ export default function CameraScreen() {
   const [permissionBusy, setPermissionBusy] = useState(false);
   const [, setQueueVersion] = useState(0);
   const ref = useRef<CameraView>(null);
+  const captureLock = useRef(false);
   const messageTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
@@ -150,7 +151,21 @@ export default function CameraScreen() {
       </View>
     );
   const capture = async () => {
-    if (!ref.current || capturing || !cameraReady || !membershipReady || !eventId) return;
+    // Use an immediate ref lock as well as React state. State updates are batched,
+    // so rapid taps can otherwise enter this handler several times before
+    // disabled={capturing} reaches the native button.
+    if (
+      captureLock.current ||
+      !ref.current ||
+      capturing ||
+      !cameraReady ||
+      !membershipReady ||
+      !eventId
+    ) {
+      return;
+    }
+
+    captureLock.current = true;
     setCapturing(true);
     void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     try {
@@ -174,6 +189,7 @@ export default function CameraScreen() {
     } catch (error: any) {
       showMessage(error?.message || "Could not capture the photo.");
     } finally {
+      captureLock.current = false;
       setCapturing(false);
     }
   };
