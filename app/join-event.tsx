@@ -14,6 +14,16 @@ function inviteFromValue(value: string) {
   return (match?.[1] || raw).toUpperCase();
 }
 
+function quickAccessTokenFromValue(value: string) {
+  const raw = value.trim().replace(/\/$/, "");
+  const match = raw.match(/\/rejoin\/([^/?#]+)/i);
+  if (match?.[1]) return match[1];
+  // Quick-access tokens are 32-character lowercase hex strings. Supporting
+  // the raw token also makes QR scanners that strip the URL work correctly.
+  if (/^[a-f0-9]{32}$/i.test(raw)) return raw;
+  return "";
+}
+
 export default function JoinEventScreen() {
   const router = useRouter();
   const { displayName } = useApp();
@@ -24,6 +34,15 @@ export default function JoinEventScreen() {
 
   const join = async (value = link) => {
     setError("");
+    const quickAccessToken = quickAccessTokenFromValue(value);
+    if (quickAccessToken) {
+      router.push({
+        pathname: "/rejoin/[token]",
+        params: { token: quickAccessToken },
+      });
+      return;
+    }
+
     const invite = inviteFromValue(value);
     if (!invite) {
       setError("Paste an event link or code.");
@@ -91,7 +110,7 @@ export default function JoinEventScreen() {
           onBarcodeScanned={({ data }) => {
             setScanning(false);
             setLink(data);
-            join(data);
+            void join(data);
           }}
         />
         <View style={styles.scanOverlay}>
