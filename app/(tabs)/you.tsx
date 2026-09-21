@@ -20,6 +20,7 @@ export default function You() {
   } = useApp();
   const [editingName, setEditingName] = useState(false);
   const [name, setName] = useState(displayName);
+  const [nameTextWidth, setNameTextWidth] = useState(0);
 
   useEffect(() => {
     setName(displayName);
@@ -92,7 +93,12 @@ export default function You() {
                 />
               ) : (
                 <>
-                  <Text style={styles.title} numberOfLines={1}>
+                  <Text
+                    style={styles.title}
+                    numberOfLines={1}
+                    ellipsizeMode="tail"
+                    onLayout={(event) => setNameTextWidth(event.nativeEvent.layout.width)}
+                  >
                     {displayName}
                   </Text>
                   <Pressable
@@ -100,7 +106,10 @@ export default function You() {
                     accessibilityLabel="Edit name"
                     onPress={() => setEditingName(true)}
                     hitSlop={8}
-                    style={styles.editNameButton}
+                    style={[
+                      styles.editNameButton,
+                      { left: 130 + Math.min(nameTextWidth, 180) / 2 + 4 },
+                    ]}
                   >
                     <MaterialCommunityIcons
                       name="pencil-outline"
@@ -299,36 +308,36 @@ const styles = StyleSheet.create({
   },
   */
   profileColumn: {
-    width: 78,
-    alignItems: "flex-start",
+    width: 260,
+    alignItems: "center",
   },
   nameRow: {
     width: 260,
     height: 34,
     marginTop: 8,
-    flexDirection: "row",
+    position: "relative",
     alignItems: "center",
-    justifyContent: "flex-start",
+    justifyContent: "center",
     overflow: "visible",
   },
   editNameButton: {
+    position: "absolute",
     width: 22,
     height: 22,
-    marginLeft: 4,
-    flexShrink: 0,
     alignItems: "center",
     justifyContent: "center",
   },
   title: {
+    width: 180,
     color: "#fff",
     fontSize: 24,
     lineHeight: 30,
     fontWeight: "800",
     letterSpacing: -0.5,
-    flexShrink: 0,
+    textAlign: "center",
   },
   nameInput: {
-    width: 220,
+    width: 180,
     height: 34,
     color: "#fff",
     fontSize: 24,
