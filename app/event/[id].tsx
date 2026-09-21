@@ -9,7 +9,6 @@ import { LinearGradient } from "expo-linear-gradient";
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   Alert,
-  Animated,
   Image,
   Pressable,
   Share,
@@ -45,7 +44,6 @@ export default function EventScreen() {
   const insets = useSafeAreaInsets();
   const { id } = useLocalSearchParams<{ id: string }>();
   const { displayName } = useApp();
-  const scrollY = useRef(new Animated.Value(0)).current;
   const scrollRef = useRef<FlashListRef<any>>(null);
   const photoScrollOffset = useRef(0);
   const peopleScrollOffset = useRef(0);
@@ -588,16 +586,6 @@ ${link}`,
   const title = event?.name || "Event";
   const visiblePeople = people.slice(0, 5);
   const heroSource = photos[0]?.public_url || fallbackPhoto;
-  const heroOpacity = scrollY.interpolate({
-    inputRange: [0, 130, 220],
-    outputRange: [1, 0.98, 0],
-    extrapolate: "clamp",
-  });
-  const heroInfoTranslate = scrollY.interpolate({
-    inputRange: [0, 170],
-    outputRange: [0, -42],
-    extrapolate: "clamp",
-  });
   return (
     <>
       <View style={styles.root}>
@@ -633,7 +621,7 @@ ${link}`,
           <Animated.View
             style={[
               styles.heroContent,
-              { paddingTop: insets.top + 15, opacity: heroOpacity },
+              { paddingTop: insets.top + 15 },
             ]}
           >
             <View style={styles.top}>
@@ -659,7 +647,7 @@ ${link}`,
                 </Pressable>
               </View>
             </View>
-            <Animated.View style={{ transform: [{ translateY: heroInfoTranslate }] }}>
+            <View>
               <View style={styles.heroInfo}>
                 <Text style={styles.title} numberOfLines={1}>{title}</Text>
                 <Text style={styles.meta}>{people.length} people · {photos.length} photos</Text>
@@ -682,7 +670,7 @@ ${link}`,
                   ) : null}
                 </View>
               </View>
-            </Animated.View>
+            </View>
           </Animated.View>
         }
         getItemType={(item) => item.type}
@@ -815,16 +803,7 @@ ${link}`,
             </View>
           );
         }}
-        onScroll={Animated.event(
-          [{ nativeEvent: { contentOffset: { y: scrollY } } }],
-          { useNativeDriver: true },
-        )}
-        onScrollEndDrag={(event) => {
-          const offset = Math.max(0, event.nativeEvent.contentOffset.y);
-          if (tab === "photos") photoScrollOffset.current = offset;
-          else peopleScrollOffset.current = offset;
-        }}
-        onMomentumScrollEnd={(event) => {
+        onScroll={(event) => {
           const offset = Math.max(0, event.nativeEvent.contentOffset.y);
           if (tab === "photos") photoScrollOffset.current = offset;
           else peopleScrollOffset.current = offset;
