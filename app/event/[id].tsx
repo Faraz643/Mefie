@@ -91,7 +91,11 @@ export default function EventScreen() {
       if (!supabase) return;
       try {
         const sessionId = await getSessionId();
-        await ensureParticipant(String(id), displayName);
+        const participantId = await ensureParticipant(String(id), displayName);
+        if (!participantId) {
+          if (active) router.replace("/events");
+          return;
+        }
         const [eventResult, photosResult, participantsResult] = await Promise.all([
           supabase.from("events").select("*").eq("id", id).single(),
           supabase
