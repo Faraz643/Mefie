@@ -1,5 +1,6 @@
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
-import { Camera, useCameraDevice, useCameraPermission, useCodeScanner } from "react-native-vision-camera";
+import { useCameraPermission } from "react-native-vision-camera";
+import { CodeScanner } from "react-native-vision-camera-barcode-scanner";
 import { useRouter } from "expo-router";
 import React, { useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
@@ -31,17 +32,7 @@ export default function JoinEventScreen() {
   const [scanning, setScanning] = useState(false);
   const [error, setError] = useState("");
   const { hasPermission, canRequestPermission, requestPermission } = useCameraPermission();
-  const scannerDevice = useCameraDevice("back");
-  const codeScanner = useCodeScanner({
-    codeTypes: ["qr"],
-    onCodeScanned: (codes) => {
-      const data = codes[0]?.value;
-      if (!data) return;
-      setScanning(false);
-      setLink(data);
-      void join(data);
-    },
-  });
+
 
   const join = async (value = link) => {
     setError("");
@@ -103,11 +94,6 @@ export default function JoinEventScreen() {
         return;
       }
 
-      if (!scannerDevice) {
-        setError("No camera is available on this device.");
-        return;
-      }
-
       setScanning(true);
     } catch (e: any) {
       setError(e?.message || "Could not access the camera.");
@@ -117,11 +103,18 @@ export default function JoinEventScreen() {
   if (scanning)
     return (
       <View style={styles.scanner}>
-        <Camera
+        <CodeScanner
           style={StyleSheet.absoluteFill}
-          device={scannerDevice}
           isActive={scanning}
-          codeScanner={codeScanner}
+          barcodeFormats={["qr-code"]}
+          onBarcodeScanned={(barcodes) => {
+            const data = barcodes[0]?.rawValue;
+            if (!data) return;
+            setScanning(false);
+            setLink(data);
+            void join(data);
+          }}
+          onError={(scanError) => setError(scanError.message || "Could not scan the QR code.")}
         />
         <View style={styles.scanOverlay}>
           <View style={styles.scanTop}>
