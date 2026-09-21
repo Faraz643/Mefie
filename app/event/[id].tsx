@@ -1090,7 +1090,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     paddingHorizontal: 10,
     marginBottom: 4,
-    gap: 0,
+    justifyContent: "space-between",
   },
   grid: {
     flexDirection: "row",
