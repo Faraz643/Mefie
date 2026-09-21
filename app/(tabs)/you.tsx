@@ -295,9 +295,11 @@ const styles = StyleSheet.create({
   },
   */
   nameRow: {
+    width: 78,
+    alignSelf: "center",
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "center",
+    justifyContent: "flex-start",
     marginTop: 8,
     minHeight: 34,
   },
