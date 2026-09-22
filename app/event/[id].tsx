@@ -24,7 +24,7 @@ import { FlashList, type FlashListRef } from "@shopify/flash-list";
 import { Image as ExpoImage } from "expo-image";
 import { BackButton } from "../../components/Screen";
 import { IconButton } from "../../components/Glass";
-import { colors, shadows } from "../../lib/theme";
+import { colors, shadows, typography } from "../../lib/theme";
 import { getParticipantId, getSessionId, supabase, useApp } from "../../lib/app-context";
 
 function gradientForName(name: string): [string, string] {
