@@ -3,7 +3,7 @@ import React, { useEffect, useState } from "react";
 import { StyleSheet, Text } from "react-native";
 import { GlassButton, GlassCard, GlassInput } from "../../components/Glass";
 import { Screen } from "../../components/Screen";
-import { colors } from "../../lib/theme";
+import { colors, typography } from "../../lib/theme";
 import { ensureParticipant, supabase } from "../../lib/app-context";
 
 export default function InviteRoute() {
@@ -81,7 +81,7 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: "800",
     marginTop: 50,
-  },
+  fontFamily: typography.extraBold, },
   title: { color: colors.white, fontSize: 34, fontWeight: "800", marginTop: 8 },
   sub: { color: colors.muted, fontSize: 15, lineHeight: 22, marginTop: 8 },
   error: { color: "#FFB4B4", fontSize: 13, marginBottom: 12 },
