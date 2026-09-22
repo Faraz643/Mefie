@@ -79,8 +79,7 @@ const styles = StyleSheet.create({
 fontFamily: typography.bold,
     color: colors.white,
     fontSize: 35,
-    fontFamily: typography.extraBold, fontWeight: "800",
-    letterSpacing: -1,
+    fontFamily: typography.extraBold, letterSpacing: -1,
   },
   sub: { color: colors.muted, fontSize: 14, fontFamily: typography.regular, marginTop: 5 },
   list: { gap: 14 },
@@ -113,6 +112,6 @@ fontFamily: typography.bold,
     marginBottom: 9,
   },
   h: {
-fontFamily: typography.bold, color: colors.white, fontSize: 19, fontFamily: typography.extraBold, fontWeight: "800" },
+fontFamily: typography.bold, color: colors.white, fontSize: 19, fontFamily: typography.extraBold, fontFamily: typography.extraBold },
   m: { color: "rgba(255,255,255,.70)", fontSize: 13, fontFamily: typography.regular, marginTop: 5 },
 });
