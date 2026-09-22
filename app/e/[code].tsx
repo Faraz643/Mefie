@@ -78,7 +78,7 @@ export default function InviteRoute() {
 const styles = StyleSheet.create({
   kicker: {
     color: colors.muted,
-    fontSize: 12,
+    fontFamily: typography.regular, fontSize: 12,
     fontFamily: typography.extraBold, fontFamily: typography.extraBold,
     marginTop: 50,
   fontFamily: typography.extraBold, },
