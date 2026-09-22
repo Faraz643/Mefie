@@ -118,18 +118,18 @@ const styles = StyleSheet.create({
   ready: {
     color: colors.white,
     fontSize: 13,
-    fontWeight: "700",
+    fontFamily: typography.bold, fontWeight: "700",
     marginTop: 16,
   },
   title: {
     color: colors.white,
     fontSize: 29,
-    fontWeight: "800",
+    fontFamily: typography.extraBold, fontWeight: "800",
     marginTop: 8,
     textAlign: "center",
     letterSpacing: -0.5,
   },
-  sub: { color: colors.muted, fontSize: 14, marginTop: 7, textAlign: "center" },
+  sub: { color: colors.muted, fontSize: 14, fontFamily: typography.regular, marginTop: 7, textAlign: "center" },
   qrCard: {
     backgroundColor: "rgba(255,255,255,.96)",
     borderColor: "rgba(255,255,255,.72)",
@@ -143,9 +143,9 @@ const styles = StyleSheet.create({
   label: {
     color: "#111",
     fontSize: 11,
-    fontWeight: "900",
+    fontFamily: typography.extraBold, fontWeight: "900",
     letterSpacing: 1.3,
     marginBottom: 12,
   },
-  qrLink: { color: "#111", fontSize: 10, marginTop: 12 },
+  qrLink: { color: "#111", fontSize: 10, fontFamily: typography.regular, marginTop: 12 },
 });
