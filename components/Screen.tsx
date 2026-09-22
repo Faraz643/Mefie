@@ -56,7 +56,7 @@ export function BottomNav({ active = "home" }: { active?: NavKey }) {
   const navigate = (key: NavKey, path: NavPath) => { if (key === active) return; router.navigate(path); };
   return (
     <View pointerEvents="box-none" style={[styles.navPosition, { bottom: Math.max(insets.bottom + 14, 18) }]}>
-      <BlurView {...(target ? { blurTarget: target, blurMethod: "dimezisBlurView" as const } : { blurMethod: "none" as const })} intensity={34} tint="dark" style={styles.nav}>
+      <BlurView {...(target ? { blurTarget: target, blurMethod: "dimezisBlurView" as const } : { blurMethod: "none" as const })} intensity={52} tint="light" style={styles.nav}>
         <View pointerEvents="none" style={styles.navFrost} />
         <View style={styles.navInner}>
           {items.map(({ key, label, icon, path }) => {
@@ -88,11 +88,11 @@ const styles = StyleSheet.create({
   markB: { position: "absolute", width: 17, height: 20, borderColor: "#C9D7F5", left: 11, top: 7, borderWidth: 2 },
   brand: { color: colors.white, fontSize: 21, fontWeight: "800", letterSpacing: -0.6 },
   navPosition: { position: "absolute", left: 18, right: 18 },
-  nav: { height: 76, borderRadius: 38, borderWidth: 1, borderColor: "rgba(255,255,255,0.20)", overflow: "hidden", backgroundColor: "rgba(20,25,31,0.38)", ...shadows },
-  navFrost: { ...StyleSheet.absoluteFillObject, backgroundColor: "rgba(255,255,255,0.055)" },
+  nav: { height: 76, borderRadius: 38, borderWidth: 1, borderColor: "rgba(255,255,255,0.28)", overflow: "hidden", backgroundColor: "rgba(255,255,255,0.16)", ...shadows },
+  navFrost: { ...StyleSheet.absoluteFillObject, backgroundColor: "rgba(255,255,255,0.10)" },
   navInner: { height: 74, padding: 6, flexDirection: "row", alignItems: "center", position: "relative" },
-  navIndicator: { ...StyleSheet.absoluteFillObject, borderRadius: 31, backgroundColor: "rgba(255,255,255,0.11)", borderWidth: 1, borderColor: "rgba(255,255,255,0.18)" },
+  navIndicator: { ...StyleSheet.absoluteFillObject, borderRadius: 31, backgroundColor: "rgba(255,255,255,0.28)", borderWidth: 1, borderColor: "rgba(255,255,255,0.34)" },
   navItem: { height: 62, alignItems: "center", justifyContent: "center", gap: 1, position: "relative" },
-  navText: { color: "rgba(255,255,255,0.64)", fontSize: 11, lineHeight: 15, fontWeight: "500" },
+  navText: { color: "rgba(255,255,255,0.82)", fontSize: 11, lineHeight: 15, fontWeight: "500" },
   navTextSelected: { color: colors.white, fontWeight: "700" },
 });
