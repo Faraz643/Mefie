@@ -20,7 +20,7 @@ import {
   View,
 } from "react-native";
 import { ensureParticipant, getParticipantId, supabase, useApp } from "../../lib/app-context";
-import { colors } from "../../lib/theme";
+import { colors, typography } from "../../lib/theme";
 import {
   enqueuePhotoUpload,
   getPhotoQueueSummary,
