@@ -108,7 +108,7 @@ const styles = StyleSheet.create({
   title: {
     color: colors.white,
     fontSize: 34,
-    fontFamily: typography.extraBold, fontWeight: "800",
+    fontFamily: typography.extraBold, fontFamily: typography.extraBold,
     letterSpacing: -1,
   },
   sub: { color: colors.muted, fontSize: 15, fontFamily: typography.regular, marginTop: 7 },
@@ -139,7 +139,7 @@ const styles = StyleSheet.create({
   createButtonLabel: {
     color: colors.black,
     fontSize: 16,
-    fontFamily: typography.bold, fontWeight: "700",
+    fontFamily: typography.bold, fontFamily: typography.bold,
     letterSpacing: -0.15,
   },
   pressed: { transform: [{ scale: 0.985 }], opacity: 0.88 },
