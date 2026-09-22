@@ -117,13 +117,13 @@ const styles = StyleSheet.create({
   },
   ready: {
     color: colors.white,
-    fontSize: 13,
+    fontFamily: typography.regular, fontSize: 13,
     fontFamily: typography.bold, fontFamily: typography.bold,
     marginTop: 16,
   },
   title: {
     color: colors.white,
-    fontSize: 29,
+    fontFamily: typography.regular, fontSize: 29,
     fontFamily: typography.extraBold, fontFamily: typography.extraBold,
     marginTop: 8,
     textAlign: "center",
@@ -142,7 +142,7 @@ const styles = StyleSheet.create({
   },
   label: {
     color: "#111",
-    fontSize: 11,
+    fontFamily: typography.regular, fontSize: 11,
     fontFamily: typography.extraBold, fontFamily: typography.extraBold,
     letterSpacing: 1.3,
     marginBottom: 12,
