@@ -725,7 +725,7 @@ ${link}`,
                         </Text>
                       </Pressable>
                     </View>
-                  </BlurView>
+                  </View>
                 )}
               </View>
             );
