@@ -4,7 +4,7 @@ import React, { useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { BackButton, Screen } from "../components/Screen";
 import { GlassCard, GlassInput } from "../components/Glass";
-import { colors, radii, shadows } from "../lib/theme";
+import { colors, radii, shadows, typography } from "../lib/theme";
 import { ensureParticipant, getSessionId, supabase, useApp } from "../lib/app-context";
 
 function code() {
