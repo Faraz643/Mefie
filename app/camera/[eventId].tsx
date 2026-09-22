@@ -591,7 +591,7 @@ const styles = StyleSheet.create({
     color: "#fff",
     fontSize: 11,
     fontFamily: typography.regular, marginTop: 10,
-    fontWeight: "800",
+    fontFamily: typography.extraBold,
     letterSpacing: 1,
   },
   statusPill: {
@@ -607,7 +607,7 @@ const styles = StyleSheet.create({
     borderColor: "rgba(255,255,255,.16)",
     marginBottom: 14,
   },
-  statusText: { color: "#fff", fontWeight: "700", fontSize: 13 },
+  statusText: { color: "#fff", fontFamily: typography.bold, fontSize: 13 },
   center: {
     flex: 1,
     backgroundColor: "#0A0F15",
@@ -615,7 +615,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     padding: 28,
   },
-  title: { color: "#fff", fontSize: 28, fontFamily: typography.extraBold, fontWeight: "800", marginTop: 14 },
+  title: { color: "#fff", fontSize: 28, fontFamily: typography.extraBold, marginTop: 14 },
   sub: {
     color: colors.muted,
     textAlign: "center",
@@ -629,5 +629,5 @@ const styles = StyleSheet.create({
     paddingVertical: 15,
     borderRadius: 20,
   },
-  ctaText: { color: "#111", fontWeight: "800" },
+  ctaText: { color: "#111", fontFamily: typography.extraBold },
 });
