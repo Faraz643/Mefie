@@ -104,25 +104,25 @@ export default function TemporaryInviteRoute() {
 const styles = StyleSheet.create({
   kicker: {
     color: colors.muted,
-    fontSize: 12,
+    fontFamily: typography.regular, fontSize: 12,
     fontFamily: typography.extraBold, fontFamily: typography.extraBold,
     marginTop: 50,
   fontFamily: typography.extraBold, },
   title: {
     color: colors.white,
-    fontSize: 34,
+    fontFamily: typography.regular, fontSize: 34,
     fontFamily: typography.extraBold, fontFamily: typography.extraBold,
     marginTop: 8,
   fontFamily: typography.extraBold, },
   sub: {
     color: colors.muted,
-    fontSize: 15,
+    fontFamily: typography.regular, fontSize: 15,
     fontFamily: typography.regular, lineHeight: 22,
     marginTop: 8,
   fontFamily: typography.regular, },
   error: {
     color: "#FFB4B4",
-    fontSize: 13,
+    fontFamily: typography.regular, fontSize: 13,
     fontFamily: typography.regular, marginBottom: 12,
   fontFamily: typography.regular, },
 });
