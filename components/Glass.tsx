@@ -2,7 +2,7 @@ import React, { createContext, useContext, type ReactNode, type RefObject } from
 import { Pressable, StyleSheet, Text, TextInput, View, type ViewStyle } from "react-native";
 import { BlurView } from "expo-blur";
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
-import { colors, radii, shadows } from "../lib/theme";
+import { colors, radii, shadows, typography } from "../lib/theme";
 
 const glass = {
   blur: 52,
