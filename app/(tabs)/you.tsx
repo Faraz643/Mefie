@@ -327,7 +327,8 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  title: {\n    fontFamily: typography.bold,
+  title: {
+fontFamily: typography.bold,
     width: 180,
     color: "#fff",
     fontSize: 24,
@@ -336,7 +337,8 @@ const styles = StyleSheet.create({
     letterSpacing: -0.5,
     textAlign: "center",
   },
-  nameInput: {\n    fontFamily: typography.bold,
+  nameInput: {
+fontFamily: typography.bold,
     width: 180,
     height: 34,
     color: "#fff",
@@ -377,7 +379,8 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   backgroundCopy: { flex: 1, marginLeft: 12 },
-  backgroundTitle: {\n    fontFamily: typography.semibold, color: colors.white, fontSize: 16, fontWeight: "700" },
+  backgroundTitle: {
+fontFamily: typography.semibold, color: colors.white, fontSize: 16, fontWeight: "700" },
   backgroundSub: { color: colors.muted, fontSize: 12, marginTop: 3 },
   previewWrap: {
     width: "100%",
@@ -421,7 +424,8 @@ const styles = StyleSheet.create({
     ...shadows,
   },
   chooseButtonPressed: { opacity: 0.9, transform: [{ scale: 0.99 }] },
-  chooseButtonText: {\n    fontFamily: typography.semibold, color: colors.black, fontSize: 15, fontWeight: "700" },
+  chooseButtonText: {
+fontFamily: typography.semibold, color: colors.black, fontSize: 15, fontWeight: "700" },
   removeButton: { alignItems: "center", paddingTop: 2 },
   removeText: {
     color: "rgba(255,255,255,.68)",
