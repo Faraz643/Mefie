@@ -297,14 +297,16 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: "#0A0F15" },
   hero: { paddingTop: 30, paddingBottom: 8 },
-  greeting: {\n    fontFamily: typography.semibold,
+  greeting: {
+fontFamily: typography.semibold,
     color: colors.white,
     fontSize: 34,
     lineHeight: 40,
     fontWeight: "500",
     letterSpacing: -0.8,
   },
-  title: {\n    fontFamily: typography.regular,
+  title: {
+fontFamily: typography.regular,
     color: "rgba(255,255,255,0.88)",
     fontSize: 21,
     lineHeight: 27,
@@ -383,7 +385,8 @@ const styles = StyleSheet.create({
     paddingTop: 18,
     paddingBottom: 13,
   },
-  eventName: {\n    fontFamily: typography.bold,
+  eventName: {
+fontFamily: typography.bold,
     color: colors.white,
     fontSize: 16,
     fontWeight: "800",
