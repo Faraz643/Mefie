@@ -58,15 +58,11 @@ const EventCover = memo(function EventCover({
           />
         ) : null}
       </BlurTargetView>
-      <BlurView
-        blurTarget={blurTarget}
-        blurMethod="dimezisBlurView"
-        intensity={52}
-        tint="dark"
-        pointerEvents="none"
-        style={styles.eventInfoBlur}
+      <LinearGradient
+        colors={["rgba(14,20,27,0.00)", "rgba(14,20,27,0.82)"]}
+        locations={[0, 1]}
+        style={styles.eventInfo}
       />
-      <View pointerEvents="none" style={styles.eventInfoTint} />
       <View style={styles.eventInfoContent} pointerEvents="none">
         <Text style={styles.eventName} numberOfLines={1}>
           {name}
@@ -368,37 +364,25 @@ const styles = StyleSheet.create({
     width: "100%",
     height: "100%",
   },
-  eventInfoBlur: {
+  eventInfo: {
     position: "absolute",
     left: 0,
     right: 0,
     bottom: 0,
-    height: 66,
-    borderRadius: 19,
-    backgroundColor: "rgba(30,35,42,0.48)",
-    borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.22)",
-  },
-  eventInfoTint: {
-    position: "absolute",
-    left: 0,
-    right: 0,
-    bottom: 0,
-    height: 66,
-    borderRadius: 19,
-    backgroundColor: "rgba(255,255,255,0.065)",
+    height: 76,
+    paddingHorizontal: 13,
+    paddingTop: 18,
+    paddingBottom: 13,
+    backgroundColor: "rgba(14,20,27,0.24)",
   },
   eventInfoContent: {
     position: "absolute",
     left: 0,
     right: 0,
     bottom: 0,
-    minHeight: 66,
-    borderRadius: 19,
     paddingHorizontal: 13,
-    paddingTop: 13,
-    paddingBottom: 10,
-    justifyContent: "center",
+    paddingTop: 18,
+    paddingBottom: 13,
   },
   eventName: {
     color: colors.white,
