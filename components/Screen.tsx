@@ -5,7 +5,7 @@ import { useRouter } from "expo-router";
 import React, { useRef } from "react";
 import { Dimensions, ImageBackground, Pressable, ScrollView, StyleSheet, Text, useWindowDimensions, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { colors, shadows } from "../lib/theme";
+import { colors, shadows, typography } from "../lib/theme";
 import { useApp } from "../lib/app-context";
 import { GlassTargetProvider, IconButton, useGlassTarget } from "./Glass";
 
@@ -86,13 +86,13 @@ const styles = StyleSheet.create({
   brandMark: { width: 34, height: 34, borderRadius: 10, backgroundColor: "rgba(10,15,21,0.70)", alignItems: "center", justifyContent: "center", ...shadows },
   markA: { position: "absolute", width: 17, height: 20, borderRadius: 6, borderWidth: 2, borderColor: "#FFF", left: 7, top: 7 },
   markB: { position: "absolute", width: 17, height: 20, borderColor: "#C9D7F5", left: 11, top: 7, borderWidth: 2 },
-  brand: { color: colors.white, fontSize: 21, fontWeight: "800", letterSpacing: -0.6 },
+  brand: { color: colors.white, fontFamily: typography.bold, fontSize: 21, letterSpacing: -0.6 },
   navPosition: { position: "absolute", left: 18, right: 18 },
   nav: { height: 76, borderRadius: 38, borderWidth: 1, borderColor: "rgba(255,255,255,0.22)", overflow: "hidden", backgroundColor: "rgba(30,35,42,0.34)", ...shadows },
   navFrost: { ...StyleSheet.absoluteFillObject, backgroundColor: "rgba(255,255,255,0.045)" },
   navInner: { height: 74, padding: 6, flexDirection: "row", alignItems: "center", position: "relative" },
   navIndicator: { ...StyleSheet.absoluteFillObject, borderRadius: 31, backgroundColor: "rgba(255,255,255,0.11)", borderWidth: 1, borderColor: "rgba(255,255,255,0.18)" },
   navItem: { height: 62, alignItems: "center", justifyContent: "center", gap: 1, position: "relative" },
-  navText: { color: "rgba(255,255,255,0.68)", fontSize: 11, lineHeight: 15, fontWeight: "500" },
-  navTextSelected: { color: colors.white, fontWeight: "700" },
+  navText: { color: "rgba(255,255,255,0.68)", fontFamily: typography.medium, fontSize: 11, lineHeight: 15 },
+  navTextSelected: { color: colors.white, fontFamily: typography.semibold },
 });
