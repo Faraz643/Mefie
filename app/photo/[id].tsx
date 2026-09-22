@@ -12,7 +12,7 @@ import {
   Text,
   View,
 } from "react-native";
-import { colors, shadows } from "../../lib/theme";
+import { colors, shadows, typography } from "../../lib/theme";
 import { supabase } from "../../lib/app-context";
 export default function PhotoView() {
   const router = useRouter();
