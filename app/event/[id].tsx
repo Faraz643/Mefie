@@ -43,7 +43,7 @@ export default function EventScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { id } = useLocalSearchParams<{ id: string }>();
-  const { displayName } = useApp();
+  const { displayName, backgroundImage } = useApp();
   const scrollRef = useRef<FlashListRef<any>>(null);
   const photoScrollOffset = useRef(0);
   const peopleScrollOffset = useRef(0);
@@ -585,7 +585,7 @@ ${link}`,
   };
   const title = event?.name || "Event";
   const visiblePeople = people.slice(0, 5);
-  const heroSource = photos[0]?.public_url || fallbackPhoto;
+  const heroSource = photos[0]?.public_url || backgroundImage || fallbackPhoto;
   return (
     <>
       <View style={styles.root}>
