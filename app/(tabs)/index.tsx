@@ -13,7 +13,7 @@ import {
   IconButton,
 } from "../../components/Glass";
 import { deleteEventsAsCreator, getSessionId, useApp } from "../../lib/app-context";
-import { colors, radii, shadows } from "../../lib/theme";
+import { colors, radii, shadows, typography } from "../../lib/theme";
 
 function gradientForName(name: string): [string, string] {
   const palettes: [string, string][] = [
@@ -297,14 +297,14 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: "#0A0F15" },
   hero: { paddingTop: 30, paddingBottom: 8 },
-  greeting: {
+  greeting: {\n    fontFamily: typography.semibold,
     color: colors.white,
     fontSize: 34,
     lineHeight: 40,
     fontWeight: "500",
     letterSpacing: -0.8,
   },
-  title: {
+  title: {\n    fontFamily: typography.regular,
     color: "rgba(255,255,255,0.88)",
     fontSize: 21,
     lineHeight: 27,
@@ -383,13 +383,13 @@ const styles = StyleSheet.create({
     paddingTop: 18,
     paddingBottom: 13,
   },
-  eventName: {
+  eventName: {\n    fontFamily: typography.bold,
     color: colors.white,
     fontSize: 16,
     fontWeight: "800",
     letterSpacing: -0.2,
   },
-  eventMeta: { color: "rgba(255,255,255,0.72)", fontSize: 11, marginTop: 4 },
+  eventMeta: { fontFamily: typography.regular, color: "rgba(255,255,255,0.72)", fontSize: 11, marginTop: 4 },
   emptyTitle: { color: colors.white, fontSize: 16, fontWeight: "700" },
   emptySub: { color: colors.muted, fontSize: 13, marginTop: 5 },
 });
