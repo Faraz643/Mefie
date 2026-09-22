@@ -5,7 +5,7 @@ import { Image, Pressable, StyleSheet, Text, View } from "react-native";
 import { BottomNav, Screen } from "../../components/Screen";
 import { GlassButton, GlassCard } from "../../components/Glass";
 import { useApp } from "../../lib/app-context";
-import { colors, radii, shadows } from "../../lib/theme";
+import { colors, radii, shadows, typography } from "../../lib/theme";
 
 const fallback =
   "https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=800&q=80";
@@ -75,7 +75,7 @@ export default function Events() {
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: "#0A0F15" },
   heading: { marginTop: 28, marginBottom: 2 },
-  title: {
+  title: {\n    fontFamily: typography.bold,
     color: colors.white,
     fontSize: 35,
     fontWeight: "800",
@@ -111,6 +111,6 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     marginBottom: 9,
   },
-  h: { color: colors.white, fontSize: 19, fontWeight: "800" },
+  h: {\n    fontFamily: typography.bold, color: colors.white, fontSize: 19, fontWeight: "800" },
   m: { color: "rgba(255,255,255,.70)", fontSize: 13, marginTop: 5 },
 });
