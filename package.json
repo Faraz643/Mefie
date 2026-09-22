@@ -48,7 +48,8 @@
     "react-native-nitro-image": "0.15.2",
     "react-native-vision-camera-barcode-scanner": "5.2.3",
     "@shopify/flash-list": "2.0.2",
-    "expo-image": "55.0.11"
+    "expo-image": "55.0.11",
+    "@expo-google-fonts/plus-jakarta-sans": "^0.4.1"
   },
   "devDependencies": {
     "@types/react": "~19.2.10",
