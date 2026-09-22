@@ -1,3 +1,4 @@
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 import { Asset } from "expo-asset";
 import * as Clipboard from "expo-clipboard";
@@ -35,7 +36,6 @@ function gradientForName(name: string): [string, string] {
   return palettes[hash % palettes.length];
 }
 
-const fallbackPhoto = "https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=1200&q=85";
 const HERO_HEIGHT = 250;
 const TAB_HEIGHT = 52;
 
@@ -44,6 +44,7 @@ export default function EventScreen() {
   const insets = useSafeAreaInsets();
   const { id } = useLocalSearchParams<{ id: string }>();
   const { displayName, backgroundImage } = useApp();
+  const [storedBackgroundImage, setStoredBackgroundImage] = useState<string | null>(backgroundImage);
   const scrollRef = useRef<FlashListRef<any>>(null);
   const photoScrollOffset = useRef(0);
   const peopleScrollOffset = useRef(0);
@@ -61,6 +62,15 @@ export default function EventScreen() {
   const [temporaryInvite, setTemporaryInvite] = useState<{ token: string; expiresAt: string } | null>(null);
   const [temporaryInviteBusy, setTemporaryInviteBusy] = useState(false);
   const [temporarySecondsLeft, setTemporarySecondsLeft] = useState(0);
+  useEffect(() => {
+    if (backgroundImage) {
+      setStoredBackgroundImage(backgroundImage);
+      return;
+    }
+    AsyncStorage.getItem("mefie.backgroundImage").then((uri) => {
+      if (uri) setStoredBackgroundImage(uri);
+    });
+  }, [backgroundImage]);
   /* PROFILE PHOTO LOGIC DISABLED — session avatar loading kept here for future use.
   useEffect(() => {
     void getSessionId().then(setSessionId);
@@ -585,13 +595,13 @@ ${link}`,
   };
   const title = event?.name || "Event";
   const visiblePeople = people.slice(0, 5);
-  const heroSource = photos[0]?.public_url || backgroundImage || fallbackPhoto;
+  const heroSource = photos[0]?.public_url || storedBackgroundImage;
   return (
     <>
       <View style={styles.root}>
       <View pointerEvents="none" style={styles.background}>
         <ExpoImage
-          source={{ uri: heroSource }}
+          source={heroSource ? { uri: heroSource } : undefined}
           style={styles.backgroundImage}
           contentFit="cover"
           cachePolicy="memory-disk"
