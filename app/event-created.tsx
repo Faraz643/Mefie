@@ -118,13 +118,13 @@ const styles = StyleSheet.create({
   ready: {
     color: colors.white,
     fontSize: 13,
-    fontFamily: typography.bold, fontWeight: "700",
+    fontFamily: typography.bold, fontFamily: typography.bold,
     marginTop: 16,
   },
   title: {
     color: colors.white,
     fontSize: 29,
-    fontFamily: typography.extraBold, fontWeight: "800",
+    fontFamily: typography.extraBold, fontFamily: typography.extraBold,
     marginTop: 8,
     textAlign: "center",
     letterSpacing: -0.5,
@@ -143,7 +143,7 @@ const styles = StyleSheet.create({
   label: {
     color: "#111",
     fontSize: 11,
-    fontFamily: typography.extraBold, fontWeight: "900",
+    fontFamily: typography.extraBold, fontFamily: typography.extraBold,
     letterSpacing: 1.3,
     marginBottom: 12,
   },
