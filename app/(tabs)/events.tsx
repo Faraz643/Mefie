@@ -75,7 +75,8 @@ export default function Events() {
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: "#0A0F15" },
   heading: { marginTop: 28, marginBottom: 2 },
-  title: {\n    fontFamily: typography.bold,
+  title: {
+fontFamily: typography.bold,
     color: colors.white,
     fontSize: 35,
     fontWeight: "800",
@@ -111,6 +112,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     marginBottom: 9,
   },
-  h: {\n    fontFamily: typography.bold, color: colors.white, fontSize: 19, fontWeight: "800" },
+  h: {
+fontFamily: typography.bold, color: colors.white, fontSize: 19, fontWeight: "800" },
   m: { color: "rgba(255,255,255,.70)", fontSize: 13, marginTop: 5 },
 });
