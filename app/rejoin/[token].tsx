@@ -105,24 +105,24 @@ const styles = StyleSheet.create({
   kicker: {
     color: colors.muted,
     fontSize: 12,
-    fontWeight: "800",
+    fontFamily: typography.extraBold, fontWeight: "800",
     marginTop: 50,
   fontFamily: typography.extraBold, },
   title: {
     color: colors.white,
     fontSize: 34,
-    fontWeight: "800",
+    fontFamily: typography.extraBold, fontWeight: "800",
     marginTop: 8,
   fontFamily: typography.extraBold, },
   sub: {
     color: colors.muted,
     fontSize: 15,
-    lineHeight: 22,
+    fontFamily: typography.regular, lineHeight: 22,
     marginTop: 8,
   fontFamily: typography.regular, },
   error: {
     color: "#FFB4B4",
     fontSize: 13,
-    marginBottom: 12,
+    fontFamily: typography.regular, marginBottom: 12,
   fontFamily: typography.regular, },
 });
