@@ -8,7 +8,7 @@ import { Image, Pressable, StyleSheet, Text, TextInput, View } from "react-nativ
 import { BottomNav, Screen } from "../../components/Screen";
 import { GlassCard } from "../../components/Glass";
 import { useApp } from "../../lib/app-context";
-import { colors, radii, shadows } from "../../lib/theme";
+import { colors, radii, shadows, typography } from "../../lib/theme";
 
 export default function You() {
   const router = useRouter();
@@ -327,7 +327,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  title: {
+  title: {\n    fontFamily: typography.bold,
     width: 180,
     color: "#fff",
     fontSize: 24,
@@ -336,7 +336,7 @@ const styles = StyleSheet.create({
     letterSpacing: -0.5,
     textAlign: "center",
   },
-  nameInput: {
+  nameInput: {\n    fontFamily: typography.bold,
     width: 180,
     height: 34,
     color: "#fff",
@@ -377,7 +377,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   backgroundCopy: { flex: 1, marginLeft: 12 },
-  backgroundTitle: { color: colors.white, fontSize: 16, fontWeight: "700" },
+  backgroundTitle: {\n    fontFamily: typography.semibold, color: colors.white, fontSize: 16, fontWeight: "700" },
   backgroundSub: { color: colors.muted, fontSize: 12, marginTop: 3 },
   previewWrap: {
     width: "100%",
@@ -421,7 +421,7 @@ const styles = StyleSheet.create({
     ...shadows,
   },
   chooseButtonPressed: { opacity: 0.9, transform: [{ scale: 0.99 }] },
-  chooseButtonText: { color: colors.black, fontSize: 15, fontWeight: "700" },
+  chooseButtonText: {\n    fontFamily: typography.semibold, color: colors.black, fontSize: 15, fontWeight: "700" },
   removeButton: { alignItems: "center", paddingTop: 2 },
   removeText: {
     color: "rgba(255,255,255,.68)",
