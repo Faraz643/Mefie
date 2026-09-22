@@ -8,7 +8,7 @@ import QRCode from "react-native-qrcode-svg";
 import { captureRef } from "react-native-view-shot";
 import { BackButton, Screen } from "../components/Screen";
 import { GlassButton } from "../components/Glass";
-import { colors, radii, shadows } from "../lib/theme";
+import { colors, radii, shadows, typography } from "../lib/theme";
 export default function EventCreatedScreen() {
   const router = useRouter();
   const {
