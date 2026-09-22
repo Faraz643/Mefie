@@ -177,7 +177,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  count: { color: "#fff", fontSize: 13, fontFamily: typography.bold, fontWeight: "700" },
+  count: { color: "#fff", fontSize: 13, fontFamily: typography.bold, fontFamily: typography.bold },
   bottom: {
     position: "absolute",
     bottom: 28,
@@ -194,7 +194,7 @@ const styles = StyleSheet.create({
     ...shadows,
   },
   meta: { flex: 1 },
-  name: { color: "#fff", fontSize: 15, fontFamily: typography.extraBold, fontWeight: "800" },
+  name: { color: "#fff", fontSize: 15, fontFamily: typography.extraBold, fontFamily: typography.extraBold },
   time: { color: colors.muted, fontSize: 11, fontFamily: typography.regular, marginTop: 3 },
   download: {
     height: 46,
@@ -206,7 +206,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  downloadText: { color: colors.black, fontSize: 14, fontFamily: typography.extraBold, fontWeight: "800" },
+  downloadText: { color: colors.black, fontSize: 14, fontFamily: typography.extraBold, fontFamily: typography.extraBold },
   message: {
     position: "absolute",
     top: 112,
@@ -218,5 +218,5 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "rgba(255,255,255,.14)",
   },
-  messageText: { color: "#fff", fontWeight: "700" },
+  messageText: { color: "#fff", fontFamily: typography.bold },
 });
