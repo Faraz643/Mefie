@@ -6,7 +6,7 @@ import React, { useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { Screen } from "../components/Screen";
 import { GlassCard, GlassInput, GlassAction } from "../components/Glass";
-import { colors, shadows } from "../lib/theme";
+import { colors, shadows, typography } from "../lib/theme";
 import { ensureParticipant, supabase, useApp } from "../lib/app-context";
 
 function inviteFromValue(value: string) {
@@ -223,7 +223,7 @@ const styles = StyleSheet.create({
     alignItems: "flex-start",
     justifyContent: "center",
     marginBottom: 10,
-  },
+  fontFamily: typography.regular, },
   heading: { marginTop: 34, paddingBottom: 5 },
   title: {
     color: colors.white,
