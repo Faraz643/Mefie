@@ -108,18 +108,18 @@ const styles = StyleSheet.create({
   title: {
     color: colors.white,
     fontSize: 34,
-    fontWeight: "800",
+    fontFamily: typography.extraBold, fontWeight: "800",
     letterSpacing: -1,
   },
-  sub: { color: colors.muted, fontSize: 15, marginTop: 7 },
+  sub: { color: colors.muted, fontSize: 15, fontFamily: typography.regular, marginTop: 7 },
   formCard: { padding: 14 },
   hint: {
     color: colors.faint,
     fontSize: 12,
-    marginTop: 12,
+    fontFamily: typography.regular, marginTop: 12,
     marginHorizontal: 2,
   },
-  error: { color: colors.danger, fontSize: 13, marginHorizontal: 4 },
+  error: { color: colors.danger, fontSize: 13, fontFamily: typography.regular, marginHorizontal: 4 },
   createButton: {
     height: 66,
     borderRadius: radii.pill,
@@ -139,7 +139,7 @@ const styles = StyleSheet.create({
   createButtonLabel: {
     color: colors.black,
     fontSize: 16,
-    fontWeight: "700",
+    fontFamily: typography.bold, fontWeight: "700",
     letterSpacing: -0.15,
   },
   pressed: { transform: [{ scale: 0.985 }], opacity: 0.88 },
