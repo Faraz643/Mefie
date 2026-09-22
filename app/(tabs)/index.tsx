@@ -325,11 +325,11 @@ fontFamily: typography.regular,
   },
   seeAll: {
     color: "rgba(220,225,232,0.82)",
-    fontSize: 14,
+    fontFamily: typography.regular, fontSize: 14,
     fontFamily: typography.semibold, marginBottom: 12,
   },
   seeArrow: {
-    fontSize: 23,
+    fontFamily: typography.regular, fontSize: 23,
     fontFamily: typography.regular,
     color: "rgba(220,225,232,0.82)",
   },
