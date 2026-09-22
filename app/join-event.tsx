@@ -228,10 +228,10 @@ const styles = StyleSheet.create({
   title: {
     color: colors.white,
     fontSize: 29,
-    fontWeight: "600",
+    fontFamily: typography.semibold, fontWeight: "600",
     letterSpacing: -0.7,
   },
-  sub: { color: "rgba(255,255,255,.70)", fontSize: 14, marginTop: 7 },
+  sub: { color: "rgba(255,255,255,.70)", fontSize: 14, fontFamily: typography.regular, marginTop: 7 },
   formCard: {
     padding: 10,
     borderRadius: 22,
@@ -252,7 +252,7 @@ const styles = StyleSheet.create({
     gap: 7,
     ...shadows,
   },
-  joinLabel: { color: colors.white, fontSize: 16, fontWeight: "500" },
+  joinLabel: { color: colors.white, fontSize: 16, fontFamily: typography.medium, fontWeight: "500" },
   joinDisabled: { opacity: 0.6 },
   pressed: { transform: [{ scale: 0.985 }], opacity: 0.88 },
   or: {
@@ -267,7 +267,7 @@ const styles = StyleSheet.create({
   error: {
     color: colors.danger,
     fontSize: 13,
-    marginHorizontal: 4,
+    fontFamily: typography.regular, marginHorizontal: 4,
     marginTop: -5,
   },
   scanner: { flex: 1, backgroundColor: "#000" },
@@ -288,7 +288,7 @@ const styles = StyleSheet.create({
   scanEyebrow: {
     color: "#fff",
     fontSize: 12,
-    fontWeight: "900",
+    fontFamily: typography.extraBold, fontWeight: "900",
     letterSpacing: 2,
   },
   closeCircle: {
@@ -301,8 +301,8 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  scanTitle: { color: "#fff", fontSize: 26, fontWeight: "800", marginTop: 118 },
-  scanSub: { color: "rgba(255,255,255,.72)", fontSize: 13, marginTop: 7 },
+  scanTitle: { color: "#fff", fontSize: 26, fontFamily: typography.extraBold, fontWeight: "800", marginTop: 118 },
+  scanSub: { color: "rgba(255,255,255,.72)", fontSize: 13, fontFamily: typography.regular, marginTop: 7 },
   scanBox: {
     width: 270,
     height: 270,
