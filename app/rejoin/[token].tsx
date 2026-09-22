@@ -105,13 +105,13 @@ const styles = StyleSheet.create({
   kicker: {
     color: colors.muted,
     fontSize: 12,
-    fontFamily: typography.extraBold, fontWeight: "800",
+    fontFamily: typography.extraBold, fontFamily: typography.extraBold,
     marginTop: 50,
   fontFamily: typography.extraBold, },
   title: {
     color: colors.white,
     fontSize: 34,
-    fontFamily: typography.extraBold, fontWeight: "800",
+    fontFamily: typography.extraBold, fontFamily: typography.extraBold,
     marginTop: 8,
   fontFamily: typography.extraBold, },
   sub: {
