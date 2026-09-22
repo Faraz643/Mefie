@@ -107,7 +107,7 @@ const styles = StyleSheet.create({
   heading: { marginTop: 34, paddingBottom: 3 },
   title: {
     color: colors.white,
-    fontSize: 34,
+    fontFamily: typography.regular, fontSize: 34,
     fontFamily: typography.extraBold, fontFamily: typography.extraBold,
     letterSpacing: -1,
   },
@@ -115,7 +115,7 @@ const styles = StyleSheet.create({
   formCard: { padding: 14 },
   hint: {
     color: colors.faint,
-    fontSize: 12,
+    fontFamily: typography.regular, fontSize: 12,
     fontFamily: typography.regular, marginTop: 12,
     marginHorizontal: 2,
   },
@@ -138,7 +138,7 @@ const styles = StyleSheet.create({
   },
   createButtonLabel: {
     color: colors.black,
-    fontSize: 16,
+    fontFamily: typography.regular, fontSize: 16,
     fontFamily: typography.bold, fontFamily: typography.bold,
     letterSpacing: -0.15,
   },
