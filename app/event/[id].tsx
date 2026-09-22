@@ -1054,11 +1054,11 @@ const styles = StyleSheet.create({
   title: {
     color: colors.white,
     fontSize: 29,
-    lineHeight: 35,
+    fontFamily: typography.regular, lineHeight: 35,
     fontWeight: "800",
     letterSpacing: -0.7,
   },
-  meta: { color: "rgba(255,255,255,.80)", fontSize: 14, marginTop: 1 },
+  meta: { color: "rgba(255,255,255,.80)", fontSize: 14, fontFamily: typography.regular, marginTop: 1 },
   avatars: {
     flexDirection: "row",
     alignItems: "center",
@@ -1080,9 +1080,9 @@ const styles = StyleSheet.create({
   avatarOverlap: { marginLeft: -7 },
   // PROFILE PHOTO STYLE DISABLED — kept for future image avatars.
   /* avatarImage: { width: "100%", height: "100%" }, */
-  avatarText: { color: colors.white, fontSize: 14, fontWeight: "800" },
+  avatarText: { color: colors.white, fontSize: 14, fontFamily: typography.extraBold, fontWeight: "800" },
   moreAvatar: { backgroundColor: "rgba(25,33,42,.88)" },
-  moreText: { color: colors.white, fontSize: 13, fontWeight: "800" },
+  moreText: { color: colors.white, fontSize: 13, fontFamily: typography.extraBold, fontWeight: "800" },
   tabsSticky: {
     height: 80,
     paddingHorizontal: 20,
@@ -1125,8 +1125,8 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 1 },
     elevation: 4,
   },
-  tabText: { color: "rgba(255,255,255,.94)", fontSize: 16, fontWeight: "700" },
-  activeTabText: { color: colors.black, fontSize: 16, fontWeight: "800" },
+  tabText: { color: "rgba(255,255,255,.94)", fontSize: 16, fontFamily: typography.bold, fontWeight: "700" },
+  activeTabText: { color: colors.black, fontSize: 16, fontFamily: typography.extraBold, fontWeight: "800" },
   selectionHeader: {
     height: 68,
     flexDirection: "row",
@@ -1134,8 +1134,8 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     paddingHorizontal: 8,
   },
-  selectionSide: { color: "#fff", fontSize: 14, fontWeight: "700" },
-  selectionCount: { color: "#fff", fontSize: 16, fontWeight: "800" },
+  selectionSide: { color: "#fff", fontSize: 14, fontFamily: typography.bold, fontWeight: "700" },
+  selectionCount: { color: "#fff", fontSize: 16, fontFamily: typography.extraBold, fontWeight: "800" },
   gallery: {
     position: "relative",
     paddingHorizontal: 10,
@@ -1198,7 +1198,7 @@ const styles = StyleSheet.create({
   /* personAvatarImage: { width: "100%", height: "100%" }, */
   personDetails: { flex: 1 },
   personName: { color: colors.white, fontWeight: "800", fontSize: 15 },
-  personMeta: { color: colors.muted, fontSize: 12, marginTop: 3 },
+  personMeta: { color: colors.muted, fontSize: 12, fontFamily: typography.regular, marginTop: 3 },
   removeMemberButton: { width: 42, height: 42, borderRadius: 21, alignItems: "center", justifyContent: "center", backgroundColor: "rgba(255,255,255,.08)", borderWidth: 1, borderColor: "rgba(255,255,255,.10)" },
   selectionBar: {
     position: "absolute",
@@ -1227,7 +1227,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     gap: 7,
   },
-  selectionActionText: { color: colors.black, fontSize: 14, fontWeight: "800" },
+  selectionActionText: { color: colors.black, fontSize: 14, fontFamily: typography.extraBold, fontWeight: "800" },
   disabledAction: { opacity: 0.45 },
   deleteAction: {
     height: 48,
@@ -1240,7 +1240,7 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   disabledDelete: { opacity: 0.35 },
-  deleteText: { color: "#fff", fontSize: 14, fontWeight: "800" },
+  deleteText: { color: "#fff", fontSize: 14, fontFamily: typography.extraBold, fontWeight: "800" },
   inviteHeaderButton: {
     height: 42,
     minWidth: 88,
@@ -1262,7 +1262,7 @@ const styles = StyleSheet.create({
   inviteHeaderText: {
     color: "#FFFFFF",
     fontSize: 13,
-    fontWeight: "800",
+    fontFamily: typography.extraBold, fontWeight: "800",
   },
   inviteModalBackdrop: {
     flex: 1,
@@ -1295,13 +1295,13 @@ const styles = StyleSheet.create({
   inviteEyebrow: {
     color: "rgba(255,255,255,.48)",
     fontSize: 10,
-    fontWeight: "800",
+    fontFamily: typography.extraBold, fontWeight: "800",
     letterSpacing: 1.8,
   },
   inviteSheetTitle: {
     color: colors.white,
     fontSize: 25,
-    fontWeight: "800",
+    fontFamily: typography.extraBold, fontWeight: "800",
     letterSpacing: -0.5,
     marginTop: 4,
   },
@@ -1322,7 +1322,7 @@ const styles = StyleSheet.create({
   inviteDescription: {
     color: "rgba(255,255,255,.65)",
     fontSize: 13,
-    lineHeight: 19,
+    fontFamily: typography.regular, lineHeight: 19,
     textAlign: "center",
     maxWidth: 330,
     marginBottom: 14,
@@ -1389,7 +1389,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     gap: 7,
   },
-  secondaryInviteText: { color: colors.white, fontSize: 14, fontWeight: "700" },
+  secondaryInviteText: { color: colors.white, fontSize: 14, fontFamily: typography.bold, fontWeight: "700" },
   primaryInviteButton: {
     flex: 1.25,
     minHeight: 52,
@@ -1400,7 +1400,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     gap: 7,
   },
-  primaryInviteText: { color: colors.black, fontSize: 14, fontWeight: "800" },
+  primaryInviteText: { color: colors.black, fontSize: 14, fontFamily: typography.extraBold, fontWeight: "800" },
   temporaryBadge: {
     flexDirection: "row",
     alignItems: "center",
@@ -1413,7 +1413,7 @@ const styles = StyleSheet.create({
     borderColor: "rgba(255,255,255,.12)",
     marginBottom: 10,
   },
-  temporaryBadgeText: { color: colors.white, fontSize: 12, fontWeight: "800" },
+  temporaryBadgeText: { color: colors.white, fontSize: 12, fontFamily: typography.extraBold, fontWeight: "800" },
   expiredInvite: {
     minHeight: 300,
     alignItems: "center",
@@ -1421,11 +1421,11 @@ const styles = StyleSheet.create({
     gap: 9,
     paddingHorizontal: 25,
   },
-  expiredTitle: { color: colors.white, fontSize: 19, fontWeight: "800", marginTop: 3 },
+  expiredTitle: { color: colors.white, fontSize: 19, fontFamily: typography.extraBold, fontWeight: "800", marginTop: 3 },
   expiredText: {
     color: "rgba(255,255,255,.60)",
     fontSize: 13,
-    lineHeight: 19,
+    fontFamily: typography.regular, lineHeight: 19,
     textAlign: "center",
     marginBottom: 9,
   },
@@ -1435,7 +1435,7 @@ const styles = StyleSheet.create({
     gap: 6,
     paddingVertical: 17,
   },
-  backInviteText: { color: "rgba(255,255,255,.78)", fontSize: 13, fontWeight: "700" },
+  backInviteText: { color: "rgba(255,255,255,.78)", fontSize: 13, fontFamily: typography.bold, fontWeight: "700" },
 
   camera: {
     position: "absolute",
