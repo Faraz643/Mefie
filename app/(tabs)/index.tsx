@@ -290,7 +290,6 @@ export default function HomeScreen() {
           </Pressable>
         </View>
       ) : null}
-      <BottomNav active="home" />
     </View>
   );
 }
