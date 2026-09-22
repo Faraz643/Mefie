@@ -362,7 +362,7 @@ fontFamily: typography.bold,
   rowText: {
     flex: 1,
     color: "#fff",
-    fontSize: 16,
+    fontFamily: typography.regular, fontSize: 16,
     fontFamily: typography.semibold, marginLeft: 13,
   },
   div: { height: 1, backgroundColor: colors.line, marginHorizontal: 18 },
@@ -428,6 +428,6 @@ fontFamily: typography.semibold, color: colors.black, fontSize: 15, fontFamily: 
   removeButton: { alignItems: "center", paddingTop: 2 },
   removeText: {
     color: "rgba(255,255,255,.68)",
-    fontSize: 13,
+    fontFamily: typography.regular, fontSize: 13,
     fontFamily: typography.semibold, },
 });
