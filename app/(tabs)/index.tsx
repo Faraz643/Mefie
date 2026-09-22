@@ -1,8 +1,9 @@
 import { LinearGradient } from "expo-linear-gradient";
+import { Image as ExpoImage } from "expo-image";
 import { useFocusEffect, useRouter } from "expo-router";
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 import React, { useCallback, useEffect, useState } from "react";
-import { Alert, Image, Pressable, StyleSheet, Text, View } from "react-native";
+import { Alert, Pressable, StyleSheet, Text, View } from "react-native";
 import { BottomNav, Header, Screen } from "../../components/Screen";
 import {
   GlassAction,
@@ -204,9 +205,14 @@ export default function HomeScreen() {
                   ) : null}
                   <View style={styles.cover}>
                     {e.cover ? (
-                      <Image
+                      <ExpoImage
                         source={{ uri: e.cover }}
                         style={styles.coverImage}
+                        contentFit="cover"
+                        cachePolicy="memory-disk"
+                        recyclingKey={e.id}
+                        allowDownscaling
+                        transition={0}
                       />
                     ) : null}
                     <LinearGradient
