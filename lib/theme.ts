@@ -1,14 +1,11 @@
 import { Platform } from "react-native";
 
 export const typography = {
-  // Native system typography: SF Pro on iOS, the platform system sans on Android.
-  family: Platform.select({ ios: "System", android: "sans-serif", default: "sans-serif" }) as string,
-  weights: {
-    regular: "400" as const,
-    medium: "500" as const,
-    semibold: "600" as const,
-    bold: "700" as const,
-  },
+  regular: "PlusJakartaSans_400Regular",
+  medium: "PlusJakartaSans_500Medium",
+  semibold: "PlusJakartaSans_600SemiBold",
+  bold: "PlusJakartaSans_700Bold",
+  extraBold: "PlusJakartaSans_800ExtraBold",
 };
 
 export const colors = {
