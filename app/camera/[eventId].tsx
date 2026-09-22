@@ -589,7 +589,7 @@ const styles = StyleSheet.create({
   },
   mode: {
     color: "#fff",
-    fontSize: 11,
+    fontFamily: typography.regular, fontSize: 11,
     fontFamily: typography.regular, marginTop: 10,
     fontFamily: typography.extraBold,
     letterSpacing: 1,
