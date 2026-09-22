@@ -1,8 +1,9 @@
+import { BlurTargetView, BlurView } from "expo-blur";
 import { LinearGradient } from "expo-linear-gradient";
 import { Image as ExpoImage } from "expo-image";
 import { useFocusEffect, useRouter } from "expo-router";
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
-import React, { memo, useCallback, useEffect, useState } from "react";
+import React, { memo, useCallback, useEffect, useRef, useState } from "react";
 import { Alert, Pressable, StyleSheet, Text, View } from "react-native";
 import { BottomNav, Header, Screen } from "../../components/Screen";
 import {
@@ -40,31 +41,45 @@ const EventCover = memo(function EventCover({
   people: number;
   photos: number;
 }) {
+  const blurTarget = useRef<View | null>(null);
+
   return (
     <View style={styles.cover}>
-      {cover ? (
-        <ExpoImage
-          source={{ uri: cover }}
-          style={styles.coverImage}
-          contentFit="cover"
-          cachePolicy="memory-disk"
-          recyclingKey={id}
-          allowDownscaling
-          transition={0}
-        />
-      ) : null}
+      <BlurTargetView ref={blurTarget} style={StyleSheet.absoluteFillObject}>
+        {cover ? (
+          <ExpoImage
+            source={{ uri: cover }}
+            style={styles.coverImage}
+            contentFit="cover"
+            cachePolicy="memory-disk"
+            recyclingKey={id}
+            allowDownscaling
+            transition={0}
+          />
+        ) : null}
+      </BlurTargetView>
+      <BlurView
+        blurTarget={blurTarget}
+        blurMethod="dimezisBlurView"
+        intensity={42}
+        tint="light"
+        pointerEvents="none"
+        style={styles.eventInfoBlur}
+      />
       <LinearGradient
-        colors={["rgba(14,20,27,0.00)", "rgba(14,20,27,0.82)"]}
+        colors={["rgba(255,255,255,0.18)", "rgba(255,255,255,0.48)"]}
         locations={[0, 1]}
-        style={styles.eventInfo}
-      >
+        pointerEvents="none"
+        style={styles.eventInfoTint}
+      />
+      <View style={styles.eventInfoContent} pointerEvents="none">
         <Text style={styles.eventName} numberOfLines={1}>
           {name}
         </Text>
         <Text style={styles.eventMeta}>
           {people || "—"} people · {photos || "—"} photos
         </Text>
-      </LinearGradient>
+      </View>
     </View>
   );
 });
@@ -334,7 +349,6 @@ const styles = StyleSheet.create({
     rowGap: 12,
     marginHorizontal: -8,
   },
-  eventCardSelected: { borderColor: "rgba(255,255,255,0.9)" },
   selectionBadge: { position: "absolute", top: 10, right: 10, zIndex: 3, width: 26, height: 26, borderRadius: 13, borderWidth: 1.5, borderColor: "rgba(255,255,255,0.85)", backgroundColor: "rgba(10,15,21,0.5)", alignItems: "center", justifyContent: "center" },
   selectionBadgeHidden: { opacity: 0 },
   selectionBadgeSelected: { backgroundColor: colors.white, borderColor: colors.white },
@@ -350,8 +364,7 @@ const styles = StyleSheet.create({
     borderRadius: radii.card,
     overflow: "hidden",
     backgroundColor: "#26313F",
-    borderWidth: 2,
-    borderColor: "transparent",
+    borderWidth: 0,
     ...shadows,
   },
   cover: { flex: 1, position: "relative", justifyContent: "flex-end" },
@@ -360,13 +373,28 @@ const styles = StyleSheet.create({
     width: "100%",
     height: "100%",
   },
-  eventInfo: {
+  eventInfoBlur: {
+    position: "absolute",
+    left: 0,
+    right: 0,
+    bottom: 0,
+    height: 76,
+  },
+  eventInfoTint: {
+    position: "absolute",
+    left: 0,
+    right: 0,
+    bottom: 0,
+    height: 76,
+  },
+  eventInfoContent: {
+    position: "absolute",
+    left: 0,
+    right: 0,
+    bottom: 0,
     paddingHorizontal: 13,
-    paddingTop: 16,
+    paddingTop: 18,
     paddingBottom: 13,
-    backgroundColor: "rgba(14,20,27,0.24)",
-    borderTopWidth: 1,
-    borderTopColor: "rgba(255,255,255,0.08)",
   },
   eventName: {
     color: colors.white,
