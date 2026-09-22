@@ -2,7 +2,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import { Image as ExpoImage } from "expo-image";
 import { useFocusEffect, useRouter } from "expo-router";
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
-import React, { useCallback, useEffect, useState } from "react";
+import React, { memo, useCallback, useEffect, useState } from "react";
 import { Alert, Pressable, StyleSheet, Text, View } from "react-native";
 import { BottomNav, Header, Screen } from "../../components/Screen";
 import {
@@ -26,6 +26,48 @@ function gradientForName(name: string): [string, string] {
   const hash = [...name].reduce((sum, char) => sum + char.charCodeAt(0), 0);
   return palettes[hash % palettes.length];
 }
+
+const EventCover = memo(function EventCover({
+  id,
+  cover,
+  name,
+  people,
+  photos,
+}: {
+  id: string;
+  cover: string;
+  name: string;
+  people: number;
+  photos: number;
+}) {
+  return (
+    <View style={styles.cover}>
+      {cover ? (
+        <ExpoImage
+          source={{ uri: cover }}
+          style={styles.coverImage}
+          contentFit="cover"
+          cachePolicy="memory-disk"
+          recyclingKey={id}
+          allowDownscaling
+          transition={0}
+        />
+      ) : null}
+      <LinearGradient
+        colors={["rgba(14,20,27,0.00)", "rgba(14,20,27,0.82)"]}
+        locations={[0, 1]}
+        style={styles.eventInfo}
+      >
+        <Text style={styles.eventName} numberOfLines={1}>
+          {name}
+        </Text>
+        <Text style={styles.eventMeta}>
+          {people || "—"} people · {photos || "—"} photos
+        </Text>
+      </LinearGradient>
+    </View>
+  );
+});
 
 export default function HomeScreen() {
   const router = useRouter();
@@ -196,38 +238,27 @@ export default function HomeScreen() {
                       params: { id: e.id },
                     });
                   }}
-                  style={[styles.eventCard, selected && styles.eventCardSelected]}
+                  style={styles.eventCard}
                 >
-                  {selecting ? (
-                    <View style={[styles.selectionBadge, selected && styles.selectionBadgeSelected]}>
-                      {selected ? <MaterialCommunityIcons name="check" size={15} color={colors.black} /> : null}
-                    </View>
-                  ) : null}
-                  <View style={styles.cover}>
-                    {e.cover ? (
-                      <ExpoImage
-                        source={{ uri: e.cover }}
-                        style={styles.coverImage}
-                        contentFit="cover"
-                        cachePolicy="memory-disk"
-                        recyclingKey={e.id}
-                        allowDownscaling
-                        transition={0}
-                      />
+                  <View
+                    pointerEvents="none"
+                    style={[
+                      styles.selectionBadge,
+                      !selecting && styles.selectionBadgeHidden,
+                      selected && styles.selectionBadgeSelected,
+                    ]}
+                  >
+                    {selected ? (
+                      <MaterialCommunityIcons name="check" size={15} color={colors.black} />
                     ) : null}
-                    <LinearGradient
-                      colors={["rgba(14,20,27,0.00)", "rgba(14,20,27,0.82)"]}
-                      locations={[0, 1]}
-                      style={styles.eventInfo}
-                    >
-                      <Text style={styles.eventName} numberOfLines={1}>
-                        {e.name}
-                      </Text>
-                      <Text style={styles.eventMeta}>
-                        {e.people || "—"} people · {e.photos || "—"} photos
-                      </Text>
-                    </LinearGradient>
                   </View>
+                  <EventCover
+                    id={e.id}
+                    cover={e.cover}
+                    name={e.name}
+                    people={e.people}
+                    photos={e.photos}
+                  />
                 </Pressable>
                 );
               })}
@@ -303,8 +334,9 @@ const styles = StyleSheet.create({
     rowGap: 12,
     marginHorizontal: -8,
   },
-  eventCardSelected: { borderWidth: 2, borderColor: "rgba(255,255,255,0.9)" },
+  eventCardSelected: { borderColor: "rgba(255,255,255,0.9)" },
   selectionBadge: { position: "absolute", top: 10, right: 10, zIndex: 3, width: 26, height: 26, borderRadius: 13, borderWidth: 1.5, borderColor: "rgba(255,255,255,0.85)", backgroundColor: "rgba(10,15,21,0.5)", alignItems: "center", justifyContent: "center" },
+  selectionBadgeHidden: { opacity: 0 },
   selectionBadgeSelected: { backgroundColor: colors.white, borderColor: colors.white },
   selectionToolbar: { position: "absolute", left: 24, right: 24, bottom: 88, height: 58, borderRadius: 22, backgroundColor: "rgba(20,27,36,0.94)", borderWidth: 1, borderColor: "rgba(255,255,255,0.12)", flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 7, zIndex: 20 },
   selectionClose: { width: 44, height: 44, borderRadius: 16, alignItems: "center", justifyContent: "center" },
@@ -318,6 +350,8 @@ const styles = StyleSheet.create({
     borderRadius: radii.card,
     overflow: "hidden",
     backgroundColor: "#26313F",
+    borderWidth: 2,
+    borderColor: "transparent",
     ...shadows,
   },
   cover: { flex: 1, position: "relative", justifyContent: "flex-end" },
