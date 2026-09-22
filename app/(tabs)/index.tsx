@@ -68,7 +68,7 @@ const EventCover = memo(function EventCover({
           {name}
         </Text>
         <Text style={styles.eventMeta}>
-          {people || "—"} people · {photos || "—"} photos
+          {people} people · {photos} photos
         </Text>
       </View>
     </View>
