@@ -210,9 +210,9 @@ export default function HomeScreen() {
                         style={styles.coverImage}
                       />
                     ) : null}
-                    <BlurView
-                      intensity={42}
-                      tint="dark"
+                    <LinearGradient
+                      colors={["rgba(14,20,27,0.00)", "rgba(14,20,27,0.82)"]}
+                      locations={[0, 1]}
                       style={styles.eventInfo}
                     >
                       <Text style={styles.eventName} numberOfLines={1}>
@@ -221,7 +221,7 @@ export default function HomeScreen() {
                       <Text style={styles.eventMeta}>
                         {e.people || "—"} people · {e.photos || "—"} photos
                       </Text>
-                    </BlurView>
+                    </LinearGradient>
                   </View>
                 </Pressable>
                 );
