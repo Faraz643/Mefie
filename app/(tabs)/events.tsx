@@ -40,7 +40,7 @@ export default function Events() {
                     <MaterialCommunityIcons name="image-multiple-outline" size={17} color="#fff" />
                   </View>
                   <Text style={styles.h}>{e.name}</Text>
-                  <Text style={styles.m}>{e.people || "—"} people · {e.photos || "—"} photos</Text>
+                  <Text style={styles.m}>{e.people ?? 0} people · {e.photos ?? 0} photos</Text>
                 </View>
               </Pressable>
             ))}
