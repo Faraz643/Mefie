@@ -1,4 +1,3 @@
-import { BlurView } from "expo-blur";
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 import { Asset } from "expo-asset";
 import * as Clipboard from "expo-clipboard";
@@ -182,7 +181,7 @@ export default function EventScreen() {
         }
       };
       */
-      const ch = client.channel(`event-${id}`)
+      const ch = client.channel(`event-${id}-${Date.now()}`)
         .on(
           "postgres_changes",
           {
@@ -259,7 +258,7 @@ export default function EventScreen() {
     return () => {
       active = false;
     };
-  }, [id, displayName]);
+  }, [id]);
   useEffect(() => {
     const target =
       tab === "photos" ? photoScrollOffset.current : peopleScrollOffset.current;
@@ -697,7 +696,7 @@ ${link}`,
                     </Pressable>
                   </View>
                 ) : (
-                  <BlurView intensity={58} tint="dark" style={styles.tabs}>
+                  <View style={styles.tabs}>
                     <View style={styles.tabsContent}>
                       <Pressable
                         onPress={() => selectTab("photos")}
