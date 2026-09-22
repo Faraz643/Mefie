@@ -591,11 +591,13 @@ ${link}`,
     <>
       <View style={styles.root}>
       <View pointerEvents="none" style={styles.background}>
-        <ExpoImage source={{ uri: heroSource }} style={styles.backgroundImage} contentFit="cover" cachePolicy="memory-disk" priority="low" />
-        <BlurView
-          intensity={32}
-          tint="dark"
-          style={StyleSheet.absoluteFillObject}
+        <ExpoImage
+          source={{ uri: heroSource }}
+          style={styles.backgroundImage}
+          contentFit="cover"
+          cachePolicy="memory-disk"
+          priority="low"
+          blurRadius={18}
         />
         <LinearGradient
           colors={["rgba(4,9,14,.18)", "rgba(4,9,14,.30)", "rgba(8,16,23,.64)"]}
