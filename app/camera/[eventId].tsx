@@ -590,7 +590,7 @@ const styles = StyleSheet.create({
   mode: {
     color: "#fff",
     fontSize: 11,
-    marginTop: 10,
+    fontFamily: typography.regular, marginTop: 10,
     fontWeight: "800",
     letterSpacing: 1,
   },
@@ -615,7 +615,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     padding: 28,
   },
-  title: { color: "#fff", fontSize: 28, fontWeight: "800", marginTop: 14 },
+  title: { color: "#fff", fontSize: 28, fontFamily: typography.extraBold, fontWeight: "800", marginTop: 14 },
   sub: {
     color: colors.muted,
     textAlign: "center",
