@@ -227,7 +227,7 @@ const styles = StyleSheet.create({
   heading: { marginTop: 34, paddingBottom: 5 },
   title: {
     color: colors.white,
-    fontSize: 29,
+    fontFamily: typography.regular, fontSize: 29,
     fontFamily: typography.semibold, fontFamily: typography.semibold,
     letterSpacing: -0.7,
   },
@@ -263,10 +263,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
   },
   orLine: { height: 1, backgroundColor: "rgba(255,255,255,.30)", flex: 1 },
-  orText: { color: "rgba(255,255,255,.78)", fontSize: 14 },
+  orText: { color: "rgba(255,255,255,.78)", fontFamily: typography.regular, fontSize: 14 },
   error: {
     color: colors.danger,
-    fontSize: 13,
+    fontFamily: typography.regular, fontSize: 13,
     fontFamily: typography.regular, marginHorizontal: 4,
     marginTop: -5,
   },
@@ -287,7 +287,7 @@ const styles = StyleSheet.create({
   },
   scanEyebrow: {
     color: "#fff",
-    fontSize: 12,
+    fontFamily: typography.regular, fontSize: 12,
     fontFamily: typography.extraBold, fontFamily: typography.extraBold,
     letterSpacing: 2,
   },
