@@ -275,7 +275,7 @@ export async function ensureParticipant(
     .from("participants")
     .select("id")
     .eq("event_id", eventId)
-    .eq("session_id", sessionId)
+    .eq("auth_user_id", sessionId)
     .maybeSingle();
   if (existingError) throw existingError;
 
