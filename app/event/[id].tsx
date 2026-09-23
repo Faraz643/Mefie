@@ -224,12 +224,12 @@ export default function EventScreen() {
             ],
           },
           (payload) => {
-            void signPhotoPath(payload.new.storage_path).then((signedUrl) => {
-              if (!signedUrl) return;
+            void attachSignedPhotoUrls([payload.new]).then(([photo]) => {
+              if (!photo?.public_url) return;
               setPhotos((curr) =>
                 curr.some((x) => x.id === payload.new.id)
                   ? curr
-                  : [{ ...payload.new, public_url: signedUrl }, ...curr],
+                  : [photo, ...curr],
               );
             }).catch(() => undefined);
           },
@@ -653,7 +653,7 @@ ${link}`,
   };
   const title = event?.name || "Event";
   const visiblePeople = people.slice(0, 5);
-  const heroSource = photos[0]?.public_url || storedBackgroundImage;
+  const heroSource = photos[0]?.preview_url || photos[0]?.public_url || storedBackgroundImage;
   return (
     <>
       <View style={styles.root}>
@@ -818,7 +818,7 @@ ${link}`,
                 delayLongPress={280}
               >
                 <ExpoImage
-                  source={{ uri: item.public_url }}
+                  source={{ uri: item.preview_url || item.public_url }}
                   style={styles.photoImage}
                   contentFit="cover"
                   cachePolicy="memory-disk"
