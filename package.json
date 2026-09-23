@@ -49,7 +49,8 @@
     "@shopify/flash-list": "2.0.2",
     "expo-image": "55.0.11",
     "@expo-google-fonts/plus-jakarta-sans": "0.4.2",
-    "react-native-url-polyfill": "^2.0.0"
+    "react-native-url-polyfill": "^2.0.0",
+    "expo-image-manipulator": "~55.0.21"
   },
   "devDependencies": {
     "@types/react": "~19.2.10",
