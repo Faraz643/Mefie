@@ -1,6 +1,6 @@
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
-import { Asset } from "expo-asset";
 import * as MediaLibrary from "expo-media-library";
+import * as FileSystem from "expo-file-system/legacy";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
 import {
@@ -49,10 +49,14 @@ export default function PhotoView() {
       const permission = await MediaLibrary.requestPermissionsAsync(true);
       if (!permission.granted)
         throw new Error("Photo permission is required to save this image.");
-      const asset = Asset.fromURI(photo.public_url);
-      await asset.downloadAsync();
-      if (!asset.localUri) throw new Error("Could not download the image.");
-      await MediaLibrary.saveToLibraryAsync(asset.localUri);
+      if (!FileSystem.cacheDirectory)
+        throw new Error("Local photo storage is unavailable.");
+      const target = `${FileSystem.cacheDirectory}mefie-save-${photo.id}.jpg`;
+      const download = await FileSystem.downloadAsync(photo.public_url, target);
+      if (download.status < 200 || download.status >= 300)
+        throw new Error(`Could not download photo (HTTP ${download.status}).`);
+      await MediaLibrary.saveToLibraryAsync(download.uri);
+      await FileSystem.deleteAsync(download.uri, { idempotent: true }).catch(() => undefined);
       setMessage("Saved to your photos ✓");
     } catch (e: any) {
       setMessage(e?.message || "Could not save photo.");
