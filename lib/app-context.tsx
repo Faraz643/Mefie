@@ -511,7 +511,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     const { data: memberships, error: membershipError } = await supabase
       .from("participants")
       .select("event_id")
-      .eq("session_id", sessionId);
+      .eq("auth_user_id", sessionId);
     if (membershipError) throw membershipError;
 
     const eventIds = [...new Set((memberships ?? []).map((row) => row.event_id))];
@@ -522,7 +522,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
     const { data } = await supabase
       .from("events")
-      .select("id,name,created_at,creator_session_id")
+      .select("id,name,created_at,creator_auth_user_id")
       .eq("status", "active")
       .in("id", eventIds)
       .order("created_at", { ascending: false })
@@ -555,7 +555,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
           people: people || 0,
           photos: photos || 0,
           cover: cover?.public_url || "",
-          creatorSessionId: e.creator_session_id ?? null,
+          creatorAuthUserId: e.creator_auth_user_id ?? null,
         };
       }),
     );
