@@ -4,7 +4,7 @@ import { test } from "node:test";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../");
+const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../");
 const migration = (name) => readFile(path.join(root, "supabase", "migrations", name), "utf8");
 
 test("RLS hardening keeps application tables authenticated-only", async () => {
