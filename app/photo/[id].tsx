@@ -29,7 +29,7 @@ export default function PhotoView() {
       if (supabase && id) {
         const { data } = await supabase
           .from("photos")
-          .select("*")
+          .select("id,event_id,participant_id,storage_path,thumbnail_path,original_filename,file_size,width,height,public_url,created_at")
           .eq("id", id)
           .maybeSingle();
         if (data) {
