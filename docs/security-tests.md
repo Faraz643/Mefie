@@ -3,7 +3,7 @@
 Mefie has two layers of regression protection.
 
 1. Static security tests run on every push and pull request. They inspect committed Supabase migrations for RLS, authenticated-only grants, SECURITY DEFINER search-path pinning, atomic invite joins, participant identity protection, direct photo-insert prevention, and service-role-only orphan cleanup.
-2. Live Supabase integration tests exercise the real Auth/RLS/RPC boundary with anonymous users. They create isolated test events, verify event isolation, invite resolution/join behavior, idempotent joins, participant identity protection, direct photo-row rejection, creator/member authorization, removal/rejoin behavior, and invalid-invite rejection. Test data is tagged and cleaned up with the service role.
+2. Live Supabase integration tests exercise the real Auth/RLS/RPC boundary with anonymous users. They create isolated test events, verify event isolation, invite resolution/join behavior, idempotent joins, participant identity protection, direct photo-row rejection, creator/member authorization, removal/rejoin behavior, and invalid-invite rejection. Test data is tagged and cleaned up using the creator's authenticated test session.
 
 ## Local run
 
@@ -11,7 +11,7 @@ Static tests need no credentials:
 
     npm run test:security:static
 
-Live tests require an explicit safety switch and a service-role key:
+Live tests require an explicit safety switch and the test project credentials:
 
     MEFIE_SECURITY_TESTS=1 SUPABASE_URL=... SUPABASE_ANON_KEY=... SUPABASE_SERVICE_ROLE_KEY=... npm run test:security:integration
 
@@ -25,7 +25,6 @@ Static tests always run. Live tests run automatically once these GitHub Actions 
 
 - SUPABASE_URL
 - SUPABASE_ANON_KEY
-- SUPABASE_SERVICE_ROLE_KEY
 
 The service-role key is never committed to the repository. Until the secrets are configured, the live job reports a warning and skips the integration portion rather than failing every build.
 
