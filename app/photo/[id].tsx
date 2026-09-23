@@ -14,6 +14,7 @@ import {
 } from "react-native";
 import { colors, shadows, typography } from "../../lib/theme";
 import { supabase } from "../../lib/app-context";
+import { signPhotoPath } from "../../lib/photo-storage";
 export default function PhotoView() {
   const router = useRouter();
   const { id, index = "0" } = useLocalSearchParams<{
@@ -31,7 +32,12 @@ export default function PhotoView() {
           .select("*")
           .eq("id", id)
           .maybeSingle();
-        setPhoto(data);
+        if (data) {
+          const signedUrl = await signPhotoPath(data.storage_path);
+          setPhoto({ ...data, public_url: signedUrl });
+        } else {
+          setPhoto(null);
+        }
       }
     })();
   }, [id]);
