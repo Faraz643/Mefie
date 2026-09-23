@@ -54,12 +54,11 @@ export default function JoinEventScreen() {
       setError("Cloud connection is not configured.");
       return;
     }
-    const { data, error: lookupError } = await supabase
-      .from("events")
-      .select("id,name,invite_code")
-      .eq("invite_code", invite)
-      .eq("status", "active")
-      .maybeSingle();
+    const { data: resolved, error: lookupError } = await supabase.rpc(
+      "resolve_event_invite",
+      { p_invite_code: invite },
+    );
+    const data = Array.isArray(resolved) ? resolved[0] : resolved;
     if (lookupError) {
       setError(lookupError.message);
       return;
