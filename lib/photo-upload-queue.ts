@@ -1,5 +1,6 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { File } from "expo-file-system";
+import * as ImageManipulator from "expo-image-manipulator";
 import * as FileSystem from "expo-file-system/legacy";
 import { AppState, AppStateStatus } from "react-native";
 import { ensureAnonymousAuth, supabase } from "./app-context";
@@ -8,6 +9,8 @@ const QUEUE_KEY = "mefie.photoUploadQueue.v1";
 const PHOTO_BUCKET = "photos";
 const MAX_ATTEMPTS = 8;
 const MAX_PHOTO_BYTES = 15 * 1024 * 1024;
+const MAX_THUMBNAIL_DIMENSION = 600;
+const THUMBNAIL_COMPRESSION = 0.75;
 const CONCURRENCY = 1;
 const CAPTURE_IDLE_DELAY_MS = 1200;
 const RETRY_DELAYS = [1500, 3000, 7000, 15000, 30000, 60000, 120000, 300000];
@@ -121,12 +124,57 @@ async function removeDurableFile(job: PhotoUploadJob) {
   }
 }
 
-async function removeOrphanedStorageObject(job: PhotoUploadJob) {
+async function cleanupFailedStorageObjects(job: PhotoUploadJob) {
   if (!supabase) return;
-  const path = `${job.eventId}/${job.id}.jpg`;
-  await supabase.storage.from(PHOTO_BUCKET).remove([path]).catch(() => undefined);
+
+  const originalPath = `${job.eventId}/${job.id}.jpg`;
+  const thumbnailPath = `${job.eventId}/${job.id}.thumb.jpg`;
+
+  const { data: photoRow } = await supabase
+    .from("photos")
+    .select("id")
+    .eq("client_upload_id", job.id)
+    .maybeSingle();
+
+  // Never delete the original after the DB row exists. The photo can safely
+  // fall back to its original while the thumbnail is repaired later.
+  const paths = photoRow?.id
+    ? [thumbnailPath]
+    : [originalPath, thumbnailPath];
+
+  await supabase.storage
+    .from(PHOTO_BUCKET)
+    .remove(paths)
+    .catch(() => undefined);
 }
 
+async function createThumbnail(localUri: string, job: PhotoUploadJob) {
+  const width = job.width ?? null;
+  const height = job.height ?? null;
+
+  let resize: { width?: number; height?: number };
+  if (width && height) {
+    const scale = Math.min(1, MAX_THUMBNAIL_DIMENSION / Math.max(width, height));
+    resize = {
+      width: Math.max(1, Math.round(width * scale)),
+      height: Math.max(1, Math.round(height * scale)),
+    };
+  } else {
+    resize = { width: MAX_THUMBNAIL_DIMENSION };
+  }
+
+  const result = await ImageManipulator.manipulateAsync(localUri, [{ resize }], {
+    compress: THUMBNAIL_COMPRESSION,
+    format: ImageManipulator.SaveFormat.JPEG,
+  });
+
+  const thumbnailFile = new File(result.uri);
+  if (!thumbnailFile.exists || !thumbnailFile.size) {
+    throw new Error("Could not create the gallery thumbnail.");
+  }
+
+  return { uri: result.uri, size: thumbnailFile.size };
+}
 function summaryFor(eventId?: string): PhotoQueueSummary {
   const scoped = eventId ? jobs.filter((job) => job.eventId === eventId) : jobs;
   const withErrors = scoped
@@ -205,6 +253,24 @@ async function processJob(jobId: string) {
       throw new Error(`Photo storage upload failed: ${uploadError.message}`);
     }
 
+    const thumbnail = await createThumbnail(localUri, job);
+    const thumbnailPath = `${job.eventId}/${job.id}.thumb.jpg`;
+    try {
+      const thumbnailBody = await new File(thumbnail.uri).arrayBuffer();
+      const { error: thumbnailUploadError } = await supabase.storage
+        .from(PHOTO_BUCKET)
+        .upload(thumbnailPath, thumbnailBody, {
+          contentType: "image/jpeg",
+          upsert: false,
+          cacheControl: "86400",
+        });
+      if (thumbnailUploadError && !/already exists|duplicate/i.test(thumbnailUploadError.message)) {
+        throw new Error(`Gallery thumbnail upload failed: ${thumbnailUploadError.message}`);
+      }
+    } finally {
+      await FileSystem.deleteAsync(thumbnail.uri, { idempotent: true }).catch(() => undefined);
+    }
+
     const { data: photoId, error: finalizeError } = await supabase.rpc(
       "finalize_photo_upload",
       {
@@ -219,12 +285,15 @@ async function processJob(jobId: string) {
       },
     );
 
-    if (finalizeError) {
-      throw new Error(finalizeError.message);
-    }
-    if (!photoId) {
-      throw new Error("Photo metadata could not be finalized.");
-    }
+    if (finalizeError) throw new Error(finalizeError.message);
+    if (!photoId) throw new Error("Photo metadata could not be finalized.");
+
+    const { data: thumbnailLinked, error: thumbnailLinkError } = await supabase.rpc(
+      "set_photo_thumbnail",
+      { p_photo_id: photoId, p_thumbnail_path: thumbnailPath },
+    );
+    if (thumbnailLinkError) throw new Error(thumbnailLinkError.message);
+    if (!thumbnailLinked) throw new Error("Gallery thumbnail could not be linked.");
 
     jobs = jobs.filter((item) => item.id !== job.id);
     await persistQueue();
@@ -243,7 +312,7 @@ async function processJob(jobId: string) {
     if (current.status === "failed") {
       // Once retries are exhausted, clean up the deterministic Storage object
       // if a previous attempt created it without a corresponding DB row.
-      await removeOrphanedStorageObject(current);
+      await cleanupFailedStorageObjects(current);
     }
 
     await persistQueue();
