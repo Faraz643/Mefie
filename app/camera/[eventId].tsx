@@ -271,7 +271,18 @@ export default function CameraScreen() {
         ) : queueSummary.queued + queueSummary.uploading > 0 ? (
           <View style={styles.statusPill}><MaterialCommunityIcons name="cloud-upload-outline" size={15} color="#fff" /><Text style={styles.statusText}>{queueSummary.queued + queueSummary.uploading} {(queueSummary.queued + queueSummary.uploading) === 1 ? "photo" : "photos"} sharing</Text></View>
         ) : queueSummary.failed > 0 ? (
-          <Pressable onPress={() => void retryFailedPhotoUploads(String(eventId))} style={styles.statusPill}><MaterialCommunityIcons name="alert-circle-outline" size={15} color="#fff" /><Text style={styles.statusText}>{queueSummary.failed} failed · Tap to retry</Text></Pressable>
+          <Pressable onPress={() => void retryFailedPhotoUploads(String(eventId))} style={styles.errorPill}>
+            <MaterialCommunityIcons name="alert-circle-outline" size={15} color="#fff" />
+            <Text style={styles.statusText} numberOfLines={3}>
+              {queueSummary.lastError || `${queueSummary.failed} photo${queueSummary.failed === 1 ? "" : "s"} failed`}
+              {" · Tap to retry"}
+            </Text>
+          </Pressable>
+        ) : queueSummary.lastError ? (
+          <View style={styles.errorPill}>
+            <MaterialCommunityIcons name="alert-circle-outline" size={15} color="#fff" />
+            <Text style={styles.statusText} numberOfLines={3}>{queueSummary.lastError}</Text>
+          </View>
         ) : message ? (
           <View style={styles.statusPill}><MaterialCommunityIcons name="check" size={15} color="#fff" /><Text style={styles.statusText}>{message}</Text></View>
         ) : null}
@@ -313,6 +324,7 @@ const styles = StyleSheet.create({
   shutterFlash: { ...StyleSheet.absoluteFillObject, backgroundColor: "#fff", borderRadius: 35 },
   mode: { color: "#fff", fontSize: 11, fontFamily: typography.extraBold, marginTop: 10, letterSpacing: 1 },
   statusPill: { maxWidth: "88%", flexDirection: "row", alignItems: "center", gap: 7, backgroundColor: "rgba(10,14,18,.62)", paddingHorizontal: 15, paddingVertical: 9, borderRadius: 18, borderWidth: 1, borderColor: "rgba(255,255,255,.16)", marginBottom: 14 },
+  errorPill: { maxWidth: "92%", flexDirection: "row", alignItems: "center", gap: 7, backgroundColor: "rgba(150,28,28,.82)", paddingHorizontal: 15, paddingVertical: 10, borderRadius: 18, borderWidth: 1, borderColor: "rgba(255,180,180,.32)", marginBottom: 14 },
   statusText: { color: "#fff", fontFamily: typography.bold, fontSize: 13 },
   center: { flex: 1, backgroundColor: "#0A0F15", alignItems: "center", justifyContent: "center", padding: 28 },
   title: { color: "#fff", fontSize: 28, fontFamily: typography.extraBold, marginTop: 14 },
