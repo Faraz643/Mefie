@@ -4,7 +4,7 @@ import { StyleSheet, Text } from "react-native";
 import { GlassButton, GlassCard, GlassInput } from "../../components/Glass";
 import { Screen } from "../../components/Screen";
 import { colors, typography } from "../../lib/theme";
-import { ensureParticipant, supabase } from "../../lib/app-context";
+import { supabase } from "../../lib/app-context";
 
 export default function InviteRoute() {
   const router = useRouter();
