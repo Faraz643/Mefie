@@ -318,12 +318,8 @@ export async function ensureParticipant(
 export async function ensureParticipant(
   eventId: string,
   displayName: string,
-  allowRemovedMember = false,
 ) {
   if (!supabase || !eventId) return null;
-  if (allowRemovedMember) {
-    throw new Error("Temporary rejoin must use its invite token.");
-  }
 
   const sessionId = await getSessionId();
   const { data: existing, error: existingError } = await supabase
