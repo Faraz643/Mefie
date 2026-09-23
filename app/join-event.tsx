@@ -249,8 +249,8 @@ const styles = StyleSheet.create({
   heading: { marginTop: 34, paddingBottom: 5 },
   title: {
     color: colors.white,
-    fontFamily: typography.regular, fontSize: 29,
-    fontFamily: typography.semibold, fontFamily: typography.semibold,
+    fontSize: 29,
+    fontFamily: typography.semibold,
     letterSpacing: -0.7,
   },
   sub: { color: "rgba(255,255,255,.70)", fontSize: 14, fontFamily: typography.regular, marginTop: 7 },
@@ -274,7 +274,7 @@ const styles = StyleSheet.create({
     gap: 7,
     ...shadows,
   },
-  joinLabel: { color: colors.white, fontSize: 16, fontFamily: typography.medium, fontFamily: typography.medium },
+  joinLabel: { color: colors.white, fontSize: 16, fontFamily: typography.medium },
   joinDisabled: { opacity: 0.6 },
   pressed: { transform: [{ scale: 0.985 }], opacity: 0.88 },
   or: {
@@ -288,7 +288,7 @@ const styles = StyleSheet.create({
   orText: { color: "rgba(255,255,255,.78)", fontFamily: typography.regular, fontSize: 14 },
   error: {
     color: colors.danger,
-    fontFamily: typography.regular, fontSize: 13,
+    fontSize: 13,
     fontFamily: typography.regular, marginHorizontal: 4,
     marginTop: -5,
   },
@@ -309,8 +309,8 @@ const styles = StyleSheet.create({
   },
   scanEyebrow: {
     color: "#fff",
-    fontFamily: typography.regular, fontSize: 12,
-    fontFamily: typography.extraBold, fontFamily: typography.extraBold,
+    fontSize: 12,
+    fontFamily: typography.extraBold,
     letterSpacing: 2,
   },
   closeCircle: {
@@ -323,7 +323,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  scanTitle: { color: "#fff", fontSize: 26, fontFamily: typography.extraBold, fontFamily: typography.extraBold, marginTop: 118 },
+  scanTitle: { color: "#fff", fontSize: 26, fontFamily: typography.extraBold, marginTop: 118 },
   scanSub: { color: "rgba(255,255,255,.72)", fontSize: 13, fontFamily: typography.regular, marginTop: 7 },
   scanBox: {
     width: 270,
