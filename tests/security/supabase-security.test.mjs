@@ -4,19 +4,17 @@ import { createClient } from "@supabase/supabase-js";
 
 const url = process.env.SUPABASE_URL;
 const anonKey = process.env.SUPABASE_ANON_KEY;
-const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const enabled = process.env.MEFIE_SECURITY_TESTS === "1";
 
 if (!enabled) {
   test("Supabase integration suite (set MEFIE_SECURITY_TESTS=1 to run)", { skip: true }, () => {});
-} else if (!url || !anonKey || !serviceKey) {
+} else if (!url || !anonKey) {
   test("Supabase integration suite has all required credentials", () => {
-    assert.fail("Set SUPABASE_URL, SUPABASE_ANON_KEY and SUPABASE_SERVICE_ROLE_KEY.");
+    assert.fail("Set SUPABASE_URL and SUPABASE_ANON_KEY.");
   });
 } else {
-  const admin = createClient(url, serviceKey, { auth: { persistSession: false, autoRefreshToken: false } });
   const clients = [];
-  const createdEventIds = [];
+  const createdEvents = [];
   const prefix = "MEFIE_TEST_" + Date.now().toString(36).toUpperCase();
 
   async function newUser() {
@@ -55,7 +53,7 @@ if (!enabled) {
     });
     const event = Array.isArray(created) ? created[0] : created;
     assert.ok(event?.id);
-    createdEventIds.push(event.id);
+    createdEvents.push({ id: event.id, client: creator.client });
 
     const { data: strangerEvents, error: strangerEventError } = await stranger.client.from("events").select("id").eq("id", event.id);
     assert.ifError(strangerEventError);
@@ -122,7 +120,7 @@ if (!enabled) {
   });
 
   after(async () => {
-    for (const id of createdEventIds) await admin.from("events").delete().eq("id", id);
+    for (const event of createdEvents) await event.client.rpc("delete_event_as_creator", { p_event_id: event.id });
     for (const client of clients) await client.auth.signOut().catch(() => {});
   });
 }
