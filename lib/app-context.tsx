@@ -172,10 +172,19 @@ export async function ensureAnonymousAuth(): Promise<string | null> {
 
   authSessionPromise = (async () => {
     const legacySessionId = await AsyncStorage.getItem("mefie.sessionId");
-    const { data: existing, error: existingError } = await supabase.auth.getSession();
-    if (existingError) throw existingError;
+    // getSession() reads the persisted client session. Verify that identity
+    // against the Auth server so a deleted/stale local session cannot bypass
+    // anonymous sign-in and leave Mefie using an identity that no longer exists.
+    let { data: verifiedUserData, error: verifiedUserError } = await supabase.auth.getUser();
 
-    let userId = existing.session?.user?.id ?? null;
+    if (verifiedUserError || !verifiedUserData.user) {
+      await supabase.auth.signOut().catch(() => undefined);
+      verifiedUserData = { user: null };
+      verifiedUserError = null;
+    }
+
+    let userId = verifiedUserData.user?.id ?? null;
+
     if (!userId) {
       const { data, error } = await supabase.auth.signInAnonymously();
       if (error) {
