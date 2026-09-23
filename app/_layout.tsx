@@ -6,6 +6,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { AppProvider } from '../lib/app-context';
 import { startPhotoUploadQueue } from '../lib/photo-upload-queue';
+import { captureException } from '../lib/sentry';
 import { useEffect } from 'react';
 import { useFonts } from '@expo-google-fonts/plus-jakarta-sans/useFonts';
 import { PlusJakartaSans_400Regular } from '@expo-google-fonts/plus-jakarta-sans/400Regular';
@@ -24,7 +25,9 @@ export default function RootLayout() {
   });
 
   useEffect(() => {
-    void startPhotoUploadQueue();
+    void startPhotoUploadQueue().catch((error) => {
+      captureException(error, { area: "photo_upload_queue_start" });
+    });
   }, []);
 
   if (!fontsLoaded) return null;
@@ -35,7 +38,7 @@ export default function RootLayout() {
         <SentryErrorBoundary>
           <AppProvider>
             <StatusBar style="light" />
-          <Stack
+            <Stack
             screenOptions={{
               headerShown: false,
               animation: 'fade',
