@@ -137,9 +137,11 @@ Deno.serve(async (req) => {
   const candidates: string[] = [];
 
   for (const object of objects ?? []) {
-    const name = String(object.name ?? "");
-    const path = `${eventId}/${name}`;
-    if (!PHOTO_FILE_RE.test(name)) continue;
+    const path = String(object.name ?? "");
+    const prefix = `${eventId}/`;
+    if (!path.startsWith(prefix)) continue;
+    const filename = path.slice(prefix.length);
+    if (!PHOTO_FILE_RE.test(filename)) continue;
     if (referenced.has(path)) continue;
 
     const createdAt = object.created_at ? new Date(object.created_at).getTime() : NaN;
