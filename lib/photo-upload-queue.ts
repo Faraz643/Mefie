@@ -205,23 +205,25 @@ async function processJob(jobId: string) {
       throw new Error(`Photo storage upload failed: ${uploadError.message}`);
     }
 
-    const { error: insertError } = await supabase.from("photos").upsert(
+    const { data: photoId, error: finalizeError } = await supabase.rpc(
+      "finalize_photo_upload",
       {
-        client_upload_id: job.id,
-        event_id: job.eventId,
-        participant_id: job.participantId,
-        storage_path: path,
-        original_filename: `mefie-${job.id}.jpg`,
-        file_size: body.byteLength,
-        width: job.width,
-        height: job.height,
-        public_url: null,
+        p_client_upload_id: job.id,
+        p_event_id: job.eventId,
+        p_participant_id: job.participantId,
+        p_storage_path: path,
+        p_original_filename: `mefie-${job.id}.jpg`,
+        p_file_size: body.byteLength,
+        p_width: job.width,
+        p_height: job.height,
       },
-      { onConflict: "client_upload_id" },
     );
 
-    if (insertError) {
-      throw new Error(insertError.message);
+    if (finalizeError) {
+      throw new Error(finalizeError.message);
+    }
+    if (!photoId) {
+      throw new Error("Photo metadata could not be finalized.");
     }
 
     jobs = jobs.filter((item) => item.id !== job.id);
