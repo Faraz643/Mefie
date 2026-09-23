@@ -45,6 +45,7 @@ Applied migrations:
 - `014_storage_delete_thumbnails.sql` — keeps creator/uploader storage cleanup compatible with optional thumbnail objects.
 - `015_temporary_invite_bearer_join.sql` — makes five-minute temporary invites atomic bearer links; removed members are re-admitted and their removal marker is cleared.
 - `016_invite_only_event_join.sql` — makes the invite code the authorization boundary for new members; an event UUID alone can no longer be used to create membership.
+- `017_membership_update_hardening.sql` — blocks membership updates once an event is no longer active.
 
 Important behavior:
 - Event invite-code lookup is handled by `resolve_event_invite`; the app no longer reads every active event.
