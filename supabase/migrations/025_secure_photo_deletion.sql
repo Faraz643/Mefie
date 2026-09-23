@@ -24,3 +24,23 @@ $$;
 
 revoke all on function private.can_delete_photo(uuid) from public;
 grant execute on function private.can_delete_photo(uuid) to authenticated;
+
+
+-- Tighten photo insert authorization to explicitly bind the participant
+-- to the same event as the photo row.
+drop policy if exists "Event members can upload their own photos" on public.photos;
+
+create policy "Event members can upload their own photos"
+  on public.photos
+  for insert
+  to authenticated
+  with check (
+    (select private.can_access_event(event_id))
+    and exists (
+      select 1
+      from public.participants p
+      where p.id = participant_id
+        and p.event_id = public.photos.event_id
+        and p.auth_user_id = (select auth.uid())
+    )
+  );
