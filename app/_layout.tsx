@@ -1,3 +1,5 @@
+import "../lib/sentry";
+import { SentryErrorBoundary } from "../components/SentryErrorBoundary";
 import { Stack } from 'expo-router';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
@@ -30,8 +32,9 @@ export default function RootLayout() {
   return (
     <SafeAreaProvider>
       <GestureHandlerRootView style={{ flex: 1 }}>
-        <AppProvider>
-          <StatusBar style="light" />
+        <SentryErrorBoundary>
+          <AppProvider>
+            <StatusBar style="light" />
           <Stack
             screenOptions={{
               headerShown: false,
@@ -40,8 +43,9 @@ export default function RootLayout() {
             }}
           >
             <Stack.Screen name="(tabs)" options={{ animation: 'none' }} />
-          </Stack>
-        </AppProvider>
+            </Stack>
+          </AppProvider>
+        </SentryErrorBoundary>
       </GestureHandlerRootView>
     </SafeAreaProvider>
   );
