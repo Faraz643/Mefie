@@ -5,7 +5,7 @@ import { Pressable, StyleSheet, Text, View } from "react-native";
 import { BackButton, Screen } from "../components/Screen";
 import { GlassCard, GlassInput } from "../components/Glass";
 import { colors, radii, shadows, typography } from "../lib/theme";
-import { ensureParticipant, supabase, useApp } from "../lib/app-context";
+import { ensureParticipant, getSessionId, supabase, useApp } from "../lib/app-context";
 
 function code() {
   return Math.random().toString(36).slice(2, 8).toUpperCase();
@@ -29,6 +29,9 @@ export default function CreateEventScreen() {
     setLoading(true);
     setError("");
     try {
+      const authUserId = await getSessionId();
+      if (!authUserId) throw new Error("Could not establish your secure Mefie identity.");
+
       let data: any = null;
       let insertError: any = null;
       for (let attempt = 0; attempt < 3; attempt += 1) {
@@ -37,6 +40,9 @@ export default function CreateEventScreen() {
           .insert({
             name: name.trim(),
             invite_code: code(),
+            creator_auth_user_id: authUserId,
+            creator_session_id: authUserId,
+            status: "active",
           })
           .select("id,invite_code")
           .single();
