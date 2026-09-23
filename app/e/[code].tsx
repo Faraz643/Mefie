@@ -34,6 +34,10 @@ export default function InviteRoute() {
       return;
     }
     try {
+      if (!supabase) {
+        setError("Cloud connection is not configured.");
+        return;
+      }
       const { data: participantId, error: joinError } = await supabase.rpc(
         "join_event_by_invite",
         {
