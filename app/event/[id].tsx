@@ -4,6 +4,7 @@ import { Asset } from "expo-asset";
 import * as Clipboard from "expo-clipboard";
 import QRCode from "react-native-qrcode-svg";
 import * as MediaLibrary from "expo-media-library";
+import * as FileSystem from "expo-file-system/legacy";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { LinearGradient } from "expo-linear-gradient";
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -508,11 +509,16 @@ ${link}`,
         throw new Error("Photo permission is required to save images.");
       let saved = 0;
       for (const photo of chosen) {
-        const asset = Asset.fromURI(photo.public_url);
-        await asset.downloadAsync();
-        if (!asset.localUri)
-          throw new Error("Could not download a selected photo.");
-        await MediaLibrary.saveToLibraryAsync(asset.localUri);
+        if (!photo.public_url)
+          throw new Error("Photo access expired. Please reopen the event and try again.");
+        if (!FileSystem.cacheDirectory)
+          throw new Error("Local photo storage is unavailable.");
+        const target = `${FileSystem.cacheDirectory}mefie-save-${photo.id}.jpg`;
+        const download = await FileSystem.downloadAsync(photo.public_url, target);
+        if (download.status < 200 || download.status >= 300)
+          throw new Error(`Could not download photo (HTTP ${download.status}).`);
+        await MediaLibrary.saveToLibraryAsync(download.uri);
+        await FileSystem.deleteAsync(download.uri, { idempotent: true }).catch(() => undefined);
         saved += 1;
       }
       Alert.alert(
