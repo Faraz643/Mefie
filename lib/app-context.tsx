@@ -353,7 +353,10 @@ export async function ensureParticipant(
     })
     .select("id")
     .single();
-  if (error) throw error;
+  if (error) {
+    if (error.code === "42501") return null;
+    throw error;
+  }
 
   return data.id;
 }
