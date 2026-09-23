@@ -693,7 +693,6 @@ ${link}`,
         contentContainerStyle={{ paddingBottom: insets.bottom + 112, paddingHorizontal: 8 }}
         showsVerticalScrollIndicator={false}
         stickyHeaderIndices={[0]}
-        estimatedItemSize={112}
         drawDistance={420}
         optimizeItemArrangement
         scrollEventThrottle={16}
