@@ -73,7 +73,7 @@ export const captureException = (
 
   Sentry.withScope((scope) => {
     if (context) {
-      scope.setContext("m e f i e", scrubValue(context) as Record<string, unknown>);
+      scope.setContext("mefie", scrubValue(context) as Record<string, unknown>);
     }
     Sentry.captureException(error);
   });
