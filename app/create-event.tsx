@@ -7,9 +7,6 @@ import { GlassCard, GlassInput } from "../components/Glass";
 import { colors, radii, shadows, typography } from "../lib/theme";
 import { ensureParticipant, supabase, useApp } from "../lib/app-context";
 
-function code() {
-  return Math.random().toString(36).slice(2, 8).toUpperCase();
-}
 
 export default function CreateEventScreen() {
   const router = useRouter();
@@ -31,7 +28,7 @@ export default function CreateEventScreen() {
     try {
       const { data, error } = await supabase.rpc("create_event", {
         p_name: name.trim(),
-        p_invite_code: code(),
+        p_invite_code: "",
       });
       if (error) throw error;
       if (!data?.[0]?.id) throw new Error("Could not create the event.");
