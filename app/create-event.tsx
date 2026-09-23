@@ -29,7 +29,7 @@ export default function CreateEventScreen() {
     setLoading(true);
     setError("");
     try {
-      const creatorSessionId = await getSessionId();
+      await getSessionId();
       let data: any = null;
       let insertError: any = null;
       for (let attempt = 0; attempt < 3; attempt += 1) {
@@ -38,7 +38,6 @@ export default function CreateEventScreen() {
           .insert({
             name: name.trim(),
             invite_code: code(),
-            creator_session_id: creatorSessionId,
           })
           .select("id,invite_code")
           .single();
