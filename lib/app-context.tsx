@@ -179,10 +179,18 @@ export async function ensureAnonymousAuth(): Promise<string | null> {
     if (!userId) {
       const { data, error } = await supabase.auth.signInAnonymously();
       if (error) {
+        const projectHost = SUPABASE_URL
+          ? (() => {
+              try {
+                return new URL(SUPABASE_URL).host;
+              } catch {
+                return SUPABASE_URL;
+              }
+            })()
+          : "missing";
+
         throw new Error(
-          error.message.includes("Anonymous sign-ins")
-            ? "Anonymous access is not enabled for this Mefie backend yet."
-            : error.message,
+          `Mefie anonymous authentication failed: ${error.message} (code=${error.code ?? "unknown"}, status=${error.status ?? "unknown"}, project=${projectHost})`,
         );
       }
       userId = data.user?.id ?? data.session?.user?.id ?? null;
