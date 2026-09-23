@@ -29,7 +29,6 @@ export default function CreateEventScreen() {
     setLoading(true);
     setError("");
     try {
-      if (!supabase) throw new Error("Cloud connection is not configured.");
       let data: any = null;
       let insertError: any = null;
       for (let attempt = 0; attempt < 3; attempt += 1) {
