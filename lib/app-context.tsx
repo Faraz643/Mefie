@@ -321,38 +321,16 @@ export async function ensureParticipant(
   allowRemovedMember = false,
 ) {
   if (!supabase || !eventId) return null;
-  const sessionId = await getSessionId();
-
-  const { data: eventAccess, error: eventAccessError } = await supabase
-    .from("events")
-    .select("id,removed_session_ids")
-    .eq("id", eventId)
-    .maybeSingle();
-  if (eventAccessError) throw eventAccessError;
-  if (!eventAccess) return null;
-
-  const removedSessionIds = eventAccess.removed_session_ids || [];
-  if (removedSessionIds.includes(sessionId) && !allowRemovedMember) {
-    return null;
+  if (allowRemovedMember) {
+    throw new Error("Temporary rejoin must use its invite token.");
   }
 
-  const { error: profileIdentityError } = await supabase
-    .from("profiles")
-    .upsert(
-      {
-        session_id: sessionId,
-        display_name: displayName.trim() || "Guest",
-        updated_at: new Date().toISOString(),
-      },
-      { onConflict: "session_id" },
-    );
-  if (profileIdentityError) throw profileIdentityError;
-
+  const sessionId = await getSessionId();
   const { data: existing, error: existingError } = await supabase
     .from("participants")
     .select("id")
     .eq("event_id", eventId)
-    .eq("session_id", sessionId)
+    .eq("auth_user_id", sessionId)
     .maybeSingle();
   if (existingError) throw existingError;
 
@@ -381,18 +359,24 @@ export async function ensureParticipant(
     .single();
   if (error) throw error;
 
-  if (removedSessionIds.includes(sessionId) && allowRemovedMember) {
-    const { error: clearRemovedError } = await supabase.rpc(
-      "clear_event_removed_member",
-      {
-        p_event_id: eventId,
-        p_session_id: sessionId,
-      },
-    );
-    if (clearRemovedError) throw clearRemovedError;
-  }
-
   return data.id;
+}
+
+export async function rejoinEventWithTemporaryInvite(
+  token: string,
+  displayName: string,
+) {
+  if (!supabase) return null;
+  await ensureAnonymousAuth();
+  const { data, error } = await supabase.rpc(
+    "rejoin_event_with_temporary_invite",
+    {
+      p_token: token,
+      p_display_name: displayName.trim() || "Guest",
+    },
+  );
+  if (error) throw error;
+  return data as string | null;
 }
 export async function deleteEventsAsCreator(eventIds: string[]) {
   if (!supabase || eventIds.length === 0) return;
@@ -415,7 +399,6 @@ export async function deleteEventsAsCreator(eventIds: string[]) {
 
     const { data: deleted, error } = await supabase.rpc("delete_event_as_creator", {
       p_event_id: eventId,
-      p_creator_session_id: sessionId,
     });
     if (error) throw error;
     if (!deleted) throw new Error("Only events you created can be deleted.");
