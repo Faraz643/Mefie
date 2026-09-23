@@ -584,13 +584,14 @@ ${link}`,
               }
               setActionBusy(true);
               try {
-                const paths = chosen
-                  .map((photo) => photo.storage_path)
-                  .filter(Boolean);
+                const paths = [
+                  ...chosen.map((photo) => photo.storage_path),
+                  ...chosen.map((photo) => photo.thumbnail_path),
+                ].filter(Boolean);
                 if (paths.length) {
                   const { error: storageError } = await supabase.storage
                     .from("photos")
-                    .remove(paths);
+                    .remove([...new Set(paths)]);
                   if (storageError) throw storageError;
                 }
                 const { error: deleteError } = await supabase
