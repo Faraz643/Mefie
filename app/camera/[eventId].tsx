@@ -172,9 +172,11 @@ export default function CameraScreen() {
       void capturePromise.then((photo) => {
         releaseCaptureSlot();
         const uri = photo.filePath.startsWith("file://") ? photo.filePath : `file://${photo.filePath}`;
+        const photoDimensions = photo as unknown as { width?: number; height?: number };
         void enqueuePhotoUpload({
           id: createUploadId(), eventId: String(eventId), participantId, uri,
-          width: photo.width, height: photo.height,
+          width: photoDimensions.width ?? null,
+          height: photoDimensions.height ?? null,
         }).catch((error: any) => showMessage(error?.message || "Photo could not be queued."));
       }).catch((error: any) => {
         releaseCaptureSlot();
