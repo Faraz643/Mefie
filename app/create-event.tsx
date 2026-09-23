@@ -5,7 +5,7 @@ import { Pressable, StyleSheet, Text, View } from "react-native";
 import { BackButton, Screen } from "../components/Screen";
 import { GlassCard, GlassInput } from "../components/Glass";
 import { colors, radii, shadows, typography } from "../lib/theme";
-import { ensureParticipant, getSessionId, supabase, useApp } from "../lib/app-context";
+import { ensureParticipant, supabase, useApp } from "../lib/app-context";
 
 function code() {
   return Math.random().toString(36).slice(2, 8).toUpperCase();
@@ -29,30 +29,15 @@ export default function CreateEventScreen() {
     setLoading(true);
     setError("");
     try {
-      const authUserId = await getSessionId();
-      if (!authUserId) throw new Error("Could not establish your secure Mefie identity.");
+      const { data, error } = await supabase.rpc("create_event", {
+        p_name: name.trim(),
+        p_invite_code: code(),
+      });
+      if (error) throw error;
+      if (!data?.[0]?.id) throw new Error("Could not create the event.");
 
-      let data: any = null;
-      let insertError: any = null;
-      for (let attempt = 0; attempt < 3; attempt += 1) {
-        const result = await supabase
-          .from("events")
-          .insert({
-            name: name.trim(),
-            invite_code: code(),
-            creator_auth_user_id: authUserId,
-            creator_session_id: authUserId,
-            status: "active",
-          })
-          .select("id,invite_code")
-          .single();
-        data = result.data;
-        insertError = result.error;
-        if (!insertError) break;
-      }
-      if (insertError || !data)
-        throw insertError || new Error("Could not create the event.");
-      await ensureParticipant(data.id, displayName);
+      const event = data[0];
+      await ensureParticipant(event.id, displayName);
       router.replace({
         pathname: "/event-created",
         params: { id: data.id, name: name.trim(), invite: data.invite_code },
