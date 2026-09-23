@@ -34,6 +34,7 @@ type DemoEvent = {
   people: number;
   photos: number;
   cover: string;
+  creatorAuthUserId: string | null;
 };
 type AppContextValue = {
   displayName: string;
