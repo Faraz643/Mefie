@@ -27,6 +27,7 @@ export type PhotoQueueSummary = {
   queued: number;
   uploading: number;
   failed: number;
+  lastError: string | null;
 };
 
 let jobs: PhotoUploadJob[] = [];
@@ -112,10 +113,14 @@ async function removeDurableFile(job: PhotoUploadJob) {
 
 function summaryFor(eventId?: string): PhotoQueueSummary {
   const scoped = eventId ? jobs.filter((job) => job.eventId === eventId) : jobs;
+  const withErrors = scoped
+    .filter((job) => job.error)
+    .sort((a, b) => b.createdAt - a.createdAt);
   return {
     queued: scoped.filter((job) => job.status === "queued").length,
     uploading: scoped.filter((job) => job.status === "uploading").length,
     failed: scoped.filter((job) => job.status === "failed").length,
+    lastError: withErrors[0]?.error ?? null,
   };
 }
 
@@ -129,9 +134,27 @@ async function processJob(jobId: string) {
     if (!supabase) throw new Error("Cloud connection is not configured.");
 
     // The queue can start before the camera screen finishes preparing membership.
-    // Make sure every Storage/DB request is made with the authenticated Supabase
-    // session, otherwise RLS correctly treats the upload as unauthenticated.
-    await ensureAnonymousAuth();
+    // Make sure every Storage/DB request is made with a real authenticated JWT.
+    const userId = await ensureAnonymousAuth();
+    if (!userId) throw new Error("Mefie authentication is unavailable.");
+
+    const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+    if (sessionError) throw new Error(`Authentication session error: ${sessionError.message}`);
+    if (!sessionData.session?.access_token) {
+      throw new Error("Mefie has no active authentication session. Please reconnect.");
+    }
+
+    const { data: membership, error: membershipError } = await supabase
+      .from("participants")
+      .select("id,auth_user_id,event_id")
+      .eq("id", job.participantId)
+      .eq("event_id", job.eventId)
+      .maybeSingle();
+    if (membershipError) throw new Error(`Membership check failed: ${membershipError.message}`);
+    if (!membership) throw new Error("Your event membership is missing. Reconnect to this event and try again.");
+    if (membership.auth_user_id !== userId) {
+      throw new Error("This event membership belongs to a different Mefie session.");
+    }
 
     const localUri = await ensureDurableFile(job);
     const info = await FileSystem.getInfoAsync(localUri);
@@ -146,7 +169,7 @@ async function processJob(jobId: string) {
     const body = decode(base64);
     const path = `${job.eventId}/${job.id}.jpg`;
 
-    const { error: uploadError } = await supabase.storage
+    const { data: uploadData, error: uploadError } = await supabase.storage
       .from(PHOTO_BUCKET)
       .upload(path, body, {
         contentType: "image/jpeg",
@@ -157,7 +180,12 @@ async function processJob(jobId: string) {
     // A previous attempt may have reached storage before the network response was lost.
     // The deterministic path lets us safely continue to the idempotent DB write.
     if (uploadError && !/already exists|duplicate/i.test(uploadError.message)) {
-      throw new Error(uploadError.message);
+      const status = (uploadError as any)?.statusCode ?? (uploadError as any)?.status ?? "unknown";
+      const code = (uploadError as any)?.name ?? (uploadError as any)?.code ?? "unknown";
+      throw new Error(`Photo storage upload failed (status=${status}, code=${code}): ${uploadError.message}`);
+    }
+    if (!uploadData && uploadError) {
+      throw new Error(`Photo storage upload failed: ${uploadError.message}`);
     }
 
     const { data: urlData } = supabase.storage.from(PHOTO_BUCKET).getPublicUrl(path);
