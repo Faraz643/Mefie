@@ -34,7 +34,14 @@ export default function InviteRoute() {
       return;
     }
     try {
-      const participantId = await ensureParticipant(event.id, name);
+      const { data: participantId, error: joinError } = await supabase.rpc(
+        "join_event_by_invite",
+        {
+          p_invite_code: String(code || "").toUpperCase(),
+          p_display_name: name,
+        },
+      );
+      if (joinError) throw joinError;
       if (!participantId) {
         setError("You were removed from this event. Use a temporary invite to rejoin.");
         return;
