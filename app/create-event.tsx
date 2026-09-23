@@ -40,7 +40,7 @@ export default function CreateEventScreen() {
       await ensureParticipant(event.id, displayName);
       router.replace({
         pathname: "/event-created",
-        params: { id: data.id, name: name.trim(), invite: data.invite_code },
+        params: { id: event.id, name: name.trim(), invite: event.invite_code },
       });
     } catch (e: any) {
       setError(e?.message || "Could not create the event.");
