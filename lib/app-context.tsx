@@ -443,6 +443,16 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       }
     })();
 
+    const authAppStateSubscription = supabase
+      ? AppState.addEventListener("change", (state) => {
+          if (state === "active") {
+            void supabase.auth.startAutoRefresh();
+          } else {
+            supabase.auth.stopAutoRefresh();
+          }
+        })
+      : null;
+
     AsyncStorage.getItem("mefie.displayName").then((v) => {
       if (mountedRef.current && v) setName(v);
     });
@@ -459,6 +469,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     });
     return () => {
       mountedRef.current = false;
+      authAppStateSubscription?.remove();
+      supabase?.auth.stopAutoRefresh();
     };
   }, []);
 
