@@ -30,7 +30,6 @@ jobs:
     env:
       SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
       SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
-      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
       MEFIE_SECURITY_TESTS: "1"
     steps:
       - uses: actions/checkout@v4
@@ -43,7 +42,7 @@ jobs:
         id: config
         shell: bash
         run: |
-          if [ -z "$SUPABASE_URL" ] || [ -z "$SUPABASE_ANON_KEY" ] || [ -z "$SUPABASE_SERVICE_ROLE_KEY" ]; then
+          if [ -z "$SUPABASE_URL" ] || [ -z "$SUPABASE_ANON_KEY" ]; then
             echo "configured=false" >> "$GITHUB_OUTPUT"
             echo "::warning::Supabase integration secrets are not configured; live security tests were skipped."
           else
