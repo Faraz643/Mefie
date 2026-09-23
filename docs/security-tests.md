@@ -13,7 +13,7 @@ Static tests need no credentials:
 
 Live tests require an explicit safety switch and the test project credentials:
 
-    MEFIE_SECURITY_TESTS=1 SUPABASE_URL=... SUPABASE_ANON_KEY=... SUPABASE_SERVICE_ROLE_KEY=... npm run test:security:integration
+    MEFIE_SECURITY_TESTS=1 SUPABASE_URL=... SUPABASE_ANON_KEY=... npm run test:security:integration
 
 The explicit switch prevents accidentally running destructive integration tests against the wrong Supabase project.
 
@@ -26,7 +26,7 @@ Static tests always run. Live tests run automatically once these GitHub Actions 
 - SUPABASE_URL
 - SUPABASE_ANON_KEY
 
-The service-role key is never committed to the repository. Until the secrets are configured, the live job reports a warning and skips the integration portion rather than failing every build.
+No privileged service-role key is needed by the test suite. Until the two secrets are configured, the live job reports a warning and skips the integration portion rather than failing every build.
 
 For production, point these secrets at a dedicated Supabase test/staging project when one exists. Do not use a developer personal session or a long-lived service key in source code.
 
