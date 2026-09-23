@@ -802,7 +802,7 @@ ${link}`,
                   Joined {new Date(person.joined_at).toLocaleDateString()}
                 </Text>
               </View>
-              {isCreator && person.session_id !== (event?.creator_session_id || "") ? (
+              {isCreator && person.auth_user_id !== (event?.creator_auth_user_id || "") ? (
                 <Pressable
                   onPress={() => removeMember(person)}
                   disabled={actionBusy}
