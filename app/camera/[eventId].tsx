@@ -268,6 +268,14 @@ export default function CameraScreen() {
           }} style={styles.statusPill}>
             <MaterialCommunityIcons name="cloud-alert-outline" size={15} color="#fff" /><Text style={styles.statusText}>Tap to reconnect</Text>
           </Pressable>
+        ) : queueSummary.lastError ? (
+          <Pressable onPress={() => void retryFailedPhotoUploads(String(eventId))} style={styles.errorPill}>
+            <MaterialCommunityIcons name="alert-circle-outline" size={15} color="#fff" />
+            <Text style={styles.statusText} numberOfLines={3}>
+              {queueSummary.lastError}
+              {" · Tap to retry"}
+            </Text>
+          </Pressable>
         ) : queueSummary.queued + queueSummary.uploading > 0 ? (
           <View style={styles.statusPill}><MaterialCommunityIcons name="cloud-upload-outline" size={15} color="#fff" /><Text style={styles.statusText}>{queueSummary.queued + queueSummary.uploading} {(queueSummary.queued + queueSummary.uploading) === 1 ? "photo" : "photos"} sharing</Text></View>
         ) : queueSummary.failed > 0 ? (
