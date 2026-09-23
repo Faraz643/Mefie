@@ -44,6 +44,7 @@ Applied migrations:
 - `013_storage_select_fix.sql` — keeps authenticated photo uploads compatible with Storage's metadata response and removes the disabled avatar upload/update/delete surface.
 - `014_storage_delete_thumbnails.sql` — keeps creator/uploader storage cleanup compatible with optional thumbnail objects.
 - `015_temporary_invite_bearer_join.sql` — makes five-minute temporary invites atomic bearer links; removed members are re-admitted and their removal marker is cleared.
+- `016_invite_only_event_join.sql` — makes the invite code the authorization boundary for new members; an event UUID alone can no longer be used to create membership.
 
 Important behavior:
 - Event invite-code lookup is handled by `resolve_event_invite`; the app no longer reads every active event.
