@@ -7,7 +7,7 @@ import { Pressable, StyleSheet, Text, View } from "react-native";
 import { Screen } from "../components/Screen";
 import { GlassCard, GlassInput, GlassAction } from "../components/Glass";
 import { colors, shadows, typography } from "../lib/theme";
-import { ensureParticipant, supabase, useApp } from "../lib/app-context";
+import { supabase, useApp } from "../lib/app-context";
 
 function inviteFromValue(value: string) {
   const raw = value.trim().replace(/\/$/, "");
