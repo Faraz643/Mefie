@@ -27,7 +27,7 @@ import { BackButton } from "../../components/Screen";
 import { IconButton } from "../../components/Glass";
 import { colors, shadows, typography } from "../../lib/theme";
 import { getParticipantId, getSessionId, supabase, useApp } from "../../lib/app-context";
-import { attachSignedPhotoUrls, signPhotoPath } from "../../lib/photo-storage";
+import { attachSignedPhotoUrls } from "../../lib/photo-storage";
 
 function gradientForName(name: string): [string, string] {
   const palettes: [string, string][] = [
