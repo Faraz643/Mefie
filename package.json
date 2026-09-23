@@ -7,7 +7,10 @@
     "start": "expo start",
     "android": "expo run:android",
     "ios": "expo run:ios",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "test:security:static": "node --test tests/security/static-security.test.mjs",
+    "test:security:integration": "MEFIE_SECURITY_TESTS=1 node --test tests/security/supabase-security.test.mjs",
+    "test:security": "npm run test:security:static && npm run test:security:integration"
   },
   "dependencies": {
     "@expo/vector-icons": "^15.0.2",
