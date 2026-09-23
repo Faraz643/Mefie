@@ -12,6 +12,8 @@ type PhotoTransform = {
   resize: "cover" | "contain" | "fill";
 };
 
+const ENABLE_REMOTE_STORAGE_TRANSFORMS = process.env.EXPO_PUBLIC_ENABLE_STORAGE_TRANSFORMS === "true";
+
 export const PHOTO_GALLERY_TRANSFORM: PhotoTransform = {
   width: PHOTO_PREVIEW_WIDTH,
   height: PHOTO_PREVIEW_HEIGHT,
@@ -100,15 +102,18 @@ export async function attachSignedPhotoUrls<
       }
     }
 
-    try {
-      return await signPhotoPreviewPath(photo.storage_path);
-    } catch {
-      // Image transformations can be disabled or unavailable on a plan.
-      // Keep the gallery functional by falling back to the signed original.
-      return photo.storage_path
-        ? originalUrls.get(photo.storage_path) || null
-        : null;
+    if (ENABLE_REMOTE_STORAGE_TRANSFORMS) {
+      try {
+        return await signPhotoPreviewPath(photo.storage_path);
+      } catch {
+        // Image transformations can be disabled or unavailable on a plan.
+        // Keep the gallery functional by falling back to the signed original.
+      }
     }
+
+    return photo.storage_path
+      ? originalUrls.get(photo.storage_path) || null
+      : null;
   });
 
   return photos.map((photo, index) => ({
