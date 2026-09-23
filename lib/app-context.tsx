@@ -411,7 +411,7 @@ export async function getParticipantId(eventId: string) {
     .from("participants")
     .select("id")
     .eq("event_id", eventId)
-    .eq("session_id", sessionId)
+    .eq("auth_user_id", sessionId)
     .maybeSingle();
   return data?.id ?? null;
 }
