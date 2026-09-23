@@ -158,9 +158,22 @@ export default function EventScreen() {
         */
         if (active) {
           setEvent(eventResult.data);
-          setIsCreator(eventResult.data?.creator_auth_user_id === sessionId);
+          const creator = eventResult.data?.creator_auth_user_id === sessionId;
+          setIsCreator(creator);
           setPhotos(await attachSignedPhotoUrls(photosResult.data || []));
           setPeople(mergedPeople);
+
+          // Opportunistically reconcile old, abandoned Storage objects when the
+          // event creator opens the event. The server enforces ownership,
+          // a 24-hour grace period, and a 24-hour run cooldown, so this never
+          // blocks gallery loading or races with normal uploads.
+          if (creator) {
+            void supabase.functions
+              .invoke("cleanup-photo-orphans", {
+                body: { event_id: String(id) },
+              })
+              .catch(() => undefined);
+          }
         }
       } catch (e: any) {
         if (active) setError(e?.message || "Could not load event.");
