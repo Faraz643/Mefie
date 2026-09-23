@@ -7,7 +7,7 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import { ActivityIndicator, Animated, AppState, AppStateStatus, Linking, Pressable, StyleSheet, Text, View } from "react-native";
 import { ensureParticipant, getParticipantId, supabase, useApp } from "../../lib/app-context";
 import { colors, typography } from "../../lib/theme";
-import { enqueuePhotoUpload, getPhotoQueueSummary, retryFailedPhotoUploads, startPhotoUploadQueue, subscribePhotoUploadQueue } from "../../lib/photo-upload-queue";
+import { deferPhotoUploads, enqueuePhotoUpload, getPhotoQueueSummary, retryFailedPhotoUploads, startPhotoUploadQueue, subscribePhotoUploadQueue } from "../../lib/photo-upload-queue";
 
 const MAX_IN_FLIGHT_CAPTURES = 4;
 function createUploadId() {
@@ -46,7 +46,9 @@ export default function CameraScreen() {
   const device = preferredDevice ?? fallbackDevice;
   const photoOutput = usePhotoOutput({
     containerFormat: "jpeg",
-    quality: 0.85,
+    // Prioritize shutter responsiveness over maximum JPEG quality. The upload
+    // pipeline already runs asynchronously after capture.
+    quality: 0.78,
     qualityPrioritization: device?.supportsSpeedQualityPrioritization ? "speed" : "balanced",
   });
   const effectiveFlash = useMemo(() => (flash === "on" && device?.hasFlash ? "on" : "off"), [device?.hasFlash, flash]);
@@ -108,8 +110,8 @@ export default function CameraScreen() {
   useEffect(() => {
     if (hasPermission && device) {
       void photoOutput.prepareSettings([
-        { flashMode: "off" },
-        ...(device.hasFlash ? [{ flashMode: "on" as const }] : []),
+        { flashMode: "off", enableDistortionCorrection: false },
+        ...(device.hasFlash ? [{ flashMode: "on" as const, enableDistortionCorrection: false }] : []),
       ]);
     }
   }, [device, hasPermission, photoOutput]);
@@ -149,6 +151,9 @@ export default function CameraScreen() {
   const capture = () => {
     if (!hasPermission || !device || !cameraReady || !membershipReady || !eventId || !participantId || inFlightCaptures.current >= MAX_IN_FLIGHT_CAPTURES) return;
     inFlightCaptures.current += 1;
+    // Extend the upload idle window immediately, so the JS-side upload work
+    // cannot contend with a rapid sequence of shutter presses.
+    void deferPhotoUploads();
     animateShutter();
     void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
 
