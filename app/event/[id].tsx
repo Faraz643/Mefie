@@ -96,16 +96,20 @@ export default function EventScreen() {
         }
         if (active) setParticipantId(currentParticipantId);
         const [eventResult, photosResult, participantsResult] = await Promise.all([
-          supabase.from("events").select("*").eq("id", id).single(),
+          supabase
+            .from("events")
+            .select("id,name,creator_auth_user_id,invite_code,invite_link,created_at,updated_at,status")
+            .eq("id", id)
+            .single(),
           supabase
             .from("photos")
-            .select("*")
+            .select("id,event_id,participant_id,storage_path,thumbnail_path,original_filename,file_size,width,height,public_url,created_at")
             .eq("event_id", id)
             .order("created_at", { ascending: false })
             .limit(200),
           supabase
             .from("participants")
-            .select("*")
+            .select("id,event_id,display_name,joined_at,last_seen_at,avatar_url")
             .eq("event_id", id)
             .order("joined_at", { ascending: true }),
         ]);
