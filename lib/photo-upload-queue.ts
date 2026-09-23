@@ -195,7 +195,6 @@ async function processJob(jobId: string) {
       throw new Error(`Photo storage upload failed: ${uploadError.message}`);
     }
 
-    const { data: urlData } = supabase.storage.from(PHOTO_BUCKET).getPublicUrl(path);
     const { error: insertError } = await supabase.from("photos").upsert(
       {
         client_upload_id: job.id,
@@ -206,7 +205,7 @@ async function processJob(jobId: string) {
         file_size: body.byteLength,
         width: job.width,
         height: job.height,
-        public_url: urlData.publicUrl,
+        public_url: null,
       },
       { onConflict: "client_upload_id" },
     );
