@@ -21,3 +21,11 @@ create policy "Authenticated event members can read photo metadata"
         and private.can_access_event(e.id)
     )
   );
+
+
+-- Profile/avatar uploads are disabled in the app. Remove the legacy
+-- unauthenticated write surface while keeping the public bucket readable for
+-- any old assets that may still be referenced.
+drop policy if exists "avatar uploads" on storage.objects;
+drop policy if exists "avatar updates" on storage.objects;
+drop policy if exists "avatar deletes" on storage.objects;
