@@ -1125,7 +1125,7 @@ const styles = StyleSheet.create({
   title: {
     color: colors.white,
     fontSize: 29,
-    fontFamily: typography.regular, lineHeight: 35,
+    lineHeight: 35,
     fontFamily: typography.extraBold,
     letterSpacing: -0.7,
   },
@@ -1151,9 +1151,9 @@ const styles = StyleSheet.create({
   avatarOverlap: { marginLeft: -7 },
   // PROFILE PHOTO STYLE DISABLED — kept for future image avatars.
   /* avatarImage: { width: "100%", height: "100%" }, */
-  avatarText: { color: colors.white, fontSize: 14, fontFamily: typography.extraBold, fontFamily: typography.extraBold },
+  avatarText: { color: colors.white, fontSize: 14, fontFamily: typography.extraBold },
   moreAvatar: { backgroundColor: "rgba(25,33,42,.88)" },
-  moreText: { color: colors.white, fontSize: 13, fontFamily: typography.extraBold, fontFamily: typography.extraBold },
+  moreText: { color: colors.white, fontSize: 13, fontFamily: typography.extraBold },
   tabsSticky: {
     height: 80,
     paddingHorizontal: 20,
@@ -1196,8 +1196,8 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 1 },
     elevation: 4,
   },
-  tabText: { color: "rgba(255,255,255,.94)", fontSize: 16, fontFamily: typography.bold, fontFamily: typography.bold },
-  activeTabText: { color: colors.black, fontSize: 16, fontFamily: typography.extraBold, fontFamily: typography.extraBold },
+  tabText: { color: "rgba(255,255,255,.94)", fontSize: 16, fontFamily: typography.bold },
+  activeTabText: { color: colors.black, fontSize: 16, fontFamily: typography.extraBold },
   selectionHeader: {
     height: 68,
     flexDirection: "row",
@@ -1205,8 +1205,8 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     paddingHorizontal: 8,
   },
-  selectionSide: { color: "#fff", fontSize: 14, fontFamily: typography.bold, fontFamily: typography.bold },
-  selectionCount: { color: "#fff", fontSize: 16, fontFamily: typography.extraBold, fontFamily: typography.extraBold },
+  selectionSide: { color: "#fff", fontSize: 14, fontFamily: typography.bold },
+  selectionCount: { color: "#fff", fontSize: 16, fontFamily: typography.extraBold },
   gallery: {
     position: "relative",
     paddingHorizontal: 10,
@@ -1298,7 +1298,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     gap: 7,
   },
-  selectionActionText: { color: colors.black, fontSize: 14, fontFamily: typography.extraBold, fontFamily: typography.extraBold },
+  selectionActionText: { color: colors.black, fontSize: 14, fontFamily: typography.extraBold },
   disabledAction: { opacity: 0.45 },
   deleteAction: {
     height: 48,
@@ -1311,7 +1311,7 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   disabledDelete: { opacity: 0.35 },
-  deleteText: { color: "#fff", fontSize: 14, fontFamily: typography.extraBold, fontFamily: typography.extraBold },
+  deleteText: { color: "#fff", fontSize: 14, fontFamily: typography.extraBold },
   inviteHeaderButton: {
     height: 42,
     minWidth: 88,
@@ -1333,7 +1333,7 @@ const styles = StyleSheet.create({
   inviteHeaderText: {
     color: "#FFFFFF",
     fontSize: 13,
-    fontFamily: typography.extraBold, fontFamily: typography.extraBold,
+    fontFamily: typography.extraBold,
   },
   inviteModalBackdrop: {
     flex: 1,
@@ -1366,13 +1366,13 @@ const styles = StyleSheet.create({
   inviteEyebrow: {
     color: "rgba(255,255,255,.48)",
     fontSize: 10,
-    fontFamily: typography.extraBold, fontFamily: typography.extraBold,
+    fontFamily: typography.extraBold,
     letterSpacing: 1.8,
   },
   inviteSheetTitle: {
     color: colors.white,
     fontSize: 25,
-    fontFamily: typography.extraBold, fontFamily: typography.extraBold,
+    fontFamily: typography.extraBold,
     letterSpacing: -0.5,
     marginTop: 4,
   },
@@ -1460,7 +1460,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     gap: 7,
   },
-  secondaryInviteText: { color: colors.white, fontSize: 14, fontFamily: typography.bold, fontFamily: typography.bold },
+  secondaryInviteText: { color: colors.white, fontSize: 14, fontFamily: typography.bold },
   primaryInviteButton: {
     flex: 1.25,
     minHeight: 52,
@@ -1471,7 +1471,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     gap: 7,
   },
-  primaryInviteText: { color: colors.black, fontSize: 14, fontFamily: typography.extraBold, fontFamily: typography.extraBold },
+  primaryInviteText: { color: colors.black, fontSize: 14, fontFamily: typography.extraBold },
   temporaryBadge: {
     flexDirection: "row",
     alignItems: "center",
@@ -1484,7 +1484,7 @@ const styles = StyleSheet.create({
     borderColor: "rgba(255,255,255,.12)",
     marginBottom: 10,
   },
-  temporaryBadgeText: { color: colors.white, fontSize: 12, fontFamily: typography.extraBold, fontFamily: typography.extraBold },
+  temporaryBadgeText: { color: colors.white, fontSize: 12, fontFamily: typography.extraBold },
   expiredInvite: {
     minHeight: 300,
     alignItems: "center",
@@ -1492,7 +1492,7 @@ const styles = StyleSheet.create({
     gap: 9,
     paddingHorizontal: 25,
   },
-  expiredTitle: { color: colors.white, fontSize: 19, fontFamily: typography.extraBold, fontFamily: typography.extraBold, marginTop: 3 },
+  expiredTitle: { color: colors.white, fontSize: 19, fontFamily: typography.extraBold, marginTop: 3 },
   expiredText: {
     color: "rgba(255,255,255,.60)",
     fontSize: 13,
@@ -1506,7 +1506,7 @@ const styles = StyleSheet.create({
     gap: 6,
     paddingVertical: 17,
   },
-  backInviteText: { color: "rgba(255,255,255,.78)", fontSize: 13, fontFamily: typography.bold, fontFamily: typography.bold },
+  backInviteText: { color: "rgba(255,255,255,.78)", fontSize: 13, fontFamily: typography.bold },
 
   camera: {
     position: "absolute",
