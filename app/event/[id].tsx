@@ -338,13 +338,30 @@ export default function EventScreen() {
               if (!supabase) return;
               setActionBusy(true);
               try {
-                const paths = photos.map((photo) => photo.storage_path).filter(Boolean);
+                // The gallery is intentionally capped at 200 rows, so never use
+                // the rendered photo list as the event's deletion source of truth.
+                // Fetch every photo path before deleting the event.
+                const { data: eventPhotos, error: photoListError } = await supabase
+                  .from("photos")
+                  .select("storage_path,thumbnail_path")
+                  .eq("event_id", String(id));
+                if (photoListError) throw photoListError;
+
+                const paths = [
+                  ...(eventPhotos || []).map((photo: any) => photo.storage_path),
+                  ...(eventPhotos || []).map((photo: any) => photo.thumbnail_path),
+                ].filter(Boolean);
+
                 if (paths.length) {
-                  const { error: storageError } = await supabase.storage
-                    .from("photos")
-                    .remove(paths);
-                  if (storageError) throw storageError;
+                  // Supabase Storage remove is limited to 1000 objects per call.
+                  for (let offset = 0; offset < paths.length; offset += 1000) {
+                    const { error: storageError } = await supabase.storage
+                      .from("photos")
+                      .remove(paths.slice(offset, offset + 1000));
+                    if (storageError) throw storageError;
+                  }
                 }
+
                 const { data, error: deleteError } = await supabase.rpc(
                   "delete_event_as_creator",
                   {
