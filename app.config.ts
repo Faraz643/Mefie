@@ -10,6 +10,7 @@ export default ({ config }: { config: any }) => ({
     userInterfaceStyle: "dark",
     plugins: [
       "expo-router",
+      "expo-dev-client",
       "expo-asset",
       [
         "expo-image-picker",
@@ -49,7 +50,7 @@ export default ({ config }: { config: any }) => ({
     },
     extra: {
       ...config.expo?.extra,
-      eas: { projectId: process.env.EAS_PROJECT_ID },
+      eas: { projectId: "de23c6a0-c0ef-46fa-807e-326f6649dca1" },
     },
   },
 });
