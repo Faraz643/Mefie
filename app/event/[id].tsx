@@ -26,6 +26,7 @@ import { BackButton } from "../../components/Screen";
 import { IconButton } from "../../components/Glass";
 import { colors, shadows, typography } from "../../lib/theme";
 import { getParticipantId, getSessionId, supabase, useApp } from "../../lib/app-context";
+import { attachSignedPhotoUrls, signPhotoPath } from "../../lib/photo-storage";
 
 function gradientForName(name: string): [string, string] {
   const palettes: [string, string][] = [
@@ -148,7 +149,7 @@ export default function EventScreen() {
         if (active) {
           setEvent(eventResult.data);
           setIsCreator(eventResult.data?.creator_auth_user_id === sessionId);
-          setPhotos(photosResult.data || []);
+          setPhotos(await attachSignedPhotoUrls(photosResult.data || []));
           setPeople(mergedPeople);
         }
       } catch (e: any) {
@@ -200,12 +201,16 @@ export default function EventScreen() {
             table: "photos",
             filter: `event_id=eq.${id}`,
           },
-          (payload) =>
-            setPhotos((curr) =>
-              curr.some((x) => x.id === payload.new.id)
-                ? curr
-                : [payload.new, ...curr],
-            ),
+          (payload) => {
+            void signPhotoPath(payload.new.storage_path).then((signedUrl) => {
+              if (!signedUrl) return;
+              setPhotos((curr) =>
+                curr.some((x) => x.id === payload.new.id)
+                  ? curr
+                  : [{ ...payload.new, public_url: signedUrl }, ...curr],
+              );
+            }).catch(() => undefined);
+          },
         )
         .on(
           "postgres_changes",
