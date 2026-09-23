@@ -1,3 +1,4 @@
+import "react-native-url-polyfill/auto";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import React, {
   createContext,
@@ -163,7 +164,53 @@ async function syncPendingAvatar() {
 
 const Ctx = createContext<AppContextValue | null>(null);
 
+let authSessionPromise: Promise<string | null> | null = null;
+
+export async function ensureAnonymousAuth(): Promise<string | null> {
+  if (!supabase) return null;
+  if (authSessionPromise) return authSessionPromise;
+
+  authSessionPromise = (async () => {
+    const legacySessionId = await AsyncStorage.getItem("mefie.sessionId");
+    const { data: existing, error: existingError } = await supabase.auth.getSession();
+    if (existingError) throw existingError;
+
+    let userId = existing.session?.user?.id ?? null;
+    if (!userId) {
+      const { data, error } = await supabase.auth.signInAnonymously();
+      if (error) {
+        throw new Error(
+          error.message.includes("Anonymous sign-ins")
+            ? "Anonymous access is not enabled for this Mefie backend yet."
+            : error.message,
+        );
+      }
+      userId = data.user?.id ?? data.session?.user?.id ?? null;
+    }
+
+    if (!userId) throw new Error("Mefie could not establish a secure user identity.");
+
+    if (legacySessionId && legacySessionId !== userId) {
+      await supabase.rpc("claim_legacy_session", {
+        p_legacy_session_id: legacySessionId,
+      });
+    }
+
+    await AsyncStorage.setItem("mefie.sessionId", userId);
+    return userId;
+  })();
+
+  try {
+    return await authSessionPromise;
+  } finally {
+    authSessionPromise = null;
+  }
+}
+
 export async function getSessionId() {
+  const userId = await ensureAnonymousAuth();
+  if (userId) return userId;
+
   const key = "mefie.sessionId";
   let id = await AsyncStorage.getItem(key);
   if (!id) {
@@ -372,12 +419,30 @@ export async function getParticipantId(eventId: string) {
 
 export function AppProvider({ children }: { children: React.ReactNode }) {
   const [displayName, setName] = useState("Faraz");
+  const [authReady, setAuthReady] = useState(!supabase);
+  const [authError, setAuthError] = useState("");
   const [backgroundImage, setBackground] = useState<string | null>(null);
   const [events, setEvents] = useState<DemoEvent[]>([]);
   const mountedRef = React.useRef(false);
 
   useEffect(() => {
     mountedRef.current = true;
+    void (async () => {
+      if (supabase) {
+        try {
+          await ensureAnonymousAuth();
+          if (mountedRef.current) setAuthReady(true);
+        } catch (error: any) {
+          if (mountedRef.current) {
+            setAuthError(error?.message || "Could not establish a secure Mefie identity.");
+            setAuthReady(false);
+          }
+        }
+      } else if (mountedRef.current) {
+        setAuthReady(true);
+      }
+    })();
+
     AsyncStorage.getItem("mefie.displayName").then((v) => {
       if (mountedRef.current && v) setName(v);
     });
@@ -431,6 +496,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
   const refreshEvents = useCallback(async () => {
     if (!supabase) return;
+    await ensureAnonymousAuth();
     const sessionId = await getSessionId();
     const { data: memberships, error: membershipError } = await supabase
       .from("participants")
@@ -511,6 +577,21 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     }),
     [displayName, backgroundImage, events, refreshEvents],
   );
+
+  if (!authReady) {
+    return (
+      <View style={{ flex: 1, backgroundColor: "#0A0F15", alignItems: "center", justifyContent: "center", padding: 28 }}>
+        <Text style={{ color: "#fff", textAlign: "center", fontSize: 18, fontWeight: "600" }}>
+          {authError || "Starting Mefie…"}
+        </Text>
+        {authError ? (
+          <Text style={{ color: "rgba(255,255,255,.68)", textAlign: "center", marginTop: 10, fontSize: 13 }}>
+            Enable Anonymous Sign-Ins in Supabase Authentication settings, then restart Mefie.
+          </Text>
+        ) : null}
+      </View>
+    );
+  }
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }
