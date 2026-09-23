@@ -380,8 +380,6 @@ export async function rejoinEventWithTemporaryInvite(
 }
 export async function deleteEventsAsCreator(eventIds: string[]) {
   if (!supabase || eventIds.length === 0) return;
-  const sessionId = await getSessionId();
-
   for (const eventId of eventIds) {
     const { data: photos, error: photoQueryError } = await supabase
       .from("photos")
