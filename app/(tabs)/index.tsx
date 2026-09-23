@@ -99,7 +99,7 @@ export default function HomeScreen() {
     }, [refreshEvents]),
   );
   const ownedEvents = events.filter(
-    (event) => event.creatorSessionId === sessionId,
+    (event) => event.creatorAuthUserId === sessionId,
   );
 
   const toggleSelected = (id: string) => {
@@ -298,23 +298,21 @@ const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: "#0A0F15" },
   hero: { paddingTop: 30, paddingBottom: 8 },
   greeting: {
-fontFamily: typography.semibold,
     color: colors.white,
     fontSize: 34,
-    fontFamily: typography.regular, lineHeight: 40,
+    lineHeight: 40,
     fontFamily: typography.medium,
     letterSpacing: -0.8,
   },
   title: {
-fontFamily: typography.regular,
     color: "rgba(255,255,255,0.88)",
     fontSize: 21,
-    fontFamily: typography.regular, lineHeight: 27,
+    lineHeight: 27,
     fontFamily: typography.regular,
     letterSpacing: -0.2,
     marginTop: 2,
   },
-  avatarText: { color: colors.white, fontSize: 17, fontFamily: typography.bold, fontFamily: typography.bold },
+  avatarText: { color: colors.white, fontSize: 17, fontFamily: typography.bold },
   headerAvatar: { width: "100%", height: "100%", borderRadius: 22, alignItems: "center", justifyContent: "center" },
   eventsSection: { marginTop: 10 },
   sectionActions: { flexDirection: "row", alignItems: "center", gap: 16 },
@@ -325,11 +323,11 @@ fontFamily: typography.regular,
   },
   seeAll: {
     color: "rgba(220,225,232,0.82)",
-    fontFamily: typography.regular, fontSize: 14,
+    fontSize: 14,
     fontFamily: typography.semibold, marginBottom: 12,
   },
   seeArrow: {
-    fontFamily: typography.regular, fontSize: 23,
+    fontSize: 23,
     fontFamily: typography.regular,
     color: "rgba(220,225,232,0.82)",
   },
@@ -346,7 +344,7 @@ fontFamily: typography.regular,
   selectionToolbar: { position: "absolute", left: 24, right: 24, bottom: 88, height: 58, borderRadius: 22, backgroundColor: "rgba(20,27,36,0.94)", borderWidth: 1, borderColor: "rgba(255,255,255,0.12)", flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 7, zIndex: 20 },
   selectionClose: { width: 44, height: 44, borderRadius: 16, alignItems: "center", justifyContent: "center" },
   selectionCount: { minWidth: 34, height: 34, borderRadius: 17, alignItems: "center", justifyContent: "center", backgroundColor: "rgba(255,255,255,0.1)" },
-  selectionCountText: { color: colors.white, fontSize: 15, fontFamily: typography.extraBold, fontFamily: typography.extraBold },
+  selectionCountText: { color: colors.white, fontSize: 15, fontFamily: typography.extraBold },
   selectionDelete: { width: 44, height: 44, borderRadius: 16, alignItems: "center", justifyContent: "center", backgroundColor: "rgba(185,28,28,0.95)" },
   selectionDeleteDisabled: { opacity: 0.4 },
   eventCard: {
@@ -385,12 +383,11 @@ fontFamily: typography.regular,
     paddingBottom: 13,
   },
   eventName: {
-fontFamily: typography.bold,
     color: colors.white,
     fontSize: 16,
     fontFamily: typography.extraBold, letterSpacing: -0.2,
   },
   eventMeta: { fontFamily: typography.regular, color: "rgba(255,255,255,0.72)", fontSize: 11, marginTop: 4 },
-  emptyTitle: { color: colors.white, fontSize: 16, fontFamily: typography.bold, fontFamily: typography.bold },
+  emptyTitle: { color: colors.white, fontSize: 16, fontFamily: typography.bold },
   emptySub: { color: colors.muted, fontSize: 13, fontFamily: typography.regular, marginTop: 5 },
 });
