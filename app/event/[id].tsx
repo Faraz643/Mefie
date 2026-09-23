@@ -206,6 +206,18 @@ export default function EventScreen() {
             schema: "public",
             table: "photos",
             filter: `event_id=eq.${id}`,
+            select: [
+              "id",
+              "event_id",
+              "participant_id",
+              "storage_path",
+              "thumbnail_path",
+              "original_filename",
+              "file_size",
+              "width",
+              "height",
+              "created_at",
+            ],
           },
           (payload) => {
             void signPhotoPath(payload.new.storage_path).then((signedUrl) => {
@@ -225,6 +237,7 @@ export default function EventScreen() {
             schema: "public",
             table: "participants",
             filter: `event_id=eq.${id}`,
+            select: ["id", "event_id", "display_name", "joined_at", "last_seen_at", "avatar_url"],
           },
           (payload) => {
             if (payload.eventType === "INSERT") {
