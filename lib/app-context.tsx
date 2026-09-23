@@ -349,6 +349,7 @@ export async function ensureParticipant(
     .from("participants")
     .insert({
       event_id: eventId,
+      auth_user_id: sessionId,
       session_id: sessionId,
       ...values,
     })
