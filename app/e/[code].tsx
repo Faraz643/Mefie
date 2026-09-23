@@ -16,12 +16,11 @@ export default function InviteRoute() {
   useEffect(() => {
     const load = async () => {
       if (!supabase) return;
-      const { data } = await supabase
-        .from("events")
-        .select("id,name")
-        .eq("invite_code", String(code || "").toUpperCase())
-        .eq("status", "active")
-        .maybeSingle();
+      const { data: resolved } = await supabase.rpc(
+        "resolve_event_invite",
+        { p_invite_code: String(code || "").toUpperCase() },
+      );
+      const data = Array.isArray(resolved) ? resolved[0] : resolved;
       setEvent(data);
       if (!data)
         setError("This event link isn't valid or the event has ended.");
