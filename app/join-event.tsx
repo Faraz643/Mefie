@@ -80,7 +80,23 @@ export default function JoinEventScreen() {
         setError("This invite is no longer valid for your account.");
         return;
       }
-      router.replace({ pathname: "/event/[id]", params: { id: data.id } });
+      // Resolve the destination from the membership returned by the join RPC.
+      // This avoids relying on the shape of the invite-resolution response and
+      // guarantees we navigate with a real event UUID after a successful join.
+      const { data: membership, error: membershipError } = await supabase
+        .from("participants")
+        .select("event_id")
+        .eq("id", participantId)
+        .maybeSingle();
+      if (membershipError) throw membershipError;
+      if (!membership?.event_id) {
+        throw new Error("Joined successfully, but the event could not be opened.");
+      }
+
+      router.replace({
+        pathname: "/event/[id]",
+        params: { id: String(membership.event_id) },
+      });
     } catch (e: any) {
       setError(e?.message || "Could not join the event.");
     }
