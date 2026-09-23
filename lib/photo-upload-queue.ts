@@ -6,7 +6,12 @@ import { ensureAnonymousAuth, supabase } from "./app-context";
 const QUEUE_KEY = "mefie.photoUploadQueue.v1";
 const PHOTO_BUCKET = "photos";
 const MAX_ATTEMPTS = 8;
-const CONCURRENCY = 2;
+const CONCURRENCY = 1;
+// Keep camera capture responsive during short bursts. The upload pipeline uses
+// base64 conversion on the JS side, so starting it immediately after every
+// shutter press can briefly contend with the camera UI thread.
+// Each new capture extends this idle window.
+const CAPTURE_IDLE_DELAY_MS = 1200;
 const RETRY_DELAYS = [1500, 3000, 7000, 15000, 30000, 60000, 120000, 300000];
 
 export type PhotoUploadJob = {
@@ -35,6 +40,8 @@ let loaded = false;
 let loadingPromise: Promise<void> | null = null;
 let processing = false;
 let timer: ReturnType<typeof setTimeout> | null = null;
+let processingDelayTimer: ReturnType<typeof setTimeout> | null = null;
+let processingNotBefore = 0;
 let appStateSubscription: { remove: () => void } | null = null;
 const listeners = new Set<() => void>();
 let persistChain = Promise.resolve();
@@ -232,6 +239,16 @@ async function processQueue() {
   await loadQueue();
   if (processing || !supabase || AppState.currentState !== "active") return;
 
+  const waitForCaptureBurst = processingNotBefore - Date.now();
+  if (waitForCaptureBurst > 0) {
+    if (processingDelayTimer) clearTimeout(processingDelayTimer);
+    processingDelayTimer = setTimeout(() => {
+      processingDelayTimer = null;
+      void processQueue();
+    }, waitForCaptureBurst);
+    return;
+  }
+
   processing = true;
   try {
     const available = jobs
@@ -266,6 +283,7 @@ function scheduleNext() {
 
 export async function startPhotoUploadQueue() {
   await loadQueue();
+  processingNotBefore = 0;
 
   if (!appStateSubscription) {
     appStateSubscription = AppState.addEventListener("change", (state: AppStateStatus) => {
@@ -298,7 +316,26 @@ export async function enqueuePhotoUpload(
   // Serialize persistence so rapid consecutive captures cannot overwrite each
   // other's AsyncStorage snapshots. Uploading still runs independently.
   await persistQueue();
-  void processQueue();
+
+  // Don't start the expensive upload/base64 pipeline immediately after a
+  // shutter press. This gives rapid consecutive captures the same responsive
+  // feel as a native camera burst. The timer is extended by every new capture.
+  processingNotBefore = Math.max(processingNotBefore, Date.now() + CAPTURE_IDLE_DELAY_MS);
+  if (processingDelayTimer) clearTimeout(processingDelayTimer);
+  processingDelayTimer = setTimeout(() => {
+    processingDelayTimer = null;
+    void processQueue();
+  }, CAPTURE_IDLE_DELAY_MS);
+}
+
+export async function deferPhotoUploads(delayMs = CAPTURE_IDLE_DELAY_MS) {
+  await loadQueue();
+  processingNotBefore = Math.max(processingNotBefore, Date.now() + delayMs);
+  if (processingDelayTimer) clearTimeout(processingDelayTimer);
+  processingDelayTimer = setTimeout(() => {
+    processingDelayTimer = null;
+    void processQueue();
+  }, Math.max(0, processingNotBefore - Date.now()));
 }
 
 export async function retryFailedPhotoUploads(eventId?: string) {
