@@ -4,7 +4,7 @@ import { StyleSheet, Text } from "react-native";
 import { GlassButton, GlassCard, GlassInput } from "../../components/Glass";
 import { Screen } from "../../components/Screen";
 import { colors, typography } from "../../lib/theme";
-import { ensureParticipant, supabase, useApp } from "../../lib/app-context";
+import { rejoinEventWithTemporaryInvite, supabase, useApp } from "../../lib/app-context";
 
 export default function TemporaryInviteRoute() {
   const router = useRouter();
@@ -60,7 +60,10 @@ export default function TemporaryInviteRoute() {
     }
     setError("");
     try {
-      const participantId = await ensureParticipant(event.id, name, true);
+      const participantId = await rejoinEventWithTemporaryInvite(
+        String(token || ""),
+        name,
+      );
       if (!participantId) {
         setError("This temporary invite is no longer valid.");
         return;
