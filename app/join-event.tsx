@@ -68,7 +68,14 @@ export default function JoinEventScreen() {
       return;
     }
     try {
-      const participantId = await ensureParticipant(data.id, displayName);
+      const { data: participantId, error: joinError } = await supabase.rpc(
+        "join_event_by_invite",
+        {
+          p_invite_code: invite,
+          p_display_name: displayName,
+        },
+      );
+      if (joinError) throw joinError;
       if (!participantId) {
         setError("This invite is no longer valid for your account.");
         return;
