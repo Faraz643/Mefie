@@ -1,7 +1,7 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as FileSystem from "expo-file-system/legacy";
 import { AppState, AppStateStatus } from "react-native";
-import { supabase } from "./app-context";
+import { ensureAnonymousAuth, supabase } from "./app-context";
 
 const QUEUE_KEY = "mefie.photoUploadQueue.v1";
 const PHOTO_BUCKET = "photos";
@@ -127,6 +127,11 @@ async function processJob(jobId: string) {
 
   try {
     if (!supabase) throw new Error("Cloud connection is not configured.");
+
+    // The queue can start before the camera screen finishes preparing membership.
+    // Make sure every Storage/DB request is made with the authenticated Supabase
+    // session, otherwise RLS correctly treats the upload as unauthenticated.
+    await ensureAnonymousAuth();
 
     const localUri = await ensureDurableFile(job);
     const info = await FileSystem.getInfoAsync(localUri);
