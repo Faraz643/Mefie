@@ -147,7 +147,7 @@ export default function EventScreen() {
         */
         if (active) {
           setEvent(eventResult.data);
-          setIsCreator(eventResult.data?.creator_session_id === sessionId);
+          setIsCreator(eventResult.data?.creator_auth_user_id === sessionId);
           setPhotos(photosResult.data || []);
           setPeople(mergedPeople);
         }
@@ -280,8 +280,8 @@ export default function EventScreen() {
     );
   }, [tab]);
   const removeMember = (participant: any) => {
-    if (!isCreator || actionBusy || participant.session_id === undefined) return;
-    if (participant.session_id === undefined) return;
+    if (!isCreator || actionBusy || participant.auth_user_id === undefined) return;
+    if (participant.auth_user_id === undefined) return;
     Alert.alert(
       "Remove member?",
       `Remove ${participant.display_name || "this person"} from this event?`,
@@ -299,7 +299,6 @@ export default function EventScreen() {
                   "remove_event_member_as_creator",
                   {
                     p_event_id: String(id),
-                    p_creator_session_id: await getSessionId(),
                     p_participant_id: participant.id,
                   },
                 );
@@ -344,7 +343,6 @@ export default function EventScreen() {
                   "delete_event_as_creator",
                   {
                     p_event_id: String(id),
-                    p_creator_session_id: await getSessionId(),
                   },
                 );
                 if (deleteError) throw deleteError;
@@ -431,7 +429,6 @@ ${link}`,
         "create_event_temporary_invite",
         {
           p_event_id: String(id),
-          p_creator_session_id: await getSessionId(),
         },
       );
       if (createError) throw createError;
@@ -525,11 +522,17 @@ ${link}`,
     }
   };
   const deleteSelected = () => {
-    const chosen = realPhotos.filter((photo) => selectedIds.includes(photo.id));
+    const chosen = realPhotos.filter(
+      (photo) =>
+        selectedIds.includes(photo.id) &&
+        (isCreator || photo.participant_id === participantId),
+    );
     if (!chosen.length) {
       Alert.alert(
-        "Select photos",
-        "Please select at least one photo to delete.",
+        "Delete unavailable",
+        isCreator
+          ? "Please select at least one photo to delete."
+          : "You can only delete photos you uploaded.",
       );
       return;
     }
