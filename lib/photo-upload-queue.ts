@@ -1,4 +1,5 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { File } from "expo-file-system";
 import * as FileSystem from "expo-file-system/legacy";
 import { AppState, AppStateStatus } from "react-native";
 import { ensureAnonymousAuth, supabase } from "./app-context";
@@ -6,11 +7,8 @@ import { ensureAnonymousAuth, supabase } from "./app-context";
 const QUEUE_KEY = "mefie.photoUploadQueue.v1";
 const PHOTO_BUCKET = "photos";
 const MAX_ATTEMPTS = 8;
+const MAX_PHOTO_BYTES = 15 * 1024 * 1024;
 const CONCURRENCY = 1;
-// Keep camera capture responsive during short bursts. The upload pipeline uses
-// base64 conversion on the JS side, so starting it immediately after every
-// shutter press can briefly contend with the camera UI thread.
-// Each new capture extends this idle window.
 const CAPTURE_IDLE_DELAY_MS = 1200;
 const RETRY_DELAYS = [1500, 3000, 7000, 15000, 30000, 60000, 120000, 300000];
 
@@ -45,9 +43,14 @@ let processingNotBefore = 0;
 let appStateSubscription: { remove: () => void } | null = null;
 const listeners = new Set<() => void>();
 let persistChain = Promise.resolve();
+let notifyTimer: ReturnType<typeof setTimeout> | null = null;
 
 function notify() {
-  for (const listener of listeners) listener();
+  if (notifyTimer) return;
+  notifyTimer = setTimeout(() => {
+    notifyTimer = null;
+    for (const listener of listeners) listener();
+  }, 0);
 }
 
 async function loadQueue() {
@@ -118,6 +121,12 @@ async function removeDurableFile(job: PhotoUploadJob) {
   }
 }
 
+async function removeOrphanedStorageObject(job: PhotoUploadJob) {
+  if (!supabase) return;
+  const path = `${job.eventId}/${job.id}.jpg`;
+  await supabase.storage.from(PHOTO_BUCKET).remove([path]).catch(() => undefined);
+}
+
 function summaryFor(eventId?: string): PhotoQueueSummary {
   const scoped = eventId ? jobs.filter((job) => job.eventId === eventId) : jobs;
   const withErrors = scoped
@@ -136,12 +145,11 @@ async function processJob(jobId: string) {
   if (!job || job.status === "failed") return;
 
   job.status = "uploading";
+  notify();
 
   try {
     if (!supabase) throw new Error("Cloud connection is not configured.");
 
-    // The queue can start before the camera screen finishes preparing membership.
-    // Make sure every Storage/DB request is made with a real authenticated JWT.
     const userId = await ensureAnonymousAuth();
     if (!userId) throw new Error("Mefie authentication is unavailable.");
 
@@ -167,15 +175,19 @@ async function processJob(jobId: string) {
     const info = await FileSystem.getInfoAsync(localUri);
     if (!info.exists) throw new Error("The captured photo is no longer available on this device.");
 
-    const base64 = await FileSystem.readAsStringAsync(localUri, {
-      encoding: FileSystem.EncodingType.Base64,
-    });
-    if (!base64) throw new Error("Could not read the captured photo.");
+    const file = new File(localUri);
+    const fileSize = file.size;
+    if (!fileSize || fileSize <= 0) throw new Error("The captured photo is empty.");
+    if (fileSize > MAX_PHOTO_BYTES) {
+      throw new Error("Photo is too large. Please capture a smaller image.");
+    }
 
-    const { decode } = await import("base64-arraybuffer");
-    const body = decode(base64);
+    // Read the JPEG directly as binary. This avoids the previous base64 string
+    // + decode() path and removes a large temporary JS string from memory.
+    const body = await file.arrayBuffer();
+    if (!body.byteLength) throw new Error("Could not read the captured photo.");
+
     const path = `${job.eventId}/${job.id}.jpg`;
-
     const { data: uploadData, error: uploadError } = await supabase.storage
       .from(PHOTO_BUCKET)
       .upload(path, body, {
@@ -184,8 +196,6 @@ async function processJob(jobId: string) {
         cacheControl: "3600",
       });
 
-    // A previous attempt may have reached storage before the network response was lost.
-    // The deterministic path lets us safely continue to the idempotent DB write.
     if (uploadError && !/already exists|duplicate/i.test(uploadError.message)) {
       const status = (uploadError as any)?.statusCode ?? (uploadError as any)?.status ?? "unknown";
       const code = (uploadError as any)?.name ?? (uploadError as any)?.code ?? "unknown";
@@ -211,8 +221,6 @@ async function processJob(jobId: string) {
     );
 
     if (insertError) {
-      // Do not delete storage here. The deterministic path + client_upload_id
-      // makes a retry safe if the database request actually succeeded.
       throw new Error(insertError.message);
     }
 
@@ -229,6 +237,12 @@ async function processJob(jobId: string) {
     current.error = message;
     current.nextAttemptAt =
       Date.now() + (RETRY_DELAYS[Math.min(current.attempts - 1, RETRY_DELAYS.length - 1)] || 300000);
+
+    if (current.status === "failed") {
+      // Once retries are exhausted, clean up the deterministic Storage object
+      // if a previous attempt created it without a corresponding DB row.
+      await removeOrphanedStorageObject(current);
+    }
 
     await persistQueue();
   }
@@ -306,19 +320,10 @@ export async function enqueuePhotoUpload(
     status: "queued",
   };
 
-  // Make the captured file durable before the job is persisted. This prevents a
-  // temporary camera URI from becoming a lost upload if the app is backgrounded
-  // or terminated immediately after the shutter is pressed.
   job.uri = await ensureDurableFile(job);
   jobs.push(job);
-
-  // Serialize persistence so rapid consecutive captures cannot overwrite each
-  // other's AsyncStorage snapshots. Uploading still runs independently.
   await persistQueue();
 
-  // Don't start the expensive upload/base64 pipeline immediately after a
-  // shutter press. This gives rapid consecutive captures the same responsive
-  // feel as a native camera burst. The timer is extended by every new capture.
   processingNotBefore = Math.max(processingNotBefore, Date.now() + CAPTURE_IDLE_DELAY_MS);
   if (processingDelayTimer) clearTimeout(processingDelayTimer);
   processingDelayTimer = setTimeout(() => {
