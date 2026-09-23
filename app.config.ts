@@ -13,6 +13,15 @@ export default ({ config }: { config: any }) => ({
       "expo-dev-client",
       "expo-asset",
       [
+        "@sentry/react-native/expo",
+        {
+          url: "https://sentry.io/",
+          organization: process.env.SENTRY_ORG || undefined,
+          project: process.env.SENTRY_PROJECT || undefined,
+          disableAutoUpload: !process.env.SENTRY_AUTH_TOKEN,
+        },
+      ],
+      [
         "expo-image-picker",
         {
           photosPermission:
