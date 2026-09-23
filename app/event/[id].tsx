@@ -59,6 +59,7 @@ export default function EventScreen() {
   const [actionBusy, setActionBusy] = useState(false);
   const [error, setError] = useState("");
   const [isCreator, setIsCreator] = useState(false);
+  const [participantId, setParticipantId] = useState<string | null>(null);
   const [inviteOpen, setInviteOpen] = useState(false);
   const [inviteSlide, setInviteSlide] = useState<0 | 1>(0);
   const [temporaryInvite, setTemporaryInvite] = useState<{ token: string; expiresAt: string } | null>(null);
@@ -85,11 +86,15 @@ export default function EventScreen() {
       if (!supabase) return;
       try {
         const sessionId = await getSessionId();
-        const participantId = await getParticipantId(String(id));
-        if (!participantId) {
-          if (active) router.replace("/join-event");
+        const currentParticipantId = await getParticipantId(String(id));
+        if (!currentParticipantId) {
+          if (active) {
+            setParticipantId(null);
+            router.replace("/join-event");
+          }
           return;
         }
+        if (active) setParticipantId(currentParticipantId);
         const [eventResult, photosResult, participantsResult] = await Promise.all([
           supabase.from("events").select("*").eq("id", id).single(),
           supabase
@@ -594,14 +599,18 @@ ${link}`,
                     .remove([...new Set(paths)]);
                   if (storageError) throw storageError;
                 }
-                const { error: deleteError } = await supabase
-                  .from("photos")
-                  .delete()
-                  .in(
-                    "id",
-                    chosen.map((photo) => photo.id),
-                  );
+                const { data: deletedCount, error: deleteError } = await supabase.rpc(
+                  "delete_photos_as_authenticated_user",
+                  {
+                    p_photo_ids: chosen.map((photo) => photo.id),
+                  },
+                );
                 if (deleteError) throw deleteError;
+                if (Number(deletedCount || 0) !== chosen.length) {
+                  throw new Error(
+                    "Some photos could not be deleted because you are not authorized to remove them.",
+                  );
+                }
                 const deletedIds = new Set(chosen.map((photo) => photo.id));
                 setPhotos((current) =>
                   current.filter((photo) => !deletedIds.has(photo.id)),
