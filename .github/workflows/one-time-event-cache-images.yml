@@ -1,0 +1,76 @@
+name: one-time-event-cache-images
+on:
+  push:
+    branches: [main]
+permissions:
+  contents: write
+jobs:
+  patch:
+    if: "!startsWith(github.event.head_commit.message, '[bot]')"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Warm cached event images and participant data
+        shell: bash
+        run: |
+          python3 <<'PY'
+          from pathlib import Path
+          p = Path('lib/app-context.tsx')
+          s = p.read_text()
+          old = 'supabase.from("participants").select("id,event_id").in("event_id", eventIds),'
+          new = 'supabase.from("participants").select("id,event_id,auth_user_id,display_name,joined_at,last_seen_at,avatar_url").in("event_id", eventIds),'
+          if old not in s:
+              raise SystemExit('participant query pattern not found')
+          s = s.replace(old, new, 1)
+          old = '    const paths = [...latestPhoto.values()].flatMap((photo) => [photo.thumbnail_path, photo.storage_path].filter(Boolean)) as string[];'
+          new = '    const paths = (photoRows ?? []).flatMap((photo) => [photo.thumbnail_path, photo.storage_path].filter(Boolean)) as string[];'
+          if old not in s:
+              raise SystemExit('photo signing pattern not found')
+          s = s.replace(old, new, 1)
+          old = '''    const photoDetailsByEvent = new Map<string, any[]>();
+    for (const row of photoRows ?? []) {
+      if (!row.event_id) continue;
+      const list = photoDetailsByEvent.get(row.event_id) ?? [];
+      list.push(row);
+      photoDetailsByEvent.set(row.event_id, list);
+    }'''
+          new = '''    const photoDetailsByEvent = new Map<string, any[]>();
+    for (const row of photoRows ?? []) {
+      if (!row.event_id) continue;
+      const previewUrl = row.thumbnail_path
+        ? signed.get(row.thumbnail_path) || signed.get(row.storage_path || "") || null
+        : signed.get(row.storage_path || "") || null;
+      const fullUrl = row.storage_path ? signed.get(row.storage_path) || null : null;
+      const list = photoDetailsByEvent.get(row.event_id) ?? [];
+      list.push({ ...row, preview_url: previewUrl, public_url: fullUrl });
+      photoDetailsByEvent.set(row.event_id, list);
+    }'''
+          if old not in s:
+              raise SystemExit('cached photo detail pattern not found')
+          s = s.replace(old, new, 1)
+          old = '''      setCachedEventDetail(row.id, {
+        event: row,
+        photos: photoDetailsByEvent.get(row.id) ?? [],
+        people: participantDetailsByEvent.get(row.id) ?? [],
+      }),'''
+          new = '''      setCachedEventDetail(row.id, {
+        event: row,
+        photos: photoDetailsByEvent.get(row.id) ?? [],
+        people: (participantDetailsByEvent.get(row.id) ?? []).map((person) => ({
+          ...person,
+          avatar_url: null,
+        })),
+      }),'''
+          if old not in s:
+              raise SystemExit('cached event detail pattern not found')
+          s = s.replace(old, new, 1)
+          p.write_text(s)
+          PY
+      - name: Commit patch
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add lib/app-context.tsx
+          git diff --cached --quiet && exit 0
+          git commit -m '[bot] Warm event cache with gallery images'
+          git push
