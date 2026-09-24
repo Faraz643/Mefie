@@ -25,14 +25,23 @@ test("creator identity is always derived from auth.uid()", async () => {
   assert.match(sql, /revoke all on function public\.create_event\(text, text\) from public, anon/);
 });
 
-test("create_event qualifies invite_code to avoid PL/pgSQL output-variable ambiguity", async () => {
-  const sql = await migration("20260924061714_fix_create_event_invite_code_ambiguity.sql");
+test("create_event avoids invite_code ambiguity and handles invite-code races", async () => {
+  const sql = await migration("20260924062314_fix_event_creation_on_conflict_target.sql");
   assert.match(sql, /returns table\(id uuid, invite_code text\)/);
-  assert.match(sql, /from public\.events e\s+where e\.invite_code = safe_code/);
-  assert.doesNotMatch(sql, /from public\.events\s+where invite_code = safe_code/);
   assert.match(sql, /extensions\.gen_random_bytes\(6\)/);
+  assert.match(sql, /on conflict on constraint events_invite_code_key do nothing/);
+  assert.match(sql, /returning events\.id, events\.invite_code/);
+  assert.doesNotMatch(sql, /on conflict \(invite_code\)/);
   assert.match(sql, /revoke all on function public\.create_event\(text, text\) from public, anon/);
   assert.match(sql, /grant execute on function public\.create_event\(text, text\) to authenticated/);
+});
+
+test("participant identity protection uses null-safe comparisons", async () => {
+  const sql = await migration("20260924062249_harden_event_creation_and_participant_identity.sql");
+  for (const field of ["auth_user_id", "session_id", "event_id", "id", "user_id", "joined_at"]) {
+    assert.match(sql, new RegExp(`new\\.${field} is distinct from old\\.${field}`));
+  }
+  assert.match(sql, /old\.auth_user_id is distinct from \(select auth\.uid\(\)\)/);
 });
 
 test("invite joins are atomic and authenticated", async () => {
@@ -75,6 +84,8 @@ test("security-definer migrations pin the search_path", async () => {
     "033_finalize_photo_upload_rpc.sql",
     "20260923120000_036_photo_orphan_cleanup.sql",
     "20260924061714_fix_create_event_invite_code_ambiguity.sql",
+    "20260924062249_harden_event_creation_and_participant_identity.sql",
+    "20260924062314_fix_event_creation_on_conflict_target.sql",
   ];
   for (const file of files) {
     const sql = await migration(file);
