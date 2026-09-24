@@ -33,8 +33,8 @@ function detailKey(eventId: string) { return EVENT_DETAIL_PREFIX + eventId; }
 function normalizePeople(people: any[]) {
   return people.map((person) => {
     const name = typeof person?.display_name === "string" ? person.display_name.trim() : "";
-    return name
-      ? person
+    return name && name !== "?"
+      ? { ...person, display_name: name }
       : { ...person, display_name: "Guest" };
   });
 }
@@ -47,7 +47,7 @@ export function getCachedEventDetailSync(eventId: string): CachedEventDetail | n
     memoryDetails.delete(eventId);
     return null;
   }
-  if (cached.people.some((person) => !person?.display_name?.trim())) {
+  if (cached.people.some((person) => !person?.display_name?.trim() || person.display_name.trim() === "?")) {
     const normalized = { ...cached, people: normalizePeople(cached.people) };
     memoryDetails.set(eventId, normalized);
     return normalized;
