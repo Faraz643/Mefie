@@ -1,0 +1,57 @@
+name: Apply leave-event UI
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    if: ${{ !contains(github.event.head_commit.message, 'wire leave event UI') }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Patch event screen
+        shell: python
+        run: |
+          from pathlib import Path
+
+          path = Path('app/event/[id].tsx')
+          text = path.read_text(encoding='utf-8')
+
+          state_anchor = '  const [temporarySecondsLeft, setTemporarySecondsLeft] = useState(0);\n'
+          state_insert = state_anchor + '  const [leavingEvent, setLeavingEvent] = useState(false);\n'
+          if 'const [leavingEvent, setLeavingEvent]' not in text:
+              if state_anchor not in text:
+                  raise SystemExit('state anchor not found')
+              text = text.replace(state_anchor, state_insert, 1)
+
+          function_anchor = '  const deleteEvent = () => {\n'
+          function_insert = '''  const leaveEvent = () => {\n    if (isCreator || actionBusy || leavingEvent || !supabase) return;\n    Alert.alert(\n      "Leave event?",\n      "You will leave this event and it will disappear from your event list. Your photos already shared to the event will remain available to the other participants.",\n      [\n        { text: "Cancel", style: "cancel" },\n        {\n          text: "Leave event",\n          style: "destructive",\n          onPress: () => {\n            void (async () => {\n              if (!supabase) return;\n              setLeavingEvent(true);\n              setActionBusy(true);\n              try {\n                const { data, error: leaveError } = await supabase.rpc(\n                  "leave_event",\n                  { p_event_id: String(id) },\n                );\n                if (leaveError) throw leaveError;\n                if (!data) throw new Error("You are not a participant in this event.");\n                setParticipantId(null);\n                router.replace("/events");\n              } catch (e: any) {\n                Alert.alert("Could not leave event", e?.message || "Please try again.");\n              } finally {\n                setLeavingEvent(false);\n                setActionBusy(false);\n              }\n            })();\n          },\n        },\n      ],\n    );\n  };\n\n  const deleteEvent = () => {\n'''
+          if 'const leaveEvent = () => {' not in text:
+              if function_anchor not in text:
+                  raise SystemExit('function anchor not found')
+              text = text.replace(function_anchor, function_insert, 1)
+
+          button_anchor = '''                <Pressable\n                  accessibilityRole="button"\n                  accessibilityLabel="Open event QR and invites"\n'''
+          button_insert = '''                {!isCreator ? (\n                  <IconButton\n                    plain\n                    accessibilityLabel="Leave event"\n                    onPress={leaveEvent}\n                    disabled={actionBusy || leavingEvent}\n                  >\n                    <MaterialCommunityIcons\n                      name="exit-to-app"\n                      size={21}\n                      color="rgba(255,255,255,.92)"\n                    />\n                  </IconButton>\n                ) : null}\n                <Pressable\n                  accessibilityRole="button"\n                  accessibilityLabel="Open event QR and invites"\n'''
+          if 'accessibilityLabel="Leave event"' not in text:
+              if button_anchor not in text:
+                  raise SystemExit('button anchor not found')
+              text = text.replace(button_anchor, button_insert, 1)
+
+          path.write_text(text, encoding='utf-8', newline='\n')
+
+      - name: Commit patch and remove one-time workflow
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add app/event/'[id].tsx'
+          git rm .github/workflows/apply-leave-event-ui.yml
+          git commit -m "feat: add participant leave event action"
+          git push
