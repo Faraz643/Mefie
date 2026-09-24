@@ -10,7 +10,7 @@ import React, {
 } from "react";
 import { createClient } from "@supabase/supabase-js";
 import { AppState, View, Text } from "react-native";
-import { getCachedEvents, setCachedEvents, type CachedEventSummary } from "./event-cache";
+import { getCachedEvents, setCachedEvents, setCachedEventDetail, type CachedEventSummary } from "./event-cache";
 // PROFILE PHOTO LOGIC DISABLED FOR NOW:
 // import { File } from "expo-file-system";
 
@@ -558,6 +558,32 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       };
     });
     await setCachedEvents(sessionId, enriched);
+
+    // Warm the detail cache from the same dataset already fetched for the
+    // home/events lists. Event screens can therefore render real cached data
+    // immediately instead of starting from an empty placeholder state.
+    const participantDetailsByEvent = new Map<string, any[]>();
+    for (const row of participantRows ?? []) {
+      if (!row.event_id) continue;
+      const list = participantDetailsByEvent.get(row.event_id) ?? [];
+      list.push(row);
+      participantDetailsByEvent.set(row.event_id, list);
+    }
+    const photoDetailsByEvent = new Map<string, any[]>();
+    for (const row of photoRows ?? []) {
+      if (!row.event_id) continue;
+      const list = photoDetailsByEvent.get(row.event_id) ?? [];
+      list.push(row);
+      photoDetailsByEvent.set(row.event_id, list);
+    }
+    await Promise.all((eventRows ?? []).map((row) =>
+      setCachedEventDetail(row.id, {
+        event: row,
+        photos: photoDetailsByEvent.get(row.id) ?? [],
+        people: participantDetailsByEvent.get(row.id) ?? [],
+      }),
+    ));
+
     if (mountedRef.current) setEvents(enriched);
   }, []);
 

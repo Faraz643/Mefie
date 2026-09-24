@@ -28,7 +28,7 @@ import { IconButton } from "../../components/Glass";
 import { colors, shadows, typography } from "../../lib/theme";
 import { getParticipantId, getSessionId, supabase, useApp } from "../../lib/app-context";
 import { attachSignedPhotoUrls } from "../../lib/photo-storage";
-import { getCachedEventDetail, setCachedEventDetail } from "../../lib/event-cache";
+import { getCachedEventDetail, getCachedEventDetailSync, setCachedEventDetail } from "../../lib/event-cache";
 
 function gradientForName(name: string): [string, string] {
   const palettes: [string, string][] = [
@@ -48,12 +48,15 @@ export default function EventScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { displayName, backgroundImage } = useApp();
   const [storedBackgroundImage, setStoredBackgroundImage] = useState<string | null>(backgroundImage);
+  // Seed the first render from the in-memory event cache. This prevents the
+  // placeholder Event Name / 0 people / 0 photos state on repeat opens.
+  const initialCachedDetail = getCachedEventDetailSync(String(id));
   const scrollRef = useRef<FlashListRef<any>>(null);
   const photoScrollOffset = useRef(0);
   const peopleScrollOffset = useRef(0);
-  const [event, setEvent] = useState<any>(null);
-  const [photos, setPhotos] = useState<any[]>([]);
-  const [people, setPeople] = useState<any[]>([]);
+  const [event, setEvent] = useState<any>(initialCachedDetail?.event ?? null);
+  const [photos, setPhotos] = useState<any[]>(initialCachedDetail?.photos ?? []);
+  const [people, setPeople] = useState<any[]>(initialCachedDetail?.people ?? []);
   const [tab, setTab] = useState<"photos" | "people">("photos");
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [selectionMode, setSelectionMode] = useState(false);
