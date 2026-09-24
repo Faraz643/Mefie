@@ -1,0 +1,108 @@
+name: patch-event-photo-cache
+on:
+  push:
+    branches: [main]
+permissions:
+  contents: write
+jobs:
+  patch:
+    if: "!startsWith(github.event.head_commit.message, '[bot]')"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Patch event photo cache
+        shell: bash
+        run: |
+          python3 <<'PY'
+          from pathlib import Path
+
+          p = Path('lib/photo-storage.ts')
+          s = p.read_text()
+          marker = '''export async function attachSignedPhotoUrls<'''
+          helper = '''export async function preloadPhotoUrls(urls: string[]) {
+            const unique = [...new Set(urls.filter(Boolean))];
+            if (!unique.length) return;
+            try {
+              await import("expo-image").then(({ Image }) => Image.prefetch(unique, "disk"));
+            } catch {
+              // Preloading is opportunistic; the gallery remains functional without it.
+            }
+          }
+
+'''
+          if 'export async function preloadPhotoUrls' not in s:
+              if marker not in s:
+                  raise SystemExit('photo-storage insertion marker not found')
+              s = s.replace(marker, helper + marker, 1)
+              p.write_text(s)
+
+          p = Path('app/event/[id].tsx')
+          s = p.read_text()
+          old = 'import { attachSignedPhotoUrls } from "../../lib/photo-storage";'
+          new = 'import { attachSignedPhotoUrls, preloadPhotoUrls } from "../../lib/photo-storage";'
+          if old not in s:
+              raise SystemExit('photo-storage import not found')
+          s = s.replace(old, new, 1)
+
+          old = '''        if (active && cachedDetail) {
+          setEvent(cachedDetail.event);
+          setIsCreator(cachedDetail.event?.creator_auth_user_id === sessionId);
+          setPeople(cachedDetail.people || []);
+          try { setPhotos(await attachSignedPhotoUrls(cachedDetail.photos || [])); } catch {}
+        }'''
+          new = '''        if (active && cachedDetail) {
+          const cachedPhotos = cachedDetail.photos || [];
+          setEvent(cachedDetail.event);
+          setIsCreator(cachedDetail.event?.creator_auth_user_id === sessionId);
+          setPeople(cachedDetail.people || []);
+          // Render cached signed preview URLs immediately. Do not wait for a
+          // new signing round before showing the gallery.
+          setPhotos(cachedPhotos);
+          void preloadPhotoUrls(cachedPhotos.map((photo: any) => photo.preview_url || photo.public_url));
+          if (cachedPhotos.some((photo: any) => !photo.preview_url)) {
+            void attachSignedPhotoUrls(cachedPhotos).then((signedPhotos) => {
+              if (!active) return;
+              setPhotos(signedPhotos);
+              void preloadPhotoUrls(signedPhotos.map((photo: any) => photo.preview_url || photo.public_url));
+              void setCachedEventDetail(String(id), {
+                event: cachedDetail.event,
+                photos: signedPhotos,
+                people: cachedDetail.people || [],
+              });
+            }).catch(() => undefined);
+          }
+        }'''
+          if old not in s:
+              raise SystemExit('cached detail block not found')
+          s = s.replace(old, new, 1)
+
+          old = '''          setPhotos(await attachSignedPhotoUrls(freshPhotos));
+          setPeople(mergedPeople);
+          void setCachedEventDetail(String(id), { event: eventResult.data, photos: freshPhotos, people: mergedPeople });'''
+          new = '''          const signedPhotos = await attachSignedPhotoUrls(freshPhotos);
+          setPhotos(signedPhotos);
+          void preloadPhotoUrls(signedPhotos.map((photo: any) => photo.preview_url || photo.public_url));
+          setPeople(mergedPeople);
+          // Persist the already-signed preview URLs so the next event open can
+          // render the gallery immediately instead of signing every thumbnail again.
+          void setCachedEventDetail(String(id), { event: eventResult.data, photos: signedPhotos, people: mergedPeople });'''
+          if old not in s:
+              raise SystemExit('fresh photo block not found')
+          s = s.replace(old, new, 1)
+
+          old = '''                        {(person.display_name || "?")[0].toUpperCase()}'''
+          new = '''                        {person.display_name?.trim()?.charAt(0).toUpperCase() || ""}'''
+          if old not in s:
+              raise SystemExit('participant initial expression not found')
+          s = s.replace(old, new, 1)
+
+          p.write_text(s)
+          PY
+      - name: Commit patch
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add lib/photo-storage.ts 'app/event/[id].tsx'
+          git diff --cached --quiet && exit 0
+          git commit -m '[bot] Preload cached event photos'
+          git push
