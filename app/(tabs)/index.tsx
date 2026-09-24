@@ -110,7 +110,7 @@ export default function HomeScreen() {
       .then((map) => { if (active) setCoverOverrides(map as Record<string, string>); })
       .catch(() => undefined);
     return () => { active = false; };
-  }, [ownedEvents]);
+  }, [events, sessionId]);
 
   const toggleSelected = (id: string) => {
     setSelectedIds((current) =>
