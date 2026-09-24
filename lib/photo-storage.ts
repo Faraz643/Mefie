@@ -229,11 +229,22 @@ export async function attachSignedPhotoUrls<
     resolvePhotoUrls(photo, originalUrls, cachedUrls[index]),
   );
 
-  const resolved = photos.map((photo, index) => ({
-    ...photo,
-    public_url: indexedResolved[index].publicUrl,
-    preview_url: indexedResolved[index].previewUrl,
-  }));
+  const resolved = photos.map((photo, index) => {
+    const urls = indexedResolved[index];
+    // Mutate the fetched row as well as returning a new object. The event
+    // cache receives the same Supabase array after this function returns, so
+    // the resolved preview URL survives into the next event open instead of
+    // being thrown away in favour of the raw storage paths.
+    Object.assign(photo as object, {
+      public_url: urls.publicUrl,
+      preview_url: urls.previewUrl,
+    });
+    return {
+      ...photo,
+      public_url: urls.publicUrl,
+      preview_url: urls.previewUrl,
+    };
+  });
 
   // Warm expo-image's disk/memory cache after the URLs are known. This is
   // deliberately fire-and-forget so opening an event is never blocked by
