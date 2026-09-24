@@ -10,6 +10,7 @@ import React, {
 } from "react";
 import { createClient } from "@supabase/supabase-js";
 import { AppState, View, Text } from "react-native";
+import { getCachedEvents, setCachedEvents, type CachedEventSummary } from "./event-cache";
 // PROFILE PHOTO LOGIC DISABLED FOR NOW:
 // import { File } from "expo-file-system";
 
@@ -430,7 +431,10 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     void (async () => {
       if (supabase) {
         try {
-          await ensureAnonymousAuth();
+          const authenticatedId = await ensureAnonymousAuth();
+          const sessionId = authenticatedId || await getSessionId();
+          const cachedEvents = await getCachedEvents(sessionId);
+          if (mountedRef.current && cachedEvents) setEvents(cachedEvents);
           if (mountedRef.current) setAuthReady(true);
         } catch (error: any) {
           if (mountedRef.current) {
@@ -510,57 +514,50 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     if (!supabase) return;
     await ensureAnonymousAuth();
     const sessionId = await getSessionId();
-    const { data: memberships, error: membershipError } = await supabase
-      .from("participants")
-      .select("event_id")
-      .eq("auth_user_id", sessionId);
+    const { data: memberships, error: membershipError } = await supabase.from("participants").select("event_id").eq("auth_user_id", sessionId);
     if (membershipError) throw membershipError;
 
-    const eventIds = [...new Set((memberships ?? []).map((row) => row.event_id))];
+    const eventIds = [...new Set((memberships ?? []).map((row) => row.event_id).filter(Boolean))];
     if (!eventIds.length) {
       if (mountedRef.current) setEvents([]);
+      await setCachedEvents(sessionId, []);
       return;
     }
 
-    const { data } = await supabase
-      .from("events")
-      .select("id,name,created_at,creator_auth_user_id")
-      .eq("status", "active")
-      .in("id", eventIds)
-      .order("created_at", { ascending: false })
-      .limit(20);
-    if (!data || !mountedRef.current) return;
-    const enriched = await Promise.all(
-      data.map(async (e) => {
-        const [{ count: people }, { count: photos }, { data: cover }] =
-          await Promise.all([
-            supabase
-              .from("participants")
-              .select("id", { count: "exact", head: true })
-              .eq("event_id", e.id),
-            supabase
-              .from("photos")
-              .select("id", { count: "exact", head: true })
-              .eq("event_id", e.id),
-            supabase
-              .from("photos")
-              .select("public_url")
-              .eq("event_id", e.id)
-              .not("public_url", "is", null)
-              .order("created_at", { ascending: false })
-              .limit(1)
-              .maybeSingle(),
-          ]);
-        return {
-          id: e.id,
-          name: e.name,
-          people: people || 0,
-          photos: photos || 0,
-          cover: cover?.public_url || "",
-          creatorAuthUserId: e.creator_auth_user_id ?? null,
-        };
-      }),
-    );
+    const [{ data: eventRows, error: eventError }, { data: participantRows, error: participantError }, { data: photoRows, error: photoError }] = await Promise.all([
+      supabase.from("events").select("id,name,created_at,creator_auth_user_id").eq("status", "active").in("id", eventIds).order("created_at", { ascending: false }).limit(20),
+      supabase.from("participants").select("id,event_id").in("event_id", eventIds),
+      supabase.from("photos").select("id,event_id,storage_path,thumbnail_path,created_at").in("event_id", eventIds).order("created_at", { ascending: false }).limit(500),
+    ]);
+    if (eventError) throw eventError;
+    if (participantError) throw participantError;
+    if (photoError) throw photoError;
+
+    const peopleCounts = new Map<string, number>();
+    for (const row of participantRows ?? []) if (row.event_id) peopleCounts.set(row.event_id, (peopleCounts.get(row.event_id) ?? 0) + 1);
+    const photoCounts = new Map<string, number>();
+    const latestPhoto = new Map<string, any>();
+    for (const row of photoRows ?? []) {
+      if (!row.event_id) continue;
+      photoCounts.set(row.event_id, (photoCounts.get(row.event_id) ?? 0) + 1);
+      if (!latestPhoto.has(row.event_id)) latestPhoto.set(row.event_id, row);
+    }
+
+    const paths = [...latestPhoto.values()].flatMap((photo) => [photo.thumbnail_path, photo.storage_path].filter(Boolean)) as string[];
+    const { signPhotoPaths } = await import("./photo-storage");
+    const signed = paths.length ? await signPhotoPaths(paths) : new Map<string, string>();
+    const enriched: CachedEventSummary[] = (eventRows ?? []).map((e) => {
+      const coverRow = latestPhoto.get(e.id);
+      return {
+        id: e.id,
+        name: e.name,
+        people: peopleCounts.get(e.id) ?? 0,
+        photos: photoCounts.get(e.id) ?? 0,
+        cover: coverRow ? signed.get(coverRow.thumbnail_path || "") || signed.get(coverRow.storage_path) || "" : "",
+        creatorAuthUserId: e.creator_auth_user_id ?? null,
+      };
+    });
+    await setCachedEvents(sessionId, enriched);
     if (mountedRef.current) setEvents(enriched);
   }, []);
 

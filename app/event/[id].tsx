@@ -28,6 +28,7 @@ import { IconButton } from "../../components/Glass";
 import { colors, shadows, typography } from "../../lib/theme";
 import { getParticipantId, getSessionId, supabase, useApp } from "../../lib/app-context";
 import { attachSignedPhotoUrls } from "../../lib/photo-storage";
+import { getCachedEventDetail, setCachedEventDetail } from "../../lib/event-cache";
 
 function gradientForName(name: string): [string, string] {
   const palettes: [string, string][] = [
@@ -96,6 +97,15 @@ export default function EventScreen() {
           return;
         }
         if (active) setParticipantId(currentParticipantId);
+
+        const cachedDetail = await getCachedEventDetail(String(id));
+        if (active && cachedDetail) {
+          setEvent(cachedDetail.event);
+          setIsCreator(cachedDetail.event?.creator_auth_user_id === sessionId);
+          setPeople(cachedDetail.people || []);
+          try { setPhotos(await attachSignedPhotoUrls(cachedDetail.photos || [])); } catch {}
+        }
+
         const [eventResult, photosResult, participantsResult] = await Promise.all([
           supabase
             .from("events")
@@ -158,11 +168,13 @@ export default function EventScreen() {
 
         */
         if (active) {
+          const freshPhotos = photosResult.data || [];
           setEvent(eventResult.data);
           const creator = eventResult.data?.creator_auth_user_id === sessionId;
           setIsCreator(creator);
-          setPhotos(await attachSignedPhotoUrls(photosResult.data || []));
+          setPhotos(await attachSignedPhotoUrls(freshPhotos));
           setPeople(mergedPeople);
+          void setCachedEventDetail(String(id), { event: eventResult.data, photos: freshPhotos, people: mergedPeople });
 
           // Opportunistically reconcile old, abandoned Storage objects when the
           // event creator opens the event. The server enforces ownership,
