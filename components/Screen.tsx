@@ -1,12 +1,12 @@
 import { BlurTargetView, BlurView } from "expo-blur";
 import { LinearGradient } from "expo-linear-gradient";
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
-import { useRouter } from "expo-router";
-import React, { useRef } from "react";
-import { Dimensions, ImageBackground, Pressable, ScrollView, StyleSheet, Text, useWindowDimensions, View } from "react-native";
+import { useRouter, usePathname } from "expo-router";
+import React, { useEffect, useRef, useState } from "react";
+import { Alert, Dimensions, ImageBackground, Pressable, ScrollView, StyleSheet, Text, useWindowDimensions, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { colors, shadows, typography } from "../lib/theme";
-import { useApp } from "../lib/app-context";
+import { getSessionId, supabase, useApp } from "../lib/app-context";
 import { GlassTargetProvider, IconButton, useGlassTarget } from "./Glass";
 
 const hero = require("../assets/hero-background.jpg");
@@ -39,7 +39,85 @@ export function Screen({ children, backgroundImage, blurBackground = true, botto
 
 export function BackButton() {
   const router = useRouter();
-  return <IconButton plain accessibilityLabel="Go back" onPress={() => router.back()}><MaterialCommunityIcons name="chevron-left" size={25} color={colors.white} /></IconButton>;
+  const pathname = usePathname();
+  const isEventRoute = /^\/event\/[^/]+$/.test(pathname || "");
+  const eventId = isEventRoute ? pathname.split("/").pop() || "" : "";
+  const [canLeaveEvent, setCanLeaveEvent] = useState(false);
+  const [leavingEvent, setLeavingEvent] = useState(false);
+
+  useEffect(() => {
+    let active = true;
+    if (!isEventRoute || !eventId || !supabase) {
+      setCanLeaveEvent(false);
+      return () => { active = false; };
+    }
+    void (async () => {
+      try {
+        const sessionId = await getSessionId();
+        const { data, error } = await supabase
+          .from("events")
+          .select("creator_auth_user_id")
+          .eq("id", eventId)
+          .maybeSingle();
+        if (!active || error) return;
+        setCanLeaveEvent(Boolean(data && data.creator_auth_user_id !== sessionId));
+      } catch {
+        if (active) setCanLeaveEvent(false);
+      }
+    })();
+    return () => { active = false; };
+  }, [eventId, isEventRoute]);
+
+  const leaveEvent = () => {
+    if (!canLeaveEvent || leavingEvent || !supabase || !eventId) return;
+    Alert.alert(
+      "Leave event?",
+      "You will leave this event and it will disappear from your event list. Photos already shared to the event will remain for the other participants.",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Leave event",
+          style: "destructive",
+          onPress: () => {
+            void (async () => {
+              setLeavingEvent(true);
+              try {
+                const { data, error } = await supabase.rpc("leave_event", {
+                  p_event_id: eventId,
+                });
+                if (error) throw error;
+                if (!data) throw new Error("You are not a participant in this event.");
+                setCanLeaveEvent(false);
+                router.replace("/events");
+              } catch (e: any) {
+                Alert.alert("Could not leave event", e?.message || "Please try again.");
+              } finally {
+                setLeavingEvent(false);
+              }
+            })();
+          },
+        },
+      ],
+    );
+  };
+
+  return (
+    <View style={styles.backActions}>
+      <IconButton plain accessibilityLabel="Go back" onPress={() => router.back()}>
+        <MaterialCommunityIcons name="chevron-left" size={25} color={colors.white} />
+      </IconButton>
+      {canLeaveEvent ? (
+        <IconButton
+          plain
+          accessibilityLabel="Leave event"
+          onPress={leaveEvent}
+          disabled={leavingEvent}
+        >
+          <MaterialCommunityIcons name="exit-to-app" size={20} color={colors.white} />
+        </IconButton>
+      ) : null}
+    </View>
+  );
 }
 
 export function BottomNav({ active = "home" }: { active?: NavKey }) {
@@ -87,6 +165,7 @@ const styles = StyleSheet.create({
   markA: { position: "absolute", width: 17, height: 20, borderRadius: 6, borderWidth: 2, borderColor: "#FFF", left: 7, top: 7 },
   markB: { position: "absolute", width: 17, height: 20, borderColor: "#C9D7F5", left: 11, top: 7, borderWidth: 2 },
   brand: { color: colors.white, fontFamily: typography.bold, fontSize: 21, letterSpacing: -0.6 },
+  backActions: { flexDirection: "row", alignItems: "center", gap: 2 },
   navPosition: { position: "absolute", left: 18, right: 18 },
   nav: { height: 76, borderRadius: 38, borderWidth: 1, borderColor: "rgba(255,255,255,0.22)", overflow: "hidden", backgroundColor: "rgba(30,35,42,0.34)", ...shadows },
   navFrost: { ...StyleSheet.absoluteFillObject, backgroundColor: "rgba(255,255,255,0.045)" },
