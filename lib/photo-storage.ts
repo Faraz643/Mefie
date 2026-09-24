@@ -24,8 +24,6 @@ type CachedPhotoUrls = {
   cachedAt: number;
 };
 
-// Generated thumbnails are preferred. For legacy photos that do not have a
-// thumbnail_path yet, use Supabase's private signed-image transform by default.
 const ENABLE_REMOTE_STORAGE_TRANSFORMS = process.env.EXPO_PUBLIC_ENABLE_STORAGE_TRANSFORMS !== "false";
 
 export const PHOTO_GALLERY_TRANSFORM: PhotoTransform = {
@@ -151,13 +149,16 @@ async function resolvePhotoUrls<T extends {
   thumbnail_path?: string | null;
   public_url?: string | null;
   preview_url?: string | null;
-}>(photo: T, originalUrls: Map<string, string>) {
+}>(
+  photo: T,
+  originalUrls: Map<string, string>,
+  cached: CachedPhotoUrls | null,
+) {
   const storagePath = photo.storage_path || "";
   if (!storagePath) {
     return { publicUrl: photo.public_url || null, previewUrl: photo.preview_url || null };
   }
 
-  const cached = await readCachedPhotoUrls(storagePath, photo.thumbnail_path);
   if (cached?.publicUrl || cached?.previewUrl) {
     return {
       publicUrl: cached.publicUrl || photo.public_url || null,
@@ -204,24 +205,27 @@ export async function attachSignedPhotoUrls<
 >(photos: T[]) {
   if (!photos.length) return [] as Array<T & { public_url: string | null; preview_url: string | null }>;
 
-  // First resolve all original URLs in one request. Cached preview URLs are
-  // then reused below, so reopening an event does not create a new signed URL
-  // for every image on every render.
+  // Load persisted signed URLs first. This is important after an app restart:
+  // AsyncStorage can satisfy the gallery without making a new Storage request.
+  const cachedUrls = await mapWithConcurrency(photos, 12, async (photo) =>
+    readCachedPhotoUrls(photo.storage_path || "", photo.thumbnail_path),
+  );
+
   const pathsNeedingOriginalUrls = photos
-    .filter((photo) => {
+    .map((photo, index) => ({ photo, cached: cachedUrls[index] }))
+    .filter(({ photo, cached }) => {
       const path = photo.storage_path || "";
-      const memory = path ? memoryUrlCache.get(photoUrlCacheKey(path, photo.thumbnail_path)) : null;
-      return !!path && !isFresh(memory) && !photo.public_url;
+      return !!path && !cached && !photo.public_url;
     })
-    .map((photo) => photo.storage_path || "")
+    .map(({ photo }) => photo.storage_path || "")
     .filter(Boolean);
 
   const originalUrls = pathsNeedingOriginalUrls.length
     ? await signPhotoPaths(pathsNeedingOriginalUrls)
     : new Map<string, string>();
 
-  const resolved = await mapWithConcurrency(photos, 8, async (photo) => {
-    const urls = await resolvePhotoUrls(photo, originalUrls);
+  const resolved = await mapWithConcurrency(photos, 8, async (photo, index) => {
+    const urls = await resolvePhotoUrls(photo, originalUrls, cachedUrls[index]);
     return {
       ...photo,
       public_url: urls.publicUrl,
