@@ -254,7 +254,7 @@ async function processJob(jobId: string) {
   job.status = "uploading";
   notify();
 
-  let uploadSourceCleanup = async () => undefined;
+  let uploadSourceCleanup: () => Promise<void> = async () => undefined;
   try {
     if (!supabase) throw new Error("Cloud connection is not configured.");
 
