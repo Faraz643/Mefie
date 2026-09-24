@@ -39,7 +39,7 @@ begin
       (select auth.uid())::text,
       'active'
     )
-    on conflict (invite_code) do nothing
+    on conflict on constraint events_invite_code_key do nothing
     returning events.id, events.invite_code
     into new_event_id, safe_code;
 
