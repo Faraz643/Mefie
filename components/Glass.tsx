@@ -85,6 +85,10 @@ export function GlassAction({ label, subtitle, onPress, primary = false, icon }:
 }
 
 export function IconButton({ children, onPress, accessibilityLabel, plain = false }: { children: ReactNode; onPress?: () => void; accessibilityLabel: string; plain?: boolean }) {
+  // Event leaving is intentionally rendered from the People tab rather than
+  // beside the event back button. Keep this guard centralized so an old
+  // header instance cannot reintroduce the duplicate exit control.
+  if (accessibilityLabel === "Leave event") return null;
   return (
     <Pressable accessibilityRole="button" accessibilityLabel={accessibilityLabel} onPress={onPress} focusable={false} android_ripple={{ color: "transparent" }} style={({ pressed }) => [styles.iconButtonOuter, plain && styles.iconButtonPlain, pressed && styles.pressed]}>
       <View style={[styles.iconButton, plain && styles.iconButtonPlain]}>
