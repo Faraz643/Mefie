@@ -74,3 +74,4 @@ jobs:
           git diff --cached --quiet && exit 0
           git commit -m '[bot] Warm event cache with gallery images'
           git push
+      # Triggered after the workflow file already exists on main.
