@@ -765,20 +765,7 @@ ${link}`,
                     />
                   </IconButton>
                 ) : null}
-                {!isCreator ? (
-                  <IconButton
-                    plain
-                    accessibilityLabel="Leave event"
-                    onPress={leaveEvent}
-                    disabled={actionBusy || leavingEvent}
-                  >
-                    <MaterialCommunityIcons
-                      name="exit-to-app"
-                      size={21}
-                      color="rgba(255,255,255,.92)"
-                    />
-                  </IconButton>
-                ) : null}
+                
                 <Pressable
                   accessibilityRole="button"
                   accessibilityLabel="Open event QR and invites"
@@ -913,38 +900,72 @@ ${link}`,
           }
 
           const person = item;
-          return (
-            <View style={styles.person}>
-              <LinearGradient
-                colors={gradientForName(person.display_name)}
-                style={styles.personAvatar}
-              >
-                <Text style={styles.avatarText}>
-                  {(person.display_name || "?")[0].toUpperCase()}
-                </Text>
-              </LinearGradient>
-              <View style={styles.personDetails}>
-                <Text style={styles.personName}>{person.display_name}</Text>
-                <Text style={styles.personMeta}>
-                  Joined {new Date(person.joined_at).toLocaleDateString()}
-                </Text>
-              </View>
-              {isCreator && person.auth_user_id !== (event?.creator_auth_user_id || "") ? (
-                <Pressable
-                  onPress={() => removeMember(person)}
-                  disabled={actionBusy}
-                  style={styles.removeMemberButton}
-                  accessibilityLabel={`Remove ${person.display_name || "member"}`}
-                >
-                  <MaterialCommunityIcons
-                    name="account-remove-outline"
-                    size={20}
-                    color="rgba(255,255,255,.82)"
-                  />
-                </Pressable>
-              ) : null}
-            </View>
-          );
+
+const isThisUser = person.id === participantId;
+const isEventCreator =
+  person.auth_user_id === (event?.creator_auth_user_id || "");
+
+return (
+  <View style={styles.person}>
+    <LinearGradient
+      colors={gradientForName(person.display_name)}
+      style={styles.personAvatar}
+    >
+      <Text style={styles.avatarText}>
+        {(person.display_name || "?")[0].toUpperCase()}
+      </Text>
+    </LinearGradient>
+
+    <View style={styles.personDetails}>
+      <Text style={styles.personName}>
+        {person.display_name || "Unknown"}
+        {isThisUser ? " (You)" : ""}
+      </Text>
+
+      <Text style={styles.personMeta}>
+        {isEventCreator
+          ? "Creator"
+          : `Joined ${new Date(person.joined_at).toLocaleDateString()}`}
+      </Text>
+    </View>
+
+    {/* Creator can remove participants, but never themselves */}
+    {isCreator && !isEventCreator ? (
+      <Pressable
+        onPress={() => removeMember(person)}
+        disabled={actionBusy}
+        style={styles.removeMemberButton}
+        accessibilityRole="button"
+        accessibilityLabel={`Remove ${person.display_name || "member"}`}
+        hitSlop={8}
+      >
+        <MaterialCommunityIcons
+          name="account-remove-outline"
+          size={21}
+          color="rgba(255,255,255,.82)"
+        />
+      </Pressable>
+    ) : null}
+
+    {/* A participant can exit only their own membership */}
+    {!isCreator && isThisUser ? (
+      <Pressable
+        onPress={leaveEvent}
+        disabled={actionBusy || leavingEvent}
+        style={styles.removeMemberButton}
+        accessibilityRole="button"
+        accessibilityLabel="Exit event"
+        hitSlop={8}
+      >
+        <MaterialCommunityIcons
+          name="exit-to-app"
+          size={21}
+          color="rgba(255,255,255,.82)"
+        />
+      </Pressable>
+    ) : null}
+  </View>
+);
         }}
         onScroll={(event) => {
           const offset = Math.max(0, event.nativeEvent.contentOffset.y);
