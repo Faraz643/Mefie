@@ -205,6 +205,25 @@ export async function attachSignedPhotoUrls<
 >(photos: T[]) {
   if (!photos.length) return [] as Array<T & { public_url: string | null; preview_url: string | null }>;
 
+  // Cached event objects already carry their resolved gallery URL. Do not
+  // round-trip through AsyncStorage again before rendering those photos.
+  // This is the hot path used when an event is reopened.
+  if (photos.every((photo) => !!(photo.preview_url || photo.public_url))) {
+    const resolved = photos.map((photo) => ({
+      ...photo,
+      public_url: photo.public_url || photo.preview_url || null,
+      preview_url: photo.preview_url || photo.public_url || null,
+    }));
+    const previewUrls = resolved
+      .slice(0, PREFETCH_LIMIT)
+      .map((photo) => photo.preview_url || photo.public_url)
+      .filter((url): url is string => !!url);
+    if (previewUrls.length) {
+      void ExpoImage.prefetch(previewUrls, "memory-disk").catch(() => undefined);
+    }
+    return resolved;
+  }
+
   // Load persisted signed URLs first. This is important after an app restart:
   // AsyncStorage can satisfy the gallery without making a new Storage request.
   const indexedPhotos = photos.map((photo, index) => ({ photo, index }));
@@ -231,10 +250,6 @@ export async function attachSignedPhotoUrls<
 
   const resolved = photos.map((photo, index) => {
     const urls = indexedResolved[index];
-    // Mutate the fetched row as well as returning a new object. The event
-    // cache receives the same Supabase array after this function returns, so
-    // the resolved preview URL survives into the next event open instead of
-    // being thrown away in favour of the raw storage paths.
     Object.assign(photo as object, {
       public_url: urls.publicUrl,
       preview_url: urls.previewUrl,
@@ -246,9 +261,6 @@ export async function attachSignedPhotoUrls<
     };
   });
 
-  // Warm expo-image's disk/memory cache after the URLs are known. This is
-  // deliberately fire-and-forget so opening an event is never blocked by
-  // downloading the gallery.
   const previewUrls = resolved
     .slice(0, PREFETCH_LIMIT)
     .map((photo) => photo.preview_url || photo.public_url)
