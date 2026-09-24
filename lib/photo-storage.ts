@@ -207,7 +207,8 @@ export async function attachSignedPhotoUrls<
 
   // Load persisted signed URLs first. This is important after an app restart:
   // AsyncStorage can satisfy the gallery without making a new Storage request.
-  const cachedUrls = await mapWithConcurrency(photos, 12, async (photo) =>
+  const indexedPhotos = photos.map((photo, index) => ({ photo, index }));
+  const cachedUrls = await mapWithConcurrency(indexedPhotos, 12, ({ photo }) =>
     readCachedPhotoUrls(photo.storage_path || "", photo.thumbnail_path),
   );
 
@@ -224,14 +225,15 @@ export async function attachSignedPhotoUrls<
     ? await signPhotoPaths(pathsNeedingOriginalUrls)
     : new Map<string, string>();
 
-  const resolved = await mapWithConcurrency(photos, 8, async (photo, index) => {
-    const urls = await resolvePhotoUrls(photo, originalUrls, cachedUrls[index]);
-    return {
-      ...photo,
-      public_url: urls.publicUrl,
-      preview_url: urls.previewUrl,
-    };
-  });
+  const indexedResolved = await mapWithConcurrency(indexedPhotos, 8, ({ photo, index }) =>
+    resolvePhotoUrls(photo, originalUrls, cachedUrls[index]),
+  );
+
+  const resolved = photos.map((photo, index) => ({
+    ...photo,
+    public_url: indexedResolved[index].publicUrl,
+    preview_url: indexedResolved[index].previewUrl,
+  }));
 
   // Warm expo-image's disk/memory cache after the URLs are known. This is
   // deliberately fire-and-forget so opening an event is never blocked by
