@@ -12,7 +12,10 @@ type PhotoTransform = {
   resize: "cover" | "contain" | "fill";
 };
 
-const ENABLE_REMOTE_STORAGE_TRANSFORMS = process.env.EXPO_PUBLIC_ENABLE_STORAGE_TRANSFORMS === "true";
+// Generated thumbnails are preferred. For legacy photos that do not have a
+// thumbnail_path yet, use Supabase's private signed-image transform by default.
+// Set EXPO_PUBLIC_ENABLE_STORAGE_TRANSFORMS=false to disable that fallback.
+const ENABLE_REMOTE_STORAGE_TRANSFORMS = process.env.EXPO_PUBLIC_ENABLE_STORAGE_TRANSFORMS !== "false";
 
 export const PHOTO_GALLERY_TRANSFORM: PhotoTransform = {
   width: PHOTO_PREVIEW_WIDTH,
@@ -93,12 +96,13 @@ export async function attachSignedPhotoUrls<
   );
 
   const previewUrls = await mapWithConcurrency(photos, 8, async (photo) => {
+    // New uploads have a physical thumbnail object. It is the cheapest and
+    // most predictable gallery source, so always prefer it over a transform.
     if (photo.thumbnail_path) {
       try {
         return await signPhotoPath(photo.thumbnail_path);
       } catch {
-        // Fall back to a transformed origin image if a legacy/missing
-        // thumbnail object cannot be signed.
+        // Fall back to a transformed origin image if the thumbnail is missing.
       }
     }
 
@@ -106,8 +110,7 @@ export async function attachSignedPhotoUrls<
       try {
         return await signPhotoPreviewPath(photo.storage_path);
       } catch {
-        // Image transformations can be disabled or unavailable on a plan.
-        // Keep the gallery functional by falling back to the signed original.
+        // Image transformations may be unavailable; keep the gallery usable.
       }
     }
 
@@ -118,6 +121,8 @@ export async function attachSignedPhotoUrls<
 
   return photos.map((photo, index) => ({
     ...photo,
+    // public_url is retained as the full-resolution signed source for the
+    // photo viewer/download flow. preview_url is display-only.
     public_url: photo.storage_path
       ? originalUrls.get(photo.storage_path) || null
       : null,
