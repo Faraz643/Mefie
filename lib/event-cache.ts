@@ -18,7 +18,8 @@ export type CachedEventDetail = {
 
 const EVENTS_CACHE_VERSION = 1;
 const EVENTS_CACHE_PREFIX = "mefie.cache.events.v1:";
-const EVENT_DETAIL_PREFIX = "mefie.cache.event.v1:";
+const EVENT_DETAIL_VERSION = 2;
+const EVENT_DETAIL_PREFIX = "mefie.cache.event.v2:";
 const EVENT_DETAIL_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 
 // Keep the most recently loaded event data in memory. This is the zero-I/O
@@ -29,6 +30,15 @@ const memoryDetails = new Map<string, CachedEventDetail>();
 function eventsKey(sessionId: string) { return EVENTS_CACHE_PREFIX + sessionId; }
 function detailKey(eventId: string) { return EVENT_DETAIL_PREFIX + eventId; }
 
+function normalizePeople(people: any[]) {
+  return people.map((person) => {
+    const name = typeof person?.display_name === "string" ? person.display_name.trim() : "";
+    return name
+      ? person
+      : { ...person, display_name: "Guest" };
+  });
+}
+
 export function getCachedEventDetailSync(eventId: string): CachedEventDetail | null {
   if (!eventId) return null;
   const cached = memoryDetails.get(eventId);
@@ -36,6 +46,11 @@ export function getCachedEventDetailSync(eventId: string): CachedEventDetail | n
   if (Date.now() - cached.cachedAt > EVENT_DETAIL_TTL_MS) {
     memoryDetails.delete(eventId);
     return null;
+  }
+  if (cached.people.some((person) => !person?.display_name?.trim())) {
+    const normalized = { ...cached, people: normalizePeople(cached.people) };
+    memoryDetails.set(eventId, normalized);
+    return normalized;
   }
   return cached;
 }
@@ -83,14 +98,25 @@ export async function getCachedEventDetail(eventId: string): Promise<CachedEvent
   try {
     const raw = await AsyncStorage.getItem(detailKey(eventId));
     if (!raw) return null;
-    const parsed = JSON.parse(raw) as CachedEventDetail;
-    if (!parsed?.event || !Array.isArray(parsed.photos) || !Array.isArray(parsed.people)) return null;
+    const parsed = JSON.parse(raw) as CachedEventDetail & { version?: number };
+    if (
+      !parsed?.event ||
+      !Array.isArray(parsed.photos) ||
+      !Array.isArray(parsed.people) ||
+      parsed.version !== EVENT_DETAIL_VERSION
+    ) return null;
     if (typeof parsed.cachedAt !== "number" || Date.now() - parsed.cachedAt > EVENT_DETAIL_TTL_MS) {
       await AsyncStorage.removeItem(detailKey(eventId)).catch(() => undefined);
       return null;
     }
-    memoryDetails.set(eventId, parsed);
-    return parsed;
+    const normalized: CachedEventDetail = {
+      event: parsed.event,
+      photos: parsed.photos,
+      people: normalizePeople(parsed.people),
+      cachedAt: parsed.cachedAt,
+    };
+    memoryDetails.set(eventId, normalized);
+    return normalized;
   } catch {
     return null;
   }
@@ -101,10 +127,17 @@ export async function setCachedEventDetail(
   detail: Omit<CachedEventDetail, "cachedAt">,
 ) {
   if (!eventId) return;
-  const value: CachedEventDetail = { ...detail, cachedAt: Date.now() };
+  const value: CachedEventDetail = {
+    ...detail,
+    people: normalizePeople(detail.people || []),
+    cachedAt: Date.now(),
+  };
   memoryDetails.set(eventId, value);
   try {
-    await AsyncStorage.setItem(detailKey(eventId), JSON.stringify(value));
+    await AsyncStorage.setItem(
+      detailKey(eventId),
+      JSON.stringify({ version: EVENT_DETAIL_VERSION, ...value }),
+    );
   } catch {}
 }
 
