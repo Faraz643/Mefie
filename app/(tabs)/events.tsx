@@ -1,19 +1,28 @@
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 import { useFocusEffect, useRouter } from "expo-router";
 import React, { useCallback } from "react";
-import { Image, Pressable, StyleSheet, Text, View } from "react-native";
+import { Pressable, StyleSheet, Text, View } from "react-native";
+import { Image as ExpoImage } from "expo-image";
 import { BottomNav, Screen } from "../../components/Screen";
 import { GlassButton, GlassCard } from "../../components/Glass";
 import { useApp } from "../../lib/app-context";
+import { getEventCoverMap } from "../../lib/event-cover";
 import { colors, radii, shadows, typography } from "../../lib/theme";
-
-const fallback = "https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=800&q=80";
 
 export default function Events() {
   const router = useRouter();
   const { events, refreshEvents } = useApp();
+  const [coverOverrides, setCoverOverrides] = React.useState<Record<string, string>>({});
 
   useFocusEffect(useCallback(() => { refreshEvents(); }, [refreshEvents]));
+
+  React.useEffect(() => {
+    let active = true;
+    void getEventCoverMap(events.map((event) => event.id))
+      .then((map) => { if (active) setCoverOverrides(map as Record<string, string>); })
+      .catch(() => undefined);
+    return () => { active = false; };
+  }, [events]);
 
   return (
     <View style={styles.root}>
@@ -34,7 +43,14 @@ export default function Events() {
           <View style={styles.list}>
             {events.map((e) => (
               <Pressable key={e.id} onPress={() => router.push({ pathname: "/event/[id]", params: { id: e.id } })} style={styles.card}>
-                <Image source={{ uri: e.cover || fallback }} style={styles.image} />
+                <ExpoImage
+                  source={coverOverrides[e.id] || e.cover ? { uri: coverOverrides[e.id] || e.cover } : undefined}
+                  style={styles.image}
+                  contentFit="cover"
+                  cachePolicy="memory-disk"
+                  recyclingKey={e.id}
+                  transition={0}
+                />
                 <View style={styles.overlay}>
                   <View style={styles.icon}>
                     <MaterialCommunityIcons name="image-multiple-outline" size={17} color="#fff" />

@@ -109,7 +109,7 @@ export default function EventScreen() {
             .limit(200),
           supabase
             .from("participants")
-            .select("id,event_id,display_name,joined_at,last_seen_at,avatar_url")
+            .select("id,event_id,auth_user_id,display_name,joined_at,last_seen_at,avatar_url")
             .eq("event_id", id)
             .order("joined_at", { ascending: true }),
         ]);
@@ -219,7 +219,7 @@ export default function EventScreen() {
         .on(
           "postgres_changes",
           {
-            event: "INSERT",
+            event: "*",
             schema: "public",
             table: "photos",
             filter: `event_id=eq.${id}`,
@@ -237,13 +237,21 @@ export default function EventScreen() {
             ],
           },
           (payload) => {
+            if (payload.eventType === "DELETE") {
+              setPhotos((curr) => curr.filter((photo) => photo.id !== payload.old.id));
+              setSelectedIds((curr) => curr.filter((photoId) => photoId !== payload.old.id));
+              return;
+            }
+            if (payload.eventType === "UPDATE") {
+              void attachSignedPhotoUrls([payload.new]).then(([photo]) => {
+                if (!photo) return;
+                setPhotos((curr) => curr.map((item) => item.id === photo.id ? { ...item, ...photo } : item));
+              }).catch(() => undefined);
+              return;
+            }
             void attachSignedPhotoUrls([payload.new]).then(([photo]) => {
               if (!photo?.public_url) return;
-              setPhotos((curr) =>
-                curr.some((x) => x.id === payload.new.id)
-                  ? curr
-                  : [photo, ...curr],
-              );
+              setPhotos((curr) => curr.some((x) => x.id === payload.new.id) ? curr : [photo, ...curr]);
             }).catch(() => undefined);
           },
         )
@@ -254,7 +262,7 @@ export default function EventScreen() {
             schema: "public",
             table: "participants",
             filter: `event_id=eq.${id}`,
-            select: ["id", "event_id", "display_name", "joined_at", "last_seen_at", "avatar_url"],
+            select: ["id", "event_id", "auth_user_id", "display_name", "joined_at", "last_seen_at", "avatar_url"],
           },
           (payload) => {
             if (payload.eventType === "INSERT") {

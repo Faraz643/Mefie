@@ -14,6 +14,7 @@ import {
 } from "../../components/Glass";
 import { deleteEventsAsCreator, getSessionId, useApp } from "../../lib/app-context";
 import { colors, radii, shadows, typography } from "../../lib/theme";
+import { getEventCoverMap } from "../../lib/event-cover";
 
 function gradientForName(name: string): [string, string] {
   const palettes: [string, string][] = [
@@ -82,6 +83,7 @@ export default function HomeScreen() {
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [deleting, setDeleting] = useState(false);
   const [sessionId, setSessionId] = useState<string | null>(null);
+  const [coverOverrides, setCoverOverrides] = useState<Record<string, string>>({});
 
   useEffect(() => {
     void getSessionId().then(setSessionId);
@@ -101,6 +103,14 @@ export default function HomeScreen() {
   const ownedEvents = events.filter(
     (event) => event.creatorAuthUserId === sessionId,
   );
+
+  useEffect(() => {
+    let active = true;
+    void getEventCoverMap(ownedEvents.map((event) => event.id))
+      .then((map) => { if (active) setCoverOverrides(map as Record<string, string>); })
+      .catch(() => undefined);
+    return () => { active = false; };
+  }, [ownedEvents]);
 
   const toggleSelected = (id: string) => {
     setSelectedIds((current) =>
@@ -260,7 +270,7 @@ export default function HomeScreen() {
                   </View>
                   <EventCover
                     id={e.id}
-                    cover={e.cover}
+                    cover={coverOverrides[e.id] || e.cover}
                     name={e.name}
                     people={e.people}
                     photos={e.photos}
