@@ -39,10 +39,10 @@ const EVENT_DETAIL_PREFIX = "mefie.cache.event.v1:";
 const EVENT_DETAIL_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 
 function eventsKey(sessionId: string) {
-  return `${EVENTS_CACHE_PREFIX}${sessionId}`;
+  return EVENTS_CACHE_PREFIX + sessionId;
 }
 function detailKey(eventId: string) {
-  return `${EVENT_DETAIL_PREFIX}${eventId}`;
+  return EVENT_DETAIL_PREFIX + eventId;
 }
 
 export async function getCachedEvents(sessionId: string): Promise<CachedEventSummary[] | null> {
@@ -259,7 +259,6 @@ const networkSetReplacement = `        if (active) {
 eventScreen = mustReplace(eventScreen, networkSetPattern, networkSetReplacement, "event cache write-through");
 write("app/event/[id].tsx", eventScreen);
 
-// Remove this migration machinery after the real source files have been changed.
 fs.rmSync(path.join(root, "scripts/apply-event-cache.js"), { force: true });
 fs.rmSync(path.join(root, ".github/workflows/apply-event-cache.yml"), { force: true });
 
