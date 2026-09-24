@@ -39,13 +39,23 @@ export default function RootLayout() {
           <AppProvider>
             <StatusBar style="light" />
             <Stack
-            screenOptions={{
-              headerShown: false,
-              animation: 'fade',
-              contentStyle: { backgroundColor: '#0A0F15' },
-            }}
-          >
-            <Stack.Screen name="(tabs)" options={{ animation: 'none' }} />
+              screenOptions={{
+                headerShown: false,
+                animation: 'fade',
+                contentStyle: { backgroundColor: '#0A0F15' },
+              }}
+            >
+              <Stack.Screen name="(tabs)" options={{ animation: 'none' }} />
+              {/*
+                Temporary-invite navigation must be visually atomic. The global
+                fade animation combined with the invite lookup/join redirect can
+                expose intermediate native frames on Android, which looks like a
+                rapid multi-blink when the event screen mounts. Keep these two
+                routes transition-free; the event screen already performs its
+                own data loading without needing a navigation animation.
+              */}
+              <Stack.Screen name="rejoin/[token]" options={{ animation: 'none' }} />
+              <Stack.Screen name="event/[id]" options={{ animation: 'none' }} />
             </Stack>
           </AppProvider>
         </SentryErrorBoundary>
