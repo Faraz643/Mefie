@@ -1,17 +1,29 @@
 import { LinearGradient } from 'expo-linear-gradient';
 import { useFocusEffect, useRouter } from 'expo-router';
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
-import React, { useCallback } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
 import { BottomNav, Header, Screen } from '../components/Screen';
 import { GlassAction, GlassCard, SectionTitle, IconButton } from '../components/Glass';
 import { useApp } from '../lib/app-context';
+import { getEventCoverMap } from '../lib/event-cover';
 import { colors, radii, shadows, typography } from '../lib/theme';
 
 export default function HomeScreen() {
   const router = useRouter();
   const { displayName, events, refreshEvents } = useApp();
-  useFocusEffect(useCallback(() => { refreshEvents(); }, [refreshEvents]));
+  const [coverOverrides, setCoverOverrides] = useState<Record<string, string>>({});
+
+  useFocusEffect(useCallback(() => { void refreshEvents(); }, [refreshEvents]));
+
+  useEffect(() => {
+    let active = true;
+    void getEventCoverMap(events.map((event) => event.id))
+      .then((map) => { if (active) setCoverOverrides(map); })
+      .catch(() => undefined);
+    return () => { active = false; };
+  }, [events]);
+
   return <View style={styles.root}><Screen>
     <Header title="Mefie" right={<IconButton accessibilityLabel="Open profile" onPress={() => router.push('/you')}><Text style={styles.avatarText}>{displayName.slice(0,1).toUpperCase()}</Text></IconButton>} />
     <View style={styles.hero}>
@@ -20,7 +32,18 @@ export default function HomeScreen() {
     </View>
     <GlassAction primary label="Create an event" onPress={() => router.push('/create-event')} icon={<MaterialCommunityIcons name="plus" size={30} color={colors.black} />} />
     <GlassAction label="Join an event" onPress={() => router.push('/join-event')} icon={<MaterialCommunityIcons name="link-variant" size={26} color={colors.white} />} />
-    <View style={styles.eventsSection}><View style={styles.sectionRow}><SectionTitle>Your events</SectionTitle>{events.length > 0 ? <Pressable onPress={() => router.push('/events')}><Text style={styles.seeAll}>See all <Text style={styles.seeArrow}>›</Text></Text></Pressable> : null}</View>{events.length === 0 ? <GlassCard><Text style={styles.emptyTitle}>Your moments start here.</Text><Text style={styles.emptySub}>Create an event and invite your people.</Text></GlassCard> : <View style={styles.grid}>{events.slice(0, 4).map(e => <Pressable key={e.id} onPress={() => router.push({ pathname:'/event/[id]', params:{id:e.id} })} style={styles.eventCard}><View style={styles.cover}>{e.cover ? <Image source={{ uri: e.cover }} style={styles.coverImage} /> : null}<LinearGradient colors={["rgba(10,15,21,0.00)", "rgba(10,15,21,0.88)"]} locations={[0, 1]} style={styles.eventInfo}><View style={styles.eventInfoTint} /><View style={styles.eventInfoContent}><Text style={styles.eventName} numberOfLines={1}>{e.name}</Text><Text style={styles.eventMeta}>{e.people || '—'} people · {e.photos || '—'} photos</Text></View></LinearGradient></View></Pressable>)}</View>}</View>
+    <View style={styles.eventsSection}><View style={styles.sectionRow}><SectionTitle>Your events</SectionTitle>{events.length > 0 ? <Pressable onPress={() => router.push('/events')}><Text style={styles.seeAll}>See all <Text style={styles.seeArrow}>›</Text></Text></Pressable> : null}</View>{events.length === 0 ? <GlassCard><Text style={styles.emptyTitle}>Your moments start here.</Text><Text style={styles.emptySub}>Create an event and invite your people.</Text></GlassCard> : <View style={styles.grid}>{events.slice(0, 4).map(e => {
+      const cover = coverOverrides[e.id] || e.cover;
+      return <Pressable key={e.id} onPress={() => router.push({ pathname:'/event/[id]', params:{id:e.id} })} style={styles.eventCard}>
+        <View style={styles.cover}>
+          {cover ? <Image source={{ uri: cover }} style={styles.coverImage} /> : null}
+          <LinearGradient colors={["rgba(10,15,21,0.00)", "rgba(10,15,21,0.88)"]} locations={[0, 1]} style={styles.eventInfo}>
+            <View style={styles.eventInfoTint} />
+            <View style={styles.eventInfoContent}><Text style={styles.eventName} numberOfLines={1}>{e.name}</Text><Text style={styles.eventMeta}>{e.people || '—'} people · {e.photos || '—'} photos</Text></View>
+          </LinearGradient>
+        </View>
+      </Pressable>;
+    })}</View>}</View>
   </Screen><BottomNav active="home" /></View>;
 }
 
