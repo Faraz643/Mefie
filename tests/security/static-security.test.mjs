@@ -25,6 +25,16 @@ test("creator identity is always derived from auth.uid()", async () => {
   assert.match(sql, /revoke all on function public\.create_event\(text, text\) from public, anon/);
 });
 
+test("create_event qualifies invite_code to avoid PL/pgSQL output-variable ambiguity", async () => {
+  const sql = await migration("20260924061714_fix_create_event_invite_code_ambiguity.sql");
+  assert.match(sql, /returns table\(id uuid, invite_code text\)/);
+  assert.match(sql, /from public\.events e\s+where e\.invite_code = safe_code/);
+  assert.doesNotMatch(sql, /from public\.events\s+where invite_code = safe_code/);
+  assert.match(sql, /extensions\.gen_random_bytes\(6\)/);
+  assert.match(sql, /revoke all on function public\.create_event\(text, text\) from public, anon/);
+  assert.match(sql, /grant execute on function public\.create_event\(text, text\) to authenticated/);
+});
+
 test("invite joins are atomic and authenticated", async () => {
   const sql = await migration("021_atomic_invite_join.sql");
   assert.match(sql, /on conflict \(event_id, auth_user_id\)/);
@@ -64,6 +74,7 @@ test("security-definer migrations pin the search_path", async () => {
     "026_secure_photo_delete_rpc.sql",
     "033_finalize_photo_upload_rpc.sql",
     "20260923120000_036_photo_orphan_cleanup.sql",
+    "20260924061714_fix_create_event_invite_code_ambiguity.sql",
   ];
   for (const file of files) {
     const sql = await migration(file);
