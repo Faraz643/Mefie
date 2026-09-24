@@ -9,14 +9,22 @@ const QUEUE_KEY = "mefie.photoUploadQueue.v1";
 const PHOTO_BUCKET = "photos";
 const MAX_ATTEMPTS = 8;
 const MAX_PHOTO_BYTES = 15 * 1024 * 1024;
+const MAX_SOURCE_BYTES = 40 * 1024 * 1024;
+const MAX_UPLOAD_DIMENSION = 4096;
+const FALLBACK_UPLOAD_DIMENSION = 3072;
+const FINAL_UPLOAD_DIMENSION = 2560;
+const MAX_UNCOMPRESSED_UPLOAD_BYTES = 8 * 1024 * 1024;
 const MAX_THUMBNAIL_DIMENSION = 600;
 const THUMBNAIL_COMPRESSION = 0.75;
-const UPLOAD_JPEG_COMPRESSION = 0.92;
+const UPLOAD_JPEG_COMPRESSION = 0.9;
+const FALLBACK_JPEG_COMPRESSION = 0.88;
+const FINAL_JPEG_COMPRESSION = 0.85;
 const CONCURRENCY = 1;
 const CAPTURE_IDLE_DELAY_MS = 1200;
 const RETRY_DELAYS = [1500, 3000, 7000, 15000, 30000, 60000, 120000, 300000];
 
 type PhotoDimensions = { width: number; height: number };
+type PreparedUpload = { uri: string; size: number; cleanup: () => Promise<void> };
 
 export type PhotoUploadJob = {
   id: string;
@@ -116,19 +124,14 @@ async function ensureDurableFile(job: PhotoUploadJob) {
 
   const directory = `${FileSystem.documentDirectory}mefie-pending`;
   const directoryInfo = await FileSystem.getInfoAsync(directory);
-  if (!directoryInfo.exists) {
-    await FileSystem.makeDirectoryAsync(directory, { intermediates: true });
-  }
-
+  if (!directoryInfo.exists) await FileSystem.makeDirectoryAsync(directory, { intermediates: true });
   await FileSystem.copyAsync({ from: job.uri, to: target });
   return target;
 }
 
 async function removeDurableFile(job: PhotoUploadJob) {
   const target = durableUri(job);
-  if (target) {
-    await FileSystem.deleteAsync(target, { idempotent: true }).catch(() => undefined);
-  }
+  if (target) await FileSystem.deleteAsync(target, { idempotent: true }).catch(() => undefined);
 }
 
 async function cleanupFailedStorageObjects(job: PhotoUploadJob) {
@@ -136,7 +139,6 @@ async function cleanupFailedStorageObjects(job: PhotoUploadJob) {
 
   const originalPath = `${job.eventId}/${job.id}.jpg`;
   const thumbnailPath = `${job.eventId}/${job.id}.thumb.jpg`;
-
   const { data: photoRow } = await supabase
     .from("photos")
     .select("id")
@@ -151,9 +153,7 @@ function isAlreadyExistsError(error: unknown) {
   const message = String((error as any)?.message ?? error ?? "");
   const name = String((error as any)?.name ?? "");
   const status = String((error as any)?.statusCode ?? (error as any)?.status ?? "");
-  return /already exists|duplicate|resource already exists|object already exists/i.test(
-    `${message} ${name} ${status}`,
-  );
+  return /already exists|duplicate|resource already exists|object already exists/i.test(`${message} ${name} ${status}`);
 }
 
 function imageDimensions(uri: string): Promise<PhotoDimensions> {
@@ -173,10 +173,7 @@ function imageDimensions(uri: string): Promise<PhotoDimensions> {
 }
 
 async function resolveDimensions(localUri: string, job: PhotoUploadJob) {
-  if (job.width && job.height && job.width > 0 && job.height > 0) {
-    return { width: job.width, height: job.height };
-  }
-
+  if (job.width && job.height && job.width > 0 && job.height > 0) return { width: job.width, height: job.height };
   const dimensions = await imageDimensions(localUri);
   job.width = dimensions.width;
   job.height = dimensions.height;
@@ -190,55 +187,112 @@ function sourceIsJpeg(job: PhotoUploadJob, uri: string) {
   return /\.(jpe?g)(?:[?#].*)?$/i.test(uri);
 }
 
-async function prepareUploadJpeg(localUri: string, job: PhotoUploadJob) {
-  if (sourceIsJpeg(job, localUri)) {
-    return { uri: localUri, cleanup: async () => undefined };
-  }
-
-  const normalized = await ImageManipulator.manipulateAsync(localUri, [], {
-    compress: UPLOAD_JPEG_COMPRESSION,
-    format: ImageManipulator.SaveFormat.JPEG,
-  });
-
-  const normalizedFile = new File(normalized.uri);
-  if (!normalizedFile.exists || !normalizedFile.size) {
-    throw new Error("Could not prepare the photo for upload.");
-  }
-
+function resizeForDimension(dimensions: PhotoDimensions, maxDimension: number) {
+  const scale = Math.min(1, maxDimension / Math.max(dimensions.width, dimensions.height));
   return {
-    uri: normalized.uri,
-    cleanup: async () => {
-      await FileSystem.deleteAsync(normalized.uri, { idempotent: true }).catch(() => undefined);
-    },
-  };
-}
-
-async function createThumbnail(localUri: string, dimensions: PhotoDimensions) {
-  const scale = Math.min(1, MAX_THUMBNAIL_DIMENSION / Math.max(dimensions.width, dimensions.height));
-  const resize = {
     width: Math.max(1, Math.round(dimensions.width * scale)),
     height: Math.max(1, Math.round(dimensions.height * scale)),
   };
+}
 
-  const result = await ImageManipulator.manipulateAsync(localUri, [{ resize }], {
-    compress: THUMBNAIL_COMPRESSION,
-    format: ImageManipulator.SaveFormat.JPEG,
-  });
+async function createOptimizedJpeg(localUri: string, dimensions: PhotoDimensions, maxDimension: number, compression: number) {
+  const resize = resizeForDimension(dimensions, maxDimension);
+  const result = await ImageManipulator.manipulateAsync(
+    localUri,
+    [{ resize }],
+    { compress: compression, format: ImageManipulator.SaveFormat.JPEG },
+  );
+  const file = new File(result.uri);
+  if (!file.exists || !file.size) {
+    await FileSystem.deleteAsync(result.uri, { idempotent: true }).catch(() => undefined);
+    throw new Error("Could not prepare the photo for upload.");
+  }
+  return { uri: result.uri, size: file.size };
+}
 
-  const thumbnailFile = new File(result.uri);
-  if (!thumbnailFile.exists || !thumbnailFile.size) {
-    throw new Error("Could not create the gallery thumbnail.");
+async function prepareUploadJpeg(localUri: string, job: PhotoUploadJob, dimensions: PhotoDimensions, sourceSize: number): Promise<PreparedUpload> {
+  const needsOptimization =
+    !sourceIsJpeg(job, localUri) ||
+    sourceSize > MAX_UNCOMPRESSED_UPLOAD_BYTES ||
+    Math.max(dimensions.width, dimensions.height) > MAX_UPLOAD_DIMENSION;
+
+  if (!needsOptimization) {
+    return { uri: localUri, size: sourceSize, cleanup: async () => undefined };
   }
 
+  const generated: string[] = [];
+  try {
+    let candidate = await createOptimizedJpeg(localUri, dimensions, MAX_UPLOAD_DIMENSION, UPLOAD_JPEG_COMPRESSION);
+    generated.push(candidate.uri);
+
+    if (candidate.size > MAX_PHOTO_BYTES) {
+      candidate = await createOptimizedJpeg(localUri, dimensions, FALLBACK_UPLOAD_DIMENSION, FALLBACK_JPEG_COMPRESSION);
+      generated.push(candidate.uri);
+    }
+
+    if (candidate.size > MAX_PHOTO_BYTES) {
+      candidate = await createOptimizedJpeg(localUri, dimensions, FINAL_UPLOAD_DIMENSION, FINAL_JPEG_COMPRESSION);
+      generated.push(candidate.uri);
+    }
+
+    if (candidate.size > MAX_PHOTO_BYTES) {
+      throw new Error("Photo is too large after optimization. Please choose a smaller photo.");
+    }
+
+    const finalUri = candidate.uri;
+    return {
+      uri: finalUri,
+      size: candidate.size,
+      cleanup: async () => {
+        await Promise.all(generated.map((uri) => FileSystem.deleteAsync(uri, { idempotent: true }).catch(() => undefined)));
+      },
+    };
+  } catch (error) {
+    await Promise.all(generated.map((uri) => FileSystem.deleteAsync(uri, { idempotent: true }).catch(() => undefined)));
+    throw error;
+  }
+}
+
+async function createThumbnail(localUri: string, dimensions: PhotoDimensions) {
+  const resize = resizeForDimension(dimensions, MAX_THUMBNAIL_DIMENSION);
+  const result = await ImageManipulator.manipulateAsync(
+    localUri,
+    [{ resize }],
+    { compress: THUMBNAIL_COMPRESSION, format: ImageManipulator.SaveFormat.JPEG },
+  );
+  const thumbnailFile = new File(result.uri);
+  if (!thumbnailFile.exists || !thumbnailFile.size) {
+    await FileSystem.deleteAsync(result.uri, { idempotent: true }).catch(() => undefined);
+    throw new Error("Could not create the gallery thumbnail.");
+  }
   return { uri: result.uri, size: thumbnailFile.size };
+}
+
+async function uploadLocalFile(path: string, localUri: string, contentType: string, cacheControl: string) {
+  // React Native Storage uploads require an ArrayBuffer. Keep this buffer scoped
+  // to this function so the original and thumbnail buffers are never retained together.
+  const file = new File(localUri);
+  const body = await file.arrayBuffer();
+  if (!body.byteLength) throw new Error("Could not read the photo for upload.");
+
+  const { data, error } = await supabase!.storage.from(PHOTO_BUCKET).upload(path, body, {
+    contentType,
+    upsert: false,
+    cacheControl,
+  });
+
+  if (error && !isAlreadyExistsError(error)) {
+    const status = (error as any)?.statusCode ?? (error as any)?.status ?? "unknown";
+    const code = (error as any)?.name ?? (error as any)?.code ?? "unknown";
+    throw new Error(`Photo storage upload failed (status=${status}, code=${code}): ${error.message}`);
+  }
+
+  return { data, size: body.byteLength };
 }
 
 function summaryFor(eventId?: string): PhotoQueueSummary {
   const scoped = eventId ? jobs.filter((job) => job.eventId === eventId) : jobs;
-  const withErrors = scoped
-    .filter((job) => job.error)
-    .sort((a, b) => b.createdAt - a.createdAt);
-
+  const withErrors = scoped.filter((job) => job.error).sort((a, b) => b.createdAt - a.createdAt);
   return {
     queued: scoped.filter((job) => job.status === "queued").length,
     uploading: scoped.filter((job) => job.status === "uploading").length,
@@ -263,9 +317,7 @@ async function processJob(jobId: string) {
 
     const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
     if (sessionError) throw new Error(`Authentication session error: ${sessionError.message}`);
-    if (!sessionData.session?.access_token) {
-      throw new Error("Mefie has no active authentication session. Please reconnect.");
-    }
+    if (!sessionData.session?.access_token) throw new Error("Mefie has no active authentication session. Please reconnect.");
 
     const { data: membership, error: membershipError } = await supabase
       .from("participants")
@@ -275,9 +327,7 @@ async function processJob(jobId: string) {
       .maybeSingle();
     if (membershipError) throw new Error(`Membership check failed: ${membershipError.message}`);
     if (!membership) throw new Error("Your event membership is missing. Reconnect to this event and try again.");
-    if (membership.auth_user_id !== userId) {
-      throw new Error("This event membership belongs to a different Mefie session.");
-    }
+    if (membership.auth_user_id !== userId) throw new Error("This event membership belongs to a different Mefie session.");
 
     const localUri = await ensureDurableFile(job);
     const info = await FileSystem.getInfoAsync(localUri);
@@ -286,85 +336,41 @@ async function processJob(jobId: string) {
     const originalFile = new File(localUri);
     const originalSize = originalFile.size;
     if (!originalSize || originalSize <= 0) throw new Error("The captured photo is empty.");
-    if (originalSize > MAX_PHOTO_BYTES * 2) {
-      throw new Error("Photo is too large. Please capture a smaller image.");
-    }
+    if (originalSize > MAX_SOURCE_BYTES) throw new Error("This photo is too large to process on this device.");
 
     const dimensions = await resolveDimensions(localUri, job);
-    const prepared = await prepareUploadJpeg(localUri, job);
+    const prepared = await prepareUploadJpeg(localUri, job, dimensions, originalSize);
     uploadSourceCleanup = prepared.cleanup;
 
-    const uploadFile = new File(prepared.uri);
-    const fileSize = uploadFile.size;
-    if (!fileSize || fileSize <= 0) throw new Error("Could not read the prepared photo.");
-    if (fileSize > MAX_PHOTO_BYTES) {
-      throw new Error("Photo is too large. Please capture a smaller image.");
-    }
-
-    const body = await uploadFile.arrayBuffer();
-    if (!body.byteLength) throw new Error("Could not read the captured photo.");
-
     const path = `${job.eventId}/${job.id}.jpg`;
-    const { data: uploadData, error: uploadError } = await supabase.storage
-      .from(PHOTO_BUCKET)
-      .upload(path, body, {
-        contentType: "image/jpeg",
-        upsert: false,
-        cacheControl: "3600",
-      });
-
-    // Storage uploads are intentionally non-upserting so a retry can never
-    // replace an already accepted photo. A deterministic path is idempotent:
-    // if a previous attempt created the object, continue to DB finalization.
-    if (uploadError && !isAlreadyExistsError(uploadError)) {
-      const status = (uploadError as any)?.statusCode ?? (uploadError as any)?.status ?? "unknown";
-      const code = (uploadError as any)?.name ?? (uploadError as any)?.code ?? "unknown";
-      throw new Error(`Photo storage upload failed (status=${status}, code=${code}): ${uploadError.message}`);
-    }
-    if (!uploadData && uploadError && !isAlreadyExistsError(uploadError)) {
-      throw new Error(`Photo storage upload failed: ${uploadError.message}`);
-    }
+    const uploadResult = await uploadLocalFile(path, prepared.uri, "image/jpeg", "3600");
 
     const thumbnail = await createThumbnail(prepared.uri, dimensions);
     const thumbnailPath = `${job.eventId}/${job.id}.thumb.jpg`;
     try {
-      const thumbnailBody = await new File(thumbnail.uri).arrayBuffer();
-      const { error: thumbnailUploadError } = await supabase.storage
-        .from(PHOTO_BUCKET)
-        .upload(thumbnailPath, thumbnailBody, {
-          contentType: "image/jpeg",
-          upsert: false,
-          cacheControl: "86400",
-        });
-
-      if (thumbnailUploadError && !isAlreadyExistsError(thumbnailUploadError)) {
-        throw new Error(`Gallery thumbnail upload failed: ${thumbnailUploadError.message}`);
-      }
+      await uploadLocalFile(thumbnailPath, thumbnail.uri, "image/jpeg", "86400");
     } finally {
       await FileSystem.deleteAsync(thumbnail.uri, { idempotent: true }).catch(() => undefined);
     }
 
-    const { data: photoId, error: finalizeError } = await supabase.rpc(
-      "finalize_photo_upload",
-      {
-        p_client_upload_id: job.id,
-        p_event_id: job.eventId,
-        p_participant_id: job.participantId,
-        p_storage_path: path,
-        p_original_filename: `mefie-${job.id}.jpg`,
-        p_file_size: body.byteLength,
-        p_width: dimensions.width,
-        p_height: dimensions.height,
-      },
-    );
+    const { data: photoId, error: finalizeError } = await supabase.rpc("finalize_photo_upload", {
+      p_client_upload_id: job.id,
+      p_event_id: job.eventId,
+      p_participant_id: job.participantId,
+      p_storage_path: path,
+      p_original_filename: `mefie-${job.id}.jpg`,
+      p_file_size: uploadResult.size,
+      p_width: dimensions.width,
+      p_height: dimensions.height,
+    });
 
     if (finalizeError) throw new Error(finalizeError.message);
     if (!photoId) throw new Error("Photo metadata could not be finalized.");
 
-    const { data: thumbnailLinked, error: thumbnailLinkError } = await supabase.rpc(
-      "set_photo_thumbnail",
-      { p_photo_id: photoId, p_thumbnail_path: thumbnailPath },
-    );
+    const { data: thumbnailLinked, error: thumbnailLinkError } = await supabase.rpc("set_photo_thumbnail", {
+      p_photo_id: photoId,
+      p_thumbnail_path: thumbnailPath,
+    });
     if (thumbnailLinkError) throw new Error(thumbnailLinkError.message);
     if (!thumbnailLinked) throw new Error("Gallery thumbnail could not be linked.");
 
@@ -379,13 +385,9 @@ async function processJob(jobId: string) {
     current.attempts += 1;
     current.status = current.attempts >= MAX_ATTEMPTS ? "failed" : "queued";
     current.error = message;
-    current.nextAttemptAt =
-      Date.now() + (RETRY_DELAYS[Math.min(current.attempts - 1, RETRY_DELAYS.length - 1)] || 300000);
+    current.nextAttemptAt = Date.now() + (RETRY_DELAYS[Math.min(current.attempts - 1, RETRY_DELAYS.length - 1)] || 300000);
 
-    if (current.status === "failed") {
-      await cleanupFailedStorageObjects(current);
-    }
-
+    if (current.status === "failed") await cleanupFailedStorageObjects(current);
     await persistQueue();
   } finally {
     await uploadSourceCleanup();
@@ -411,10 +413,7 @@ async function processQueue() {
     const available = jobs
       .filter((job) => job.status === "queued" && job.nextAttemptAt <= Date.now())
       .slice(0, CONCURRENCY);
-
-    if (available.length) {
-      await Promise.all(available.map((job) => processJob(job.id)));
-    }
+    if (available.length) await Promise.all(available.map((job) => processJob(job.id)));
   } finally {
     processing = false;
     scheduleNext();
@@ -423,14 +422,9 @@ async function processQueue() {
 
 function scheduleNext() {
   if (timer) clearTimeout(timer);
-
   const next = jobs
     .filter((job) => job.status === "queued")
-    .reduce<number | null>(
-      (soonest, job) => (soonest === null ? job.nextAttemptAt : Math.min(soonest, job.nextAttemptAt)),
-      null,
-    );
-
+    .reduce<number | null>((soonest, job) => (soonest === null ? job.nextAttemptAt : Math.min(soonest, job.nextAttemptAt)), null);
   if (next === null) return;
 
   const delay = Math.max(250, Math.min(Math.max(0, next - Date.now()), 30000));
@@ -453,9 +447,7 @@ export async function startPhotoUploadQueue() {
   void processQueue();
 }
 
-export async function enqueuePhotoUpload(
-  input: Omit<PhotoUploadJob, "createdAt" | "attempts" | "nextAttemptAt" | "status">,
-) {
+export async function enqueuePhotoUpload(input: Omit<PhotoUploadJob, "createdAt" | "attempts" | "nextAttemptAt" | "status">) {
   await loadQueue();
 
   const job: PhotoUploadJob = {
@@ -491,7 +483,6 @@ export async function deferPhotoUploads(delayMs = CAPTURE_IDLE_DELAY_MS) {
 export async function retryFailedPhotoUploads(eventId?: string) {
   await loadQueue();
   const now = Date.now();
-
   for (const job of jobs) {
     if (job.status === "failed" && (!eventId || job.eventId === eventId)) {
       job.status = "queued";
@@ -500,7 +491,6 @@ export async function retryFailedPhotoUploads(eventId?: string) {
       delete job.error;
     }
   }
-
   await persistQueue();
   void processQueue();
 }
