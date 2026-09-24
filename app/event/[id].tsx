@@ -65,6 +65,7 @@ export default function EventScreen() {
   const [temporaryInvite, setTemporaryInvite] = useState<{ token: string; expiresAt: string } | null>(null);
   const [temporaryInviteBusy, setTemporaryInviteBusy] = useState(false);
   const [temporarySecondsLeft, setTemporarySecondsLeft] = useState(0);
+  const [leavingEvent, setLeavingEvent] = useState(false);
   useEffect(() => {
     if (backgroundImage) {
       setStoredBackgroundImage(backgroundImage);
@@ -357,6 +358,43 @@ export default function EventScreen() {
               } catch (e: any) {
                 Alert.alert("Could not remove member", e?.message || "Please try again.");
               } finally {
+                setActionBusy(false);
+              }
+            })();
+          },
+        },
+      ],
+    );
+  };
+
+  const leaveEvent = () => {
+    if (isCreator || actionBusy || leavingEvent || !supabase) return;
+    Alert.alert(
+      "Leave event?",
+      "You will leave this event and it will disappear from your event list. Your photos already shared to the event will remain available to the other participants.",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Leave event",
+          style: "destructive",
+          onPress: () => {
+            void (async () => {
+              if (!supabase) return;
+              setLeavingEvent(true);
+              setActionBusy(true);
+              try {
+                const { data, error: leaveError } = await supabase.rpc(
+                  "leave_event",
+                  { p_event_id: String(id) },
+                );
+                if (leaveError) throw leaveError;
+                if (!data) throw new Error("You are not a participant in this event.");
+                setParticipantId(null);
+                router.replace("/events");
+              } catch (e: any) {
+                Alert.alert("Could not leave event", e?.message || "Please try again.");
+              } finally {
+                setLeavingEvent(false);
                 setActionBusy(false);
               }
             })();
@@ -723,6 +761,20 @@ ${link}`,
                     <MaterialCommunityIcons
                       name="trash-can-outline"
                       size={20}
+                      color="rgba(255,255,255,.92)"
+                    />
+                  </IconButton>
+                ) : null}
+                {!isCreator ? (
+                  <IconButton
+                    plain
+                    accessibilityLabel="Leave event"
+                    onPress={leaveEvent}
+                    disabled={actionBusy || leavingEvent}
+                  >
+                    <MaterialCommunityIcons
+                      name="exit-to-app"
+                      size={21}
                       color="rgba(255,255,255,.92)"
                     />
                   </IconButton>
