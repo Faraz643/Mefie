@@ -2,7 +2,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { File } from "expo-file-system";
 import * as ImageManipulator from "expo-image-manipulator";
 import * as FileSystem from "expo-file-system/legacy";
-import { AppState, AppStateStatus } from "react-native";
+import { AppState, AppStateStatus, Image as RNImage } from "react-native";
 import { ensureAnonymousAuth, supabase } from "./app-context";
 
 const QUEUE_KEY = "mefie.photoUploadQueue.v1";
@@ -11,9 +11,12 @@ const MAX_ATTEMPTS = 8;
 const MAX_PHOTO_BYTES = 15 * 1024 * 1024;
 const MAX_THUMBNAIL_DIMENSION = 600;
 const THUMBNAIL_COMPRESSION = 0.75;
+const UPLOAD_JPEG_COMPRESSION = 0.92;
 const CONCURRENCY = 1;
 const CAPTURE_IDLE_DELAY_MS = 1200;
 const RETRY_DELAYS = [1500, 3000, 7000, 15000, 30000, 60000, 120000, 300000];
+
+type PhotoDimensions = { width: number; height: number };
 
 export type PhotoUploadJob = {
   id: string;
@@ -22,6 +25,7 @@ export type PhotoUploadJob = {
   uri: string;
   width: number | null;
   height: number | null;
+  mimeType?: string | null;
   createdAt: number;
   attempts: number;
   nextAttemptAt: number;
@@ -71,7 +75,10 @@ async function loadQueue() {
             .map((job) => ({
               ...job,
               status: job.status === "failed" ? "failed" : "queued",
-              nextAttemptAt: Math.min(job.nextAttemptAt || Date.now(), Date.now()),
+              attempts: Number.isFinite(job.attempts) ? Math.max(0, job.attempts) : 0,
+              nextAttemptAt: Number.isFinite(job.nextAttemptAt) ? job.nextAttemptAt : Date.now(),
+              width: Number.isFinite(job.width) && job.width > 0 ? job.width : null,
+              height: Number.isFinite(job.height) && job.height > 0 ? job.height : null,
             }));
         }
       }
@@ -136,32 +143,82 @@ async function cleanupFailedStorageObjects(job: PhotoUploadJob) {
     .eq("client_upload_id", job.id)
     .maybeSingle();
 
-  // Never delete the original after the DB row exists. The photo can safely
-  // fall back to its original while the thumbnail is repaired later.
-  const paths = photoRow?.id
-    ? [thumbnailPath]
-    : [originalPath, thumbnailPath];
-
-  await supabase.storage
-    .from(PHOTO_BUCKET)
-    .remove(paths)
-    .catch(() => undefined);
+  const paths = photoRow?.id ? [thumbnailPath] : [originalPath, thumbnailPath];
+  await supabase.storage.from(PHOTO_BUCKET).remove(paths).catch(() => undefined);
 }
 
-async function createThumbnail(localUri: string, job: PhotoUploadJob) {
-  const width = job.width ?? null;
-  const height = job.height ?? null;
+function isAlreadyExistsError(error: unknown) {
+  const message = String((error as any)?.message ?? error ?? "");
+  const name = String((error as any)?.name ?? "");
+  const status = String((error as any)?.statusCode ?? (error as any)?.status ?? "");
+  return /already exists|duplicate|resource already exists|object already exists/i.test(
+    `${message} ${name} ${status}`,
+  );
+}
 
-  let resize: { width?: number; height?: number };
-  if (width && height) {
-    const scale = Math.min(1, MAX_THUMBNAIL_DIMENSION / Math.max(width, height));
-    resize = {
-      width: Math.max(1, Math.round(width * scale)),
-      height: Math.max(1, Math.round(height * scale)),
-    };
-  } else {
-    resize = { width: MAX_THUMBNAIL_DIMENSION };
+function imageDimensions(uri: string): Promise<PhotoDimensions> {
+  return new Promise((resolve, reject) => {
+    RNImage.getSize(
+      uri,
+      (width, height) => {
+        if (Number.isFinite(width) && width > 0 && Number.isFinite(height) && height > 0) {
+          resolve({ width: Math.round(width), height: Math.round(height) });
+        } else {
+          reject(new Error("The captured photo has invalid dimensions."));
+        }
+      },
+      (message) => reject(new Error(message || "Could not read photo dimensions.")),
+    );
+  });
+}
+
+async function resolveDimensions(localUri: string, job: PhotoUploadJob) {
+  if (job.width && job.height && job.width > 0 && job.height > 0) {
+    return { width: job.width, height: job.height };
   }
+
+  const dimensions = await imageDimensions(localUri);
+  job.width = dimensions.width;
+  job.height = dimensions.height;
+  await persistQueue();
+  return dimensions;
+}
+
+function sourceIsJpeg(job: PhotoUploadJob, uri: string) {
+  const mimeType = job.mimeType?.toLowerCase() ?? "";
+  if (mimeType) return mimeType === "image/jpeg" || mimeType === "image/jpg";
+  return /\.(jpe?g)(?:[?#].*)?$/i.test(uri);
+}
+
+async function prepareUploadJpeg(localUri: string, job: PhotoUploadJob) {
+  if (sourceIsJpeg(job, localUri)) {
+    return { uri: localUri, cleanup: async () => undefined };
+  }
+
+  const normalized = await ImageManipulator.manipulateAsync(localUri, [], {
+    compress: UPLOAD_JPEG_COMPRESSION,
+    format: ImageManipulator.SaveFormat.JPEG,
+  });
+
+  const normalizedFile = new File(normalized.uri);
+  if (!normalizedFile.exists || !normalizedFile.size) {
+    throw new Error("Could not prepare the photo for upload.");
+  }
+
+  return {
+    uri: normalized.uri,
+    cleanup: async () => {
+      await FileSystem.deleteAsync(normalized.uri, { idempotent: true }).catch(() => undefined);
+    },
+  };
+}
+
+async function createThumbnail(localUri: string, dimensions: PhotoDimensions) {
+  const scale = Math.min(1, MAX_THUMBNAIL_DIMENSION / Math.max(dimensions.width, dimensions.height));
+  const resize = {
+    width: Math.max(1, Math.round(dimensions.width * scale)),
+    height: Math.max(1, Math.round(dimensions.height * scale)),
+  };
 
   const result = await ImageManipulator.manipulateAsync(localUri, [{ resize }], {
     compress: THUMBNAIL_COMPRESSION,
@@ -175,11 +232,13 @@ async function createThumbnail(localUri: string, job: PhotoUploadJob) {
 
   return { uri: result.uri, size: thumbnailFile.size };
 }
+
 function summaryFor(eventId?: string): PhotoQueueSummary {
   const scoped = eventId ? jobs.filter((job) => job.eventId === eventId) : jobs;
   const withErrors = scoped
     .filter((job) => job.error)
     .sort((a, b) => b.createdAt - a.createdAt);
+
   return {
     queued: scoped.filter((job) => job.status === "queued").length,
     uploading: scoped.filter((job) => job.status === "uploading").length,
@@ -195,6 +254,7 @@ async function processJob(jobId: string) {
   job.status = "uploading";
   notify();
 
+  let uploadSourceCleanup = async () => undefined;
   try {
     if (!supabase) throw new Error("Cloud connection is not configured.");
 
@@ -223,16 +283,25 @@ async function processJob(jobId: string) {
     const info = await FileSystem.getInfoAsync(localUri);
     if (!info.exists) throw new Error("The captured photo is no longer available on this device.");
 
-    const file = new File(localUri);
-    const fileSize = file.size;
-    if (!fileSize || fileSize <= 0) throw new Error("The captured photo is empty.");
+    const originalFile = new File(localUri);
+    const originalSize = originalFile.size;
+    if (!originalSize || originalSize <= 0) throw new Error("The captured photo is empty.");
+    if (originalSize > MAX_PHOTO_BYTES * 2) {
+      throw new Error("Photo is too large. Please capture a smaller image.");
+    }
+
+    const dimensions = await resolveDimensions(localUri, job);
+    const prepared = await prepareUploadJpeg(localUri, job);
+    uploadSourceCleanup = prepared.cleanup;
+
+    const uploadFile = new File(prepared.uri);
+    const fileSize = uploadFile.size;
+    if (!fileSize || fileSize <= 0) throw new Error("Could not read the prepared photo.");
     if (fileSize > MAX_PHOTO_BYTES) {
       throw new Error("Photo is too large. Please capture a smaller image.");
     }
 
-    // Read the JPEG directly as binary. This avoids the previous base64 string
-    // + decode() path and removes a large temporary JS string from memory.
-    const body = await file.arrayBuffer();
+    const body = await uploadFile.arrayBuffer();
     if (!body.byteLength) throw new Error("Could not read the captured photo.");
 
     const path = `${job.eventId}/${job.id}.jpg`;
@@ -244,16 +313,19 @@ async function processJob(jobId: string) {
         cacheControl: "3600",
       });
 
-    if (uploadError && !/already exists|duplicate/i.test(uploadError.message)) {
+    // Storage uploads are intentionally non-upserting so a retry can never
+    // replace an already accepted photo. A deterministic path is idempotent:
+    // if a previous attempt created the object, continue to DB finalization.
+    if (uploadError && !isAlreadyExistsError(uploadError)) {
       const status = (uploadError as any)?.statusCode ?? (uploadError as any)?.status ?? "unknown";
       const code = (uploadError as any)?.name ?? (uploadError as any)?.code ?? "unknown";
       throw new Error(`Photo storage upload failed (status=${status}, code=${code}): ${uploadError.message}`);
     }
-    if (!uploadData && uploadError) {
+    if (!uploadData && uploadError && !isAlreadyExistsError(uploadError)) {
       throw new Error(`Photo storage upload failed: ${uploadError.message}`);
     }
 
-    const thumbnail = await createThumbnail(localUri, job);
+    const thumbnail = await createThumbnail(prepared.uri, dimensions);
     const thumbnailPath = `${job.eventId}/${job.id}.thumb.jpg`;
     try {
       const thumbnailBody = await new File(thumbnail.uri).arrayBuffer();
@@ -264,7 +336,8 @@ async function processJob(jobId: string) {
           upsert: false,
           cacheControl: "86400",
         });
-      if (thumbnailUploadError && !/already exists|duplicate/i.test(thumbnailUploadError.message)) {
+
+      if (thumbnailUploadError && !isAlreadyExistsError(thumbnailUploadError)) {
         throw new Error(`Gallery thumbnail upload failed: ${thumbnailUploadError.message}`);
       }
     } finally {
@@ -280,8 +353,8 @@ async function processJob(jobId: string) {
         p_storage_path: path,
         p_original_filename: `mefie-${job.id}.jpg`,
         p_file_size: body.byteLength,
-        p_width: job.width,
-        p_height: job.height,
+        p_width: dimensions.width,
+        p_height: dimensions.height,
       },
     );
 
@@ -310,12 +383,12 @@ async function processJob(jobId: string) {
       Date.now() + (RETRY_DELAYS[Math.min(current.attempts - 1, RETRY_DELAYS.length - 1)] || 300000);
 
     if (current.status === "failed") {
-      // Once retries are exhausted, clean up the deterministic Storage object
-      // if a previous attempt created it without a corresponding DB row.
       await cleanupFailedStorageObjects(current);
     }
 
     await persistQueue();
+  } finally {
+    await uploadSourceCleanup();
   }
 }
 
@@ -350,6 +423,7 @@ async function processQueue() {
 
 function scheduleNext() {
   if (timer) clearTimeout(timer);
+
   const next = jobs
     .filter((job) => job.status === "queued")
     .reduce<number | null>(
@@ -358,7 +432,8 @@ function scheduleNext() {
     );
 
   if (next === null) return;
-  const delay = Math.max(250, Math.min(next - Date.now(), 30000));
+
+  const delay = Math.max(250, Math.min(Math.max(0, next - Date.now()), 30000));
   timer = setTimeout(() => {
     timer = null;
     void processQueue();
