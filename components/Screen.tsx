@@ -51,10 +51,11 @@ export function BackButton() {
       setCanLeaveEvent(false);
       return () => { active = false; };
     }
+    const client = supabase;
     void (async () => {
       try {
         const sessionId = await getSessionId();
-        const { data, error } = await supabase
+        const { data, error } = await client
           .from("events")
           .select("creator_auth_user_id")
           .eq("id", eventId)
@@ -70,6 +71,7 @@ export function BackButton() {
 
   const leaveEvent = () => {
     if (!canLeaveEvent || leavingEvent || !supabase || !eventId) return;
+    const client = supabase;
     Alert.alert(
       "Leave event?",
       "You will leave this event and it will disappear from your event list. Photos already shared to the event will remain for the other participants.",
@@ -82,7 +84,7 @@ export function BackButton() {
             void (async () => {
               setLeavingEvent(true);
               try {
-                const { data, error } = await supabase.rpc("leave_event", {
+                const { data, error } = await client.rpc("leave_event", {
                   p_event_id: eventId,
                 });
                 if (error) throw error;
@@ -111,7 +113,6 @@ export function BackButton() {
           plain
           accessibilityLabel="Leave event"
           onPress={leaveEvent}
-          disabled={leavingEvent}
         >
           <MaterialCommunityIcons name="exit-to-app" size={20} color={colors.white} />
         </IconButton>
