@@ -1,9 +1,15 @@
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { Image as ExpoImage } from "expo-image";
 import { supabase } from "./app-context";
 
 export const PHOTO_SIGNED_URL_TTL = 60 * 60;
 export const PHOTO_PREVIEW_WIDTH = 600;
 export const PHOTO_PREVIEW_HEIGHT = 600;
 export const PHOTO_PREVIEW_QUALITY = 75;
+
+const PHOTO_URL_CACHE_TTL_MS = 50 * 60 * 1000;
+const PHOTO_URL_CACHE_PREFIX = "mefie.cache.photo-url.v1:";
+const PREFETCH_LIMIT = 40;
 
 type PhotoTransform = {
   width: number;
@@ -12,9 +18,14 @@ type PhotoTransform = {
   resize: "cover" | "contain" | "fill";
 };
 
+type CachedPhotoUrls = {
+  publicUrl: string | null;
+  previewUrl: string | null;
+  cachedAt: number;
+};
+
 // Generated thumbnails are preferred. For legacy photos that do not have a
 // thumbnail_path yet, use Supabase's private signed-image transform by default.
-// Set EXPO_PUBLIC_ENABLE_STORAGE_TRANSFORMS=false to disable that fallback.
 const ENABLE_REMOTE_STORAGE_TRANSFORMS = process.env.EXPO_PUBLIC_ENABLE_STORAGE_TRANSFORMS !== "false";
 
 export const PHOTO_GALLERY_TRANSFORM: PhotoTransform = {
@@ -23,6 +34,56 @@ export const PHOTO_GALLERY_TRANSFORM: PhotoTransform = {
   quality: PHOTO_PREVIEW_QUALITY,
   resize: "cover",
 };
+
+const memoryUrlCache = new Map<string, CachedPhotoUrls>();
+
+function photoUrlCacheKey(storagePath: string, thumbnailPath: string | null | undefined) {
+  return `${PHOTO_URL_CACHE_PREFIX}${storagePath}|${thumbnailPath || ""}`;
+}
+
+function isFresh(cache: CachedPhotoUrls | null | undefined) {
+  return !!cache && Date.now() - cache.cachedAt < PHOTO_URL_CACHE_TTL_MS;
+}
+
+async function readCachedPhotoUrls(
+  storagePath: string,
+  thumbnailPath: string | null | undefined,
+): Promise<CachedPhotoUrls | null> {
+  if (!storagePath) return null;
+  const key = photoUrlCacheKey(storagePath, thumbnailPath);
+  const memory = memoryUrlCache.get(key);
+  if (isFresh(memory)) return memory!;
+
+  try {
+    const raw = await AsyncStorage.getItem(key);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as CachedPhotoUrls;
+    if (!isFresh(parsed)) {
+      await AsyncStorage.removeItem(key).catch(() => undefined);
+      return null;
+    }
+    memoryUrlCache.set(key, parsed);
+    return parsed;
+  } catch {
+    return null;
+  }
+}
+
+async function writeCachedPhotoUrls(
+  storagePath: string,
+  thumbnailPath: string | null | undefined,
+  urls: Omit<CachedPhotoUrls, "cachedAt">,
+) {
+  if (!storagePath) return;
+  const value: CachedPhotoUrls = { ...urls, cachedAt: Date.now() };
+  const key = photoUrlCacheKey(storagePath, thumbnailPath);
+  memoryUrlCache.set(key, value);
+  try {
+    await AsyncStorage.setItem(key, JSON.stringify(value));
+  } catch {
+    // The in-memory cache is still useful when AsyncStorage is unavailable.
+  }
+}
 
 async function mapWithConcurrency<T, R>(
   items: T[],
@@ -85,47 +146,99 @@ export async function signPhotoPreviewPath(
   return data?.signedUrl || null;
 }
 
+async function resolvePhotoUrls<T extends {
+  storage_path?: string | null;
+  thumbnail_path?: string | null;
+  public_url?: string | null;
+  preview_url?: string | null;
+}>(photo: T, originalUrls: Map<string, string>) {
+  const storagePath = photo.storage_path || "";
+  if (!storagePath) {
+    return { publicUrl: photo.public_url || null, previewUrl: photo.preview_url || null };
+  }
+
+  const cached = await readCachedPhotoUrls(storagePath, photo.thumbnail_path);
+  if (cached?.publicUrl || cached?.previewUrl) {
+    return {
+      publicUrl: cached.publicUrl || photo.public_url || null,
+      previewUrl: cached.previewUrl || photo.preview_url || cached.publicUrl || null,
+    };
+  }
+
+  const publicUrl = originalUrls.get(storagePath) || photo.public_url || null;
+  let previewUrl: string | null = null;
+
+  if (photo.thumbnail_path) {
+    try {
+      previewUrl = await signPhotoPath(photo.thumbnail_path);
+    } catch {
+      // Fall back to a transformed origin image if the physical thumbnail is missing.
+    }
+  }
+
+  if (!previewUrl && ENABLE_REMOTE_STORAGE_TRANSFORMS) {
+    try {
+      previewUrl = await signPhotoPreviewPath(storagePath);
+    } catch {
+      // Image transformations may be unavailable; keep the gallery usable.
+    }
+  }
+
+  previewUrl = previewUrl || publicUrl;
+
+  await writeCachedPhotoUrls(storagePath, photo.thumbnail_path, {
+    publicUrl,
+    previewUrl,
+  });
+
+  return { publicUrl, previewUrl };
+}
+
 export async function attachSignedPhotoUrls<
   T extends {
     storage_path?: string | null;
     thumbnail_path?: string | null;
+    public_url?: string | null;
+    preview_url?: string | null;
   },
 >(photos: T[]) {
-  const originalUrls = await signPhotoPaths(
-    photos.map((photo) => photo.storage_path || ""),
-  );
+  if (!photos.length) return [] as Array<T & { public_url: string | null; preview_url: string | null }>;
 
-  const previewUrls = await mapWithConcurrency(photos, 8, async (photo) => {
-    // New uploads have a physical thumbnail object. It is the cheapest and
-    // most predictable gallery source, so always prefer it over a transform.
-    if (photo.thumbnail_path) {
-      try {
-        return await signPhotoPath(photo.thumbnail_path);
-      } catch {
-        // Fall back to a transformed origin image if the thumbnail is missing.
-      }
-    }
+  // First resolve all original URLs in one request. Cached preview URLs are
+  // then reused below, so reopening an event does not create a new signed URL
+  // for every image on every render.
+  const pathsNeedingOriginalUrls = photos
+    .filter((photo) => {
+      const path = photo.storage_path || "";
+      const memory = path ? memoryUrlCache.get(photoUrlCacheKey(path, photo.thumbnail_path)) : null;
+      return !!path && !isFresh(memory) && !photo.public_url;
+    })
+    .map((photo) => photo.storage_path || "")
+    .filter(Boolean);
 
-    if (ENABLE_REMOTE_STORAGE_TRANSFORMS) {
-      try {
-        return await signPhotoPreviewPath(photo.storage_path);
-      } catch {
-        // Image transformations may be unavailable; keep the gallery usable.
-      }
-    }
+  const originalUrls = pathsNeedingOriginalUrls.length
+    ? await signPhotoPaths(pathsNeedingOriginalUrls)
+    : new Map<string, string>();
 
-    return photo.storage_path
-      ? originalUrls.get(photo.storage_path) || null
-      : null;
+  const resolved = await mapWithConcurrency(photos, 8, async (photo) => {
+    const urls = await resolvePhotoUrls(photo, originalUrls);
+    return {
+      ...photo,
+      public_url: urls.publicUrl,
+      preview_url: urls.previewUrl,
+    };
   });
 
-  return photos.map((photo, index) => ({
-    ...photo,
-    // public_url is retained as the full-resolution signed source for the
-    // photo viewer/download flow. preview_url is display-only.
-    public_url: photo.storage_path
-      ? originalUrls.get(photo.storage_path) || null
-      : null,
-    preview_url: previewUrls[index] || null,
-  }));
+  // Warm expo-image's disk/memory cache after the URLs are known. This is
+  // deliberately fire-and-forget so opening an event is never blocked by
+  // downloading the gallery.
+  const previewUrls = resolved
+    .slice(0, PREFETCH_LIMIT)
+    .map((photo) => photo.preview_url || photo.public_url)
+    .filter((url): url is string => !!url);
+  if (previewUrls.length) {
+    void ExpoImage.prefetch(previewUrls, "memory-disk").catch(() => undefined);
+  }
+
+  return resolved;
 }
