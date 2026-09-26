@@ -2,6 +2,7 @@ export default ({ config }: { config: any }) => ({
   ...config,
   expo: {
     ...config.expo,
+    owner: "farazbuilds_ai",
     name: "Mefie",
     slug: "mefie",
     scheme: "mefie",
@@ -59,7 +60,7 @@ export default ({ config }: { config: any }) => ({
     },
     extra: {
       ...config.expo?.extra,
-      eas: { projectId: "de23c6a0-c0ef-46fa-807e-326f6649dca1" },
+      eas: { projectId: "99e135d4-fc2a-4c7c-b33a-8a93d3ea803a" },
     },
   },
 });
