@@ -50,8 +50,6 @@ $$;
 revoke all on function public.delete_photos_as_authenticated_user(uuid[]) from public, anon;
 grant execute on function public.delete_photos_as_authenticated_user(uuid[]) to authenticated;
 
-revoke all on function public.rls_auto_enable() from public, anon, authenticated;
-
 drop policy if exists "avatar profiles insertable" on public.avatar_profiles;
 drop policy if exists "avatar profiles readable" on public.avatar_profiles;
 drop policy if exists "avatar profiles updateable" on public.avatar_profiles;
