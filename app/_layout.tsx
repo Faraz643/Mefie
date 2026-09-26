@@ -28,6 +28,14 @@ export default function RootLayout() {
     void startPhotoUploadQueue().catch((error) => {
       captureException(error, { area: "photo_upload_queue_start" });
     });
+
+    // TEMPORARY SENTRY VERIFICATION — remove after confirming the event appears
+    // in the Sentry dashboard with environment=development.
+    if (__DEV__) {
+      captureException(new Error("MEFIE SENTRY TEST"), {
+        area: "sentry_test",
+      });
+    }
   }, []);
 
   if (!fontsLoaded) return null;
