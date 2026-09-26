@@ -109,13 +109,18 @@ export async function setCachedEventDetail(eventId: string, detail: Omit<CachedE
   memoryDetails.set(eventId, value);
   try { await AsyncStorage.setItem(detailKey(eventId), JSON.stringify({ version: EVENT_DETAIL_VERSION, ...value })); } catch {}
 
-  void import("./photo-storage").then(async ({ materializeLocalPhotoPreviews }) => {
+  // Resolve remote storage paths and materialize the actual thumbnail bytes.
+  // The caller intentionally passes raw photo rows; resolving here guarantees
+  // the persistent local-media cache is populated even when the event screen
+  // itself is using a different URL resolution path.
+  void import("./photo-storage").then(async ({ attachSignedPhotoUrls, materializeLocalPhotoPreviews }) => {
     try {
-      const localPhotos = await materializeLocalPhotoPreviews(value.photos);
+      const resolved = await attachSignedPhotoUrls(value.photos);
+      const localPhotos = await materializeLocalPhotoPreviews(resolved);
       const latest = memoryDetails.get(eventId);
       const merged = {
         event: latest?.event ?? value.event,
-        photos: mergePhotoCache(latest?.photos ?? value.photos, localPhotos),
+        photos: mergePhotoCache(localPhotos, latest?.photos ?? value.photos),
         people: latest?.people ?? value.people,
         cachedAt: Date.now(),
       };
