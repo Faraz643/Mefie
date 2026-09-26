@@ -20,6 +20,20 @@ function normalizePeople(people: any[]) {
     return name && name !== "?" ? { ...person, display_name: name } : { ...person, display_name: "" };
   });
 }
+function mergePeople(freshPeople: any[], previousPeople: any[]) {
+  const previousById = new Map<string, any>();
+  for (const person of previousPeople || []) {
+    if (person?.id) previousById.set(String(person.id), person);
+  }
+  return freshPeople.map((person) => {
+    const previous = person?.id ? previousById.get(String(person.id)) : null;
+    const freshName = typeof person?.display_name === "string" ? person.display_name.trim() : "";
+    const previousName = typeof previous?.display_name === "string" ? previous.display_name.trim() : "";
+    return previousName && !freshName
+      ? { ...person, display_name: previousName }
+      : { ...person, display_name: freshName };
+  });
+}
 function hasCompletePeople(people: any[]) {
   return people.length === 0 || people.every((person) => typeof person?.display_name === "string" && person.display_name.trim() && person.display_name.trim() !== "?");
 }
@@ -99,11 +113,27 @@ export async function getCachedEventDetail(eventId: string): Promise<CachedEvent
 
 export async function setCachedEventDetail(eventId: string, detail: Omit<CachedEventDetail, "cachedAt">) {
   if (!eventId) return;
-  const previous = memoryDetails.get(eventId);
+
+  let storedPeople: any[] = [];
+  const previousMemory = memoryDetails.get(eventId);
+  if (previousMemory?.people?.length) {
+    storedPeople = previousMemory.people;
+  } else {
+    try {
+      const raw = await AsyncStorage.getItem(detailKey(eventId));
+      const parsed = raw ? JSON.parse(raw) : null;
+      if (parsed?.version === EVENT_DETAIL_VERSION && Array.isArray(parsed.people)) {
+        storedPeople = normalizePeople(parsed.people);
+      }
+    } catch {}
+  }
+
+  const mergedPeople = mergePeople(normalizePeople(detail.people || []), storedPeople);
+  const previousPhotos = previousMemory?.photos || [];
   const value: CachedEventDetail = {
     ...detail,
-    photos: mergePhotoCache(detail.photos || [], previous?.photos || []),
-    people: normalizePeople(detail.people || []),
+    photos: mergePhotoCache(detail.photos || [], previousPhotos),
+    people: mergedPeople,
     cachedAt: Date.now(),
   };
   memoryDetails.set(eventId, value);
