@@ -1,9 +1,25 @@
 {
-  "cli": { "version": ">= 12.0.0" },
+  "cli": {
+    "version": ">= 12.0.0"
+  },
   "build": {
-    "development": { "developmentClient": true, "distribution": "internal" },
-    "staging": { "distribution": "internal" },
-    "preview": { "distribution": "internal" },
-    "production": {}
+    "development": {
+      "developmentClient": true,
+      "distribution": "internal",
+      "env": {
+        "EXPO_PUBLIC_APP_ENV": "development"
+      }
+    },
+    "staging": {
+      "distribution": "internal",
+      "env": {
+        "EXPO_PUBLIC_APP_ENV": "staging"
+      }
+    },
+    "production": {
+      "env": {
+        "EXPO_PUBLIC_APP_ENV": "production"
+      }
+    }
   }
 }
