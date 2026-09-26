@@ -6,17 +6,20 @@
     "development": {
       "developmentClient": true,
       "distribution": "internal",
+      "environment": "development",
       "env": {
         "EXPO_PUBLIC_APP_ENV": "development"
       }
     },
     "staging": {
       "distribution": "internal",
+      "environment": "preview",
       "env": {
         "EXPO_PUBLIC_APP_ENV": "staging"
       }
     },
     "production": {
+      "environment": "production",
       "env": {
         "EXPO_PUBLIC_APP_ENV": "production"
       }
