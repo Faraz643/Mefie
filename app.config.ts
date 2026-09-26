@@ -20,6 +20,12 @@ export default ({ config }: { config: any }) => {
       slug: "mefie",
       scheme,
       version: "1.0.0",
+      runtimeVersion: {
+        policy: "appVersion",
+      },
+      updates: {
+        url: "https://u.expo.dev/99e135d4-fc2a-4c7c-b33a-8a93d3ea803a",
+      },
       orientation: "portrait",
       userInterfaceStyle: "dark",
       plugins: [
