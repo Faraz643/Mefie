@@ -5,8 +5,8 @@ export type CachedEventDetail = { event: any; photos: any[]; people: any[]; cach
 
 const EVENTS_CACHE_VERSION = 1;
 const EVENTS_CACHE_PREFIX = "mefie.cache.events.v1:";
-const EVENT_DETAIL_VERSION = 4;
-const EVENT_DETAIL_PREFIX = "mefie.cache.event.v4:";
+const EVENT_DETAIL_VERSION = 5;
+const EVENT_DETAIL_PREFIX = "mefie.cache.event.v5:";
 const EVENT_DETAIL_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 const DETAIL_PRELOAD_LIMIT = 12;
 
@@ -20,12 +20,22 @@ function normalizePeople(people: any[]) {
     return name && name !== "?" ? { ...person, display_name: name } : { ...person, display_name: "" };
   });
 }
+function hasCompletePeople(people: any[]) {
+  return people.length === 0 || people.every((person) => typeof person?.display_name === "string" && person.display_name.trim() && person.display_name.trim() !== "?");
+}
+function validDetail(detail: CachedEventDetail | null) {
+  if (!detail) return null;
+  if (Date.now() - detail.cachedAt > EVENT_DETAIL_TTL_MS) return null;
+  return hasCompletePeople(detail.people || []) ? detail : null;
+}
 
 export function getCachedEventDetailSync(eventId: string): CachedEventDetail | null {
   if (!eventId) return null;
-  const cached = memoryDetails.get(eventId);
-  if (!cached) return null;
-  if (Date.now() - cached.cachedAt > EVENT_DETAIL_TTL_MS) { memoryDetails.delete(eventId); return null; }
+  const cached = validDetail(memoryDetails.get(eventId) || null);
+  if (!cached) {
+    memoryDetails.delete(eventId);
+    return null;
+  }
   return cached;
 }
 export function getCachedEventsSync(sessionId: string): CachedEventSummary[] | null { return sessionId ? memoryEvents.get(sessionId) ?? null : null; }
@@ -61,10 +71,14 @@ export async function getCachedEventDetail(eventId: string): Promise<CachedEvent
     if (!raw) return null;
     const parsed = JSON.parse(raw) as CachedEventDetail & { version?: number };
     if (!parsed?.event || !Array.isArray(parsed.photos) || !Array.isArray(parsed.people) || parsed.version !== EVENT_DETAIL_VERSION) return null;
-    if (typeof parsed.cachedAt !== "number" || Date.now() - parsed.cachedAt > EVENT_DETAIL_TTL_MS) { await AsyncStorage.removeItem(detailKey(eventId)).catch(() => undefined); return null; }
     const normalized = { event: parsed.event, photos: parsed.photos, people: normalizePeople(parsed.people), cachedAt: parsed.cachedAt };
-    memoryDetails.set(eventId, normalized);
-    return normalized;
+    const valid = validDetail(normalized);
+    if (!valid) {
+      await AsyncStorage.removeItem(detailKey(eventId)).catch(() => undefined);
+      return null;
+    }
+    memoryDetails.set(eventId, valid);
+    return valid;
   } catch { return null; }
 }
 
@@ -74,10 +88,9 @@ export async function setCachedEventDetail(eventId: string, detail: Omit<CachedE
   memoryDetails.set(eventId, value);
   try { await AsyncStorage.setItem(detailKey(eventId), JSON.stringify({ version: EVENT_DETAIL_VERSION, ...value })); } catch {}
 
-  // Do not make navigation wait for disk writes or thumbnail downloads. The
-  // first render uses the remote thumbnail when necessary; this background
-  // task materializes the actual image bytes and then replaces the cached URL
-  // with a local file URI. The next event open is therefore genuinely local.
+  // Materialize gallery thumbnails without blocking navigation. The local file
+  // URI is persisted into the event snapshot so future opens can render from
+  // device storage immediately instead of resolving signed URLs again.
   void import("./photo-storage").then(async ({ materializeLocalPhotoPreviews }) => {
     try {
       const localPhotos = await materializeLocalPhotoPreviews(value.photos);
