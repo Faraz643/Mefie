@@ -138,11 +138,17 @@ async function warmLocalPreviews<T extends {
     .filter((photo) => photo.storage_path && (photo.preview_url || photo.public_url));
 
   await mapWithConcurrency(candidates, LOCAL_WARM_CONCURRENCY, async (photo) => {
-    await warmLocalPreview(
+    const localPath = await warmLocalPreview(
       photo.storage_path || "",
       photo.thumbnail_path,
       photo.preview_url || photo.public_url || null,
     );
+    // The caller's cached photo objects are intentionally mutated once the
+    // local file exists. This makes the in-memory event cache truly local-first
+    // on the next A -> B -> A navigation without another network round-trip.
+    if (localPath && /^https?:\/\//.test(photo.preview_url || "")) {
+      photo.preview_url = localPath;
+    }
     return null;
   });
 }
@@ -341,7 +347,7 @@ export async function attachSignedPhotoUrls<
     }
     // If the local file did not exist yet, seed it in the background. The first
     // render stays fast; the next event open can use the local file immediately.
-    void warmLocalPreviews(resolved).catch(() => undefined);
+    void warmLocalPreviews(photos).catch(() => undefined);
     return resolved;
   }
 
@@ -389,7 +395,9 @@ export async function attachSignedPhotoUrls<
   if (previewUrls.length) {
     void ExpoImage.prefetch(previewUrls, "memory-disk").catch(() => undefined);
   }
-  void warmLocalPreviews(resolved).catch(() => undefined);
+  // Pass the original objects so the event cache receives the local URI when
+  // the background warm completes.
+  void warmLocalPreviews(photos).catch(() => undefined);
 
   return resolved;
 }
