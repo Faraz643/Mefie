@@ -18,8 +18,8 @@ export type CachedEventDetail = {
 
 const EVENTS_CACHE_VERSION = 1;
 const EVENTS_CACHE_PREFIX = "mefie.cache.events.v1:";
-const EVENT_DETAIL_VERSION = 2;
-const EVENT_DETAIL_PREFIX = "mefie.cache.event.v2:";
+const EVENT_DETAIL_VERSION = 3;
+const EVENT_DETAIL_PREFIX = "mefie.cache.event.v3:";
 const EVENT_DETAIL_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 
 // Keep the most recently loaded event data in memory. This is the zero-I/O
@@ -33,9 +33,11 @@ function detailKey(eventId: string) { return EVENT_DETAIL_PREFIX + eventId; }
 function normalizePeople(people: any[]) {
   return people.map((person) => {
     const name = typeof person?.display_name === "string" ? person.display_name.trim() : "";
+    // Never invent "Guest" as a cached identity. A missing name is a loading
+    // state, not a real participant name, and must not overwrite a later value.
     return name && name !== "?"
       ? { ...person, display_name: name }
-      : { ...person, display_name: "Guest" };
+      : { ...person, display_name: "" };
   });
 }
 
@@ -46,11 +48,6 @@ export function getCachedEventDetailSync(eventId: string): CachedEventDetail | n
   if (Date.now() - cached.cachedAt > EVENT_DETAIL_TTL_MS) {
     memoryDetails.delete(eventId);
     return null;
-  }
-  if (cached.people.some((person) => !person?.display_name?.trim() || person.display_name.trim() === "?")) {
-    const normalized = { ...cached, people: normalizePeople(cached.people) };
-    memoryDetails.set(eventId, normalized);
-    return normalized;
   }
   return cached;
 }
