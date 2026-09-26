@@ -14,7 +14,6 @@ const memoryEvents = new Map<string, CachedEventSummary[]>();
 const memoryDetails = new Map<string, CachedEventDetail>();
 function eventsKey(sessionId: string) { return EVENTS_CACHE_PREFIX + sessionId; }
 function detailKey(eventId: string) { return EVENT_DETAIL_PREFIX + eventId; }
-
 function normalizePeople(people: any[]) {
   return people.map((person) => {
     const name = typeof person?.display_name === "string" ? person.display_name.trim() : "";
@@ -71,9 +70,30 @@ export async function getCachedEventDetail(eventId: string): Promise<CachedEvent
 
 export async function setCachedEventDetail(eventId: string, detail: Omit<CachedEventDetail, "cachedAt">) {
   if (!eventId) return;
-  const value = { ...detail, people: normalizePeople(detail.people || []), cachedAt: Date.now() };
+  const value: CachedEventDetail = { ...detail, people: normalizePeople(detail.people || []), cachedAt: Date.now() };
   memoryDetails.set(eventId, value);
   try { await AsyncStorage.setItem(detailKey(eventId), JSON.stringify({ version: EVENT_DETAIL_VERSION, ...value })); } catch {}
+
+  // Do not make navigation wait for disk writes or thumbnail downloads. The
+  // first render uses the remote thumbnail when necessary; this background
+  // task materializes the actual image bytes and then replaces the cached URL
+  // with a local file URI. The next event open is therefore genuinely local.
+  void import("./photo-storage").then(async ({ materializeLocalPhotoPreviews }) => {
+    try {
+      const localPhotos = await materializeLocalPhotoPreviews(value.photos);
+      const latest = memoryDetails.get(eventId);
+      const merged = {
+        event: latest?.event ?? value.event,
+        photos: localPhotos,
+        people: latest?.people ?? value.people,
+        cachedAt: Date.now(),
+      };
+      memoryDetails.set(eventId, merged);
+      await AsyncStorage.setItem(detailKey(eventId), JSON.stringify({ version: EVENT_DETAIL_VERSION, ...merged }));
+    } catch {
+      // Remote rendering remains the fallback if local materialization fails.
+    }
+  }).catch(() => undefined);
 }
 
 export async function removeCachedEventDetail(eventId: string) {
