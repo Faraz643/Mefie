@@ -1,3 +1,0 @@
--- Migration moved to 0181_fix_pgcrypto_search_path_random_bytes.sql.
--- Kept as a no-op compatibility file so databases that already recorded
--- version 018 remain compatible with the repository migration history.
