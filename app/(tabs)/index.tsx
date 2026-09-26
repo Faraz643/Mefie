@@ -49,7 +49,7 @@ const EventCover = memo(function EventCover({
       <BlurTargetView ref={blurTarget} style={StyleSheet.absoluteFillObject}>
         {cover ? (
           <ExpoImage
-            source={{ uri: cover }}
+            source={{ uri: cover, cacheKey: `event-cover:${id}` }}
             style={styles.coverImage}
             contentFit="cover"
             cachePolicy="memory-disk"
@@ -185,8 +185,7 @@ export default function HomeScreen() {
         />
         <View style={styles.hero}>
           <Text style={styles.greeting}>Hey {displayName} 👋</Text>
-          <Text style={styles.title}>Same moments.{`
-`}Everyone's view.</Text>
+          <Text style={styles.title}>Same moments.{`\n`}Everyone's view.</Text>
         </View>
         <GlassAction
           primary
