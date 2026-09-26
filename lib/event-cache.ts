@@ -28,6 +28,21 @@ function validDetail(detail: CachedEventDetail | null) {
   if (Date.now() - detail.cachedAt > EVENT_DETAIL_TTL_MS) return null;
   return hasCompletePeople(detail.people || []) ? detail : null;
 }
+function mergePhotoCache(freshPhotos: any[], previousPhotos: any[]) {
+  const previousByIdentity = new Map<string, any>();
+  for (const photo of previousPhotos || []) {
+    const key = `${photo?.storage_path || ""}|${photo?.thumbnail_path || ""}`;
+    if (key !== "|") previousByIdentity.set(key, photo);
+  }
+  return freshPhotos.map((photo) => {
+    const key = `${photo?.storage_path || ""}|${photo?.thumbnail_path || ""}`;
+    const previous = previousByIdentity.get(key);
+    const localPreview = typeof previous?.preview_url === "string" && previous.preview_url.startsWith("file://")
+      ? previous.preview_url
+      : null;
+    return localPreview ? { ...photo, preview_url: localPreview } : { ...photo };
+  });
+}
 
 export function getCachedEventDetailSync(eventId: string): CachedEventDetail | null {
   if (!eventId) return null;
@@ -84,20 +99,23 @@ export async function getCachedEventDetail(eventId: string): Promise<CachedEvent
 
 export async function setCachedEventDetail(eventId: string, detail: Omit<CachedEventDetail, "cachedAt">) {
   if (!eventId) return;
-  const value: CachedEventDetail = { ...detail, people: normalizePeople(detail.people || []), cachedAt: Date.now() };
+  const previous = memoryDetails.get(eventId);
+  const value: CachedEventDetail = {
+    ...detail,
+    photos: mergePhotoCache(detail.photos || [], previous?.photos || []),
+    people: normalizePeople(detail.people || []),
+    cachedAt: Date.now(),
+  };
   memoryDetails.set(eventId, value);
   try { await AsyncStorage.setItem(detailKey(eventId), JSON.stringify({ version: EVENT_DETAIL_VERSION, ...value })); } catch {}
 
-  // Materialize gallery thumbnails without blocking navigation. The local file
-  // URI is persisted into the event snapshot so future opens can render from
-  // device storage immediately instead of resolving signed URLs again.
   void import("./photo-storage").then(async ({ materializeLocalPhotoPreviews }) => {
     try {
       const localPhotos = await materializeLocalPhotoPreviews(value.photos);
       const latest = memoryDetails.get(eventId);
       const merged = {
         event: latest?.event ?? value.event,
-        photos: localPhotos,
+        photos: mergePhotoCache(latest?.photos ?? value.photos, localPhotos),
         people: latest?.people ?? value.people,
         cachedAt: Date.now(),
       };
