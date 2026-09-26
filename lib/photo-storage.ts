@@ -12,7 +12,7 @@ const PHOTO_URL_CACHE_TTL_MS = 50 * 60 * 1000;
 const PHOTO_URL_CACHE_PREFIX = "mefie.cache.photo-url.v1:";
 const LOCAL_PREVIEW_DIR_NAME = "mefie-gallery/";
 const PREFETCH_LIMIT = 40;
-const LOCAL_WARM_CONCURRENCY = 6;
+const LOCAL_WARM_CONCURRENCY = 4;
 
 type PhotoTransform = {
   width: number;
@@ -49,8 +49,6 @@ function isFresh(cache: CachedPhotoUrls | null | undefined) {
 }
 
 function stableHash(value: string) {
-  // Small deterministic FNV-1a hash; sufficient for a local filename because
-  // the storage path remains the authoritative identity.
   let hash = 2166136261;
   for (let index = 0; index < value.length; index += 1) {
     hash ^= value.charCodeAt(index);
@@ -60,16 +58,20 @@ function stableHash(value: string) {
 }
 
 function localPreviewPath(storagePath: string, thumbnailPath: string | null | undefined) {
-  if (!FileSystem.cacheDirectory || !storagePath) return null;
+  // documentDirectory is deliberate: unlike cacheDirectory, the OS does not
+  // treat this as disposable cache data. The gallery's local-first behavior
+  // therefore survives navigation and app restarts.
+  const root = FileSystem.documentDirectory;
+  if (!root || !storagePath) return null;
   const identity = `${storagePath}|${thumbnailPath || ""}`;
-  return `${FileSystem.cacheDirectory}${LOCAL_PREVIEW_DIR_NAME}${stableHash(identity)}.img`;
+  return `${root}${LOCAL_PREVIEW_DIR_NAME}${stableHash(identity)}.jpg`;
 }
 
 async function ensureLocalPreviewDirectory() {
-  if (!FileSystem.cacheDirectory) return;
+  if (!FileSystem.documentDirectory) return;
   if (!localPreviewDirectoryReady) {
     localPreviewDirectoryReady = FileSystem.makeDirectoryAsync(
-      `${FileSystem.cacheDirectory}${LOCAL_PREVIEW_DIR_NAME}`,
+      `${FileSystem.documentDirectory}${LOCAL_PREVIEW_DIR_NAME}`,
       { intermediates: true },
     ).then(() => undefined).catch(() => undefined);
   }
@@ -95,7 +97,7 @@ async function warmLocalPreview(
   thumbnailPath: string | null | undefined,
   previewUrl: string | null,
 ) {
-  if (!storagePath || !previewUrl) return null;
+  if (!storagePath || !previewUrl || !/^https?:\/\//.test(previewUrl)) return null;
   const localPath = localPreviewPath(storagePath, thumbnailPath);
   if (!localPath) return null;
 
@@ -132,25 +134,45 @@ async function warmLocalPreviews<T extends {
   thumbnail_path?: string | null;
   preview_url?: string | null;
   public_url?: string | null;
-}>(photos: T[]) {
+}>(photos: T[], limit = photos.length) {
   const candidates = photos
-    .slice(0, PREFETCH_LIMIT)
+    .slice(0, limit)
     .filter((photo) => photo.storage_path && (photo.preview_url || photo.public_url));
 
   await mapWithConcurrency(candidates, LOCAL_WARM_CONCURRENCY, async (photo) => {
-    const localPath = await warmLocalPreview(
+    await warmLocalPreview(
       photo.storage_path || "",
       photo.thumbnail_path,
       photo.preview_url || photo.public_url || null,
     );
-    // The caller's cached photo objects are intentionally mutated once the
-    // local file exists. This makes the in-memory event cache truly local-first
-    // on the next A -> B -> A navigation without another network round-trip.
-    if (localPath && /^https?:\/\//.test(photo.preview_url || "")) {
-      photo.preview_url = localPath;
-    }
     return null;
   });
+}
+
+/**
+ * Materialize gallery thumbnails into Mefie's persistent local media store.
+ * Returns new photo objects whose preview_url points at the local file when
+ * available. This is the bridge between server metadata and the local-first UI.
+ */
+export async function materializeLocalPhotoPreviews<T extends {
+  storage_path?: string | null;
+  thumbnail_path?: string | null;
+  preview_url?: string | null;
+  public_url?: string | null;
+}>(photos: T[]) {
+  if (!photos.length) return [] as T[];
+
+  const result = photos.map((photo) => ({ ...photo }));
+  await warmLocalPreviews(result);
+
+  const localUris = await mapWithConcurrency(result, 12, (photo) =>
+    getLocalPreviewUri(photo.storage_path || "", photo.thumbnail_path),
+  );
+
+  return result.map((photo, index) => ({
+    ...photo,
+    preview_url: localUris[index] || photo.preview_url || photo.public_url || null,
+  }));
 }
 
 async function readCachedPhotoUrls(
@@ -188,9 +210,7 @@ async function writeCachedPhotoUrls(
   memoryUrlCache.set(key, value);
   try {
     await AsyncStorage.setItem(key, JSON.stringify(value));
-  } catch {
-    // The in-memory cache is still useful when AsyncStorage is unavailable.
-  }
+  } catch {}
 }
 
 async function mapWithConcurrency<T, R>(
@@ -218,14 +238,11 @@ async function mapWithConcurrency<T, R>(
 
 export async function signPhotoPaths(paths: string[]) {
   if (!supabase || !paths.length) return new Map<string, string>();
-
   const uniquePaths = [...new Set(paths.filter(Boolean))];
   const { data, error } = await supabase.storage
     .from("photos")
     .createSignedUrls(uniquePaths, PHOTO_SIGNED_URL_TTL);
-
   if (error) throw error;
-
   return new Map(
     (data || [])
       .filter((item: any) => item?.path && item?.signedUrl)
@@ -239,17 +256,11 @@ export async function signPhotoPath(path: string | null | undefined) {
   return urls.get(path) || null;
 }
 
-export async function signPhotoPreviewPath(
-  path: string | null | undefined,
-) {
+export async function signPhotoPreviewPath(path: string | null | undefined) {
   if (!supabase || !path) return null;
-
   const { data, error } = await supabase.storage
     .from("photos")
-    .createSignedUrl(path, PHOTO_SIGNED_URL_TTL, {
-      transform: PHOTO_GALLERY_TRANSFORM,
-    });
-
+    .createSignedUrl(path, PHOTO_SIGNED_URL_TTL, { transform: PHOTO_GALLERY_TRANSFORM });
   if (error) throw error;
   return data?.signedUrl || null;
 }
@@ -259,18 +270,12 @@ async function resolvePhotoUrls<T extends {
   thumbnail_path?: string | null;
   public_url?: string | null;
   preview_url?: string | null;
-}>(
-  photo: T,
-  originalUrls: Map<string, string>,
-  cached: CachedPhotoUrls | null,
-) {
+}>(photo: T, originalUrls: Map<string, string>, cached: CachedPhotoUrls | null) {
   const storagePath = photo.storage_path || "";
   if (!storagePath) {
     return { publicUrl: photo.public_url || null, previewUrl: photo.preview_url || null };
   }
 
-  // A local thumbnail is the strongest cache: it is independent of signed URL
-  // expiry and survives navigation between event screens.
   const localPreview = await getLocalPreviewUri(storagePath, photo.thumbnail_path);
   if (localPreview) {
     return {
@@ -292,67 +297,28 @@ async function resolvePhotoUrls<T extends {
   if (photo.thumbnail_path) {
     try {
       previewUrl = await signPhotoPath(photo.thumbnail_path);
-    } catch {
-      // Fall back to a transformed origin image if the physical thumbnail is missing.
-    }
+    } catch {}
   }
 
   if (!previewUrl && ENABLE_REMOTE_STORAGE_TRANSFORMS) {
     try {
       previewUrl = await signPhotoPreviewPath(storagePath);
-    } catch {
-      // Image transformations may be unavailable; keep the gallery usable.
-    }
+    } catch {}
   }
 
   previewUrl = previewUrl || publicUrl;
-
-  await writeCachedPhotoUrls(storagePath, photo.thumbnail_path, {
-    publicUrl,
-    previewUrl,
-  });
-
+  await writeCachedPhotoUrls(storagePath, photo.thumbnail_path, { publicUrl, previewUrl });
   return { publicUrl, previewUrl };
 }
 
-export async function attachSignedPhotoUrls<
-  T extends {
-    storage_path?: string | null;
-    thumbnail_path?: string | null;
-    public_url?: string | null;
-    preview_url?: string | null;
-  },
->(photos: T[]) {
+export async function attachSignedPhotoUrls<T extends {
+  storage_path?: string | null;
+  thumbnail_path?: string | null;
+  public_url?: string | null;
+  preview_url?: string | null;
+}>(photos: T[]) {
   if (!photos.length) return [] as Array<T & { public_url: string | null; preview_url: string | null }>;
 
-  // Cached event objects already carry their resolved gallery URL. We still
-  // check the local thumbnail store so a stable local file can replace an
-  // expired/rotated signed URL before the first frame is rendered.
-  if (photos.every((photo) => !!(photo.preview_url || photo.public_url))) {
-    const indexed = photos.map((photo, index) => ({ photo, index }));
-    const localUris = await mapWithConcurrency(indexed, 12, ({ photo }) =>
-      getLocalPreviewUri(photo.storage_path || "", photo.thumbnail_path),
-    );
-    const resolved = photos.map((photo, index) => ({
-      ...photo,
-      public_url: photo.public_url || photo.preview_url || null,
-      preview_url: localUris[index] || photo.preview_url || photo.public_url || null,
-    }));
-    const previewUrls = resolved
-      .slice(0, PREFETCH_LIMIT)
-      .map((photo) => photo.preview_url || photo.public_url)
-      .filter((url): url is string => !!url && /^https?:\/\//.test(url));
-    if (previewUrls.length) {
-      void ExpoImage.prefetch(previewUrls, "memory-disk").catch(() => undefined);
-    }
-    // If the local file did not exist yet, seed it in the background. The first
-    // render stays fast; the next event open can use the local file immediately.
-    void warmLocalPreviews(photos).catch(() => undefined);
-    return resolved;
-  }
-
-  // Load persisted signed URLs first. This is important after an app restart:
-  // AsyncStorage can satisfy the gallery without making a new Storage request.
   const indexedPhotos = photos.map((photo, index) => ({ photo, index }));
   const cachedUrls = await mapWithConcurrency(indexedPhotos, 12, ({ photo }) =>
     readCachedPhotoUrls(photo.storage_path || "", photo.thumbnail_path),
@@ -377,10 +343,6 @@ export async function attachSignedPhotoUrls<
 
   const resolved = photos.map((photo, index) => {
     const urls = indexedResolved[index];
-    Object.assign(photo as object, {
-      public_url: urls.publicUrl,
-      preview_url: urls.previewUrl,
-    });
     return {
       ...photo,
       public_url: urls.publicUrl,
@@ -395,9 +357,11 @@ export async function attachSignedPhotoUrls<
   if (previewUrls.length) {
     void ExpoImage.prefetch(previewUrls, "memory-disk").catch(() => undefined);
   }
-  // Pass the original objects so the event cache receives the local URI when
-  // the background warm completes.
-  void warmLocalPreviews(photos).catch(() => undefined);
+
+  // Persist actual thumbnail bytes, not just their URLs. This runs in the
+  // background after the first remote render, and subsequent event opens use
+  // the local files directly.
+  void warmLocalPreviews(resolved).catch(() => undefined);
 
   return resolved;
 }
