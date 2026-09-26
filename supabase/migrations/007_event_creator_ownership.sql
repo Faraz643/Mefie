@@ -15,7 +15,7 @@ returns boolean
 language plpgsql
 security definer
 set search_path = public
-as $
+as $$
 declare
   deleted_count integer;
 begin
