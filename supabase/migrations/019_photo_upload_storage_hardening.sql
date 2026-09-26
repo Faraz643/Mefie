@@ -1,3 +1,0 @@
--- Migration moved to 0191_photo_upload_storage_hardening.sql.
--- Kept as a no-op compatibility file so existing databases that recorded
--- version 019 remain compatible with the repository migration history.
