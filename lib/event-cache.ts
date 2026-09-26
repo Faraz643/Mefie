@@ -21,6 +21,7 @@ const EVENTS_CACHE_PREFIX = "mefie.cache.events.v1:";
 const EVENT_DETAIL_VERSION = 3;
 const EVENT_DETAIL_PREFIX = "mefie.cache.event.v3:";
 const EVENT_DETAIL_TTL_MS = 7 * 24 * 60 * 60 * 1000;
+const DETAIL_PRELOAD_LIMIT = 12;
 
 // Keep the most recently loaded event data in memory. This is the zero-I/O
 // hot path used when an event is opened again during the same app session.
@@ -68,6 +69,16 @@ export async function getCachedEvents(sessionId: string): Promise<CachedEventSum
     if (parsed?.version !== EVENTS_CACHE_VERSION || !Array.isArray(parsed.events)) return null;
     const events = parsed.events as CachedEventSummary[];
     memoryEvents.set(sessionId, events);
+
+    // Warm the detail cache without delaying the event-list render. This makes
+    // the first tap after an app restart local-first as well, rather than only
+    // subsequent taps within the same session.
+    void Promise.all(
+      events
+        .slice(0, DETAIL_PRELOAD_LIMIT)
+        .map((event) => getCachedEventDetail(event.id)),
+    ).catch(() => undefined);
+
     return events;
   } catch {
     return null;
