@@ -3,6 +3,7 @@ import * as MediaLibrary from "expo-media-library";
 import * as FileSystem from "expo-file-system/legacy";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import {
   ActivityIndicator,
   Image,
@@ -15,8 +16,10 @@ import {
 import { colors, shadows, typography } from "../../lib/theme";
 import { supabase } from "../../lib/app-context";
 import { signPhotoPath } from "../../lib/photo-storage";
+
 export default function PhotoView() {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const { id, index = "0" } = useLocalSearchParams<{
     id: string;
     index?: string;
@@ -24,23 +27,38 @@ export default function PhotoView() {
   const [photo, setPhoto] = useState<any>(null);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
+
   useEffect(() => {
     (async () => {
-      if (supabase && id) {
-        const { data } = await supabase
-          .from("photos")
-          .select("id,event_id,participant_id,storage_path,thumbnail_path,original_filename,file_size,width,height,public_url,created_at")
-          .eq("id", id)
-          .maybeSingle();
-        if (data) {
-          const signedUrl = await signPhotoPath(data.storage_path);
-          setPhoto({ ...data, public_url: signedUrl });
-        } else {
-          setPhoto(null);
-        }
+      if (!supabase || !id) return;
+
+      const { data } = await supabase
+        .from("photos")
+        .select("id,event_id,participant_id,storage_path,thumbnail_path,original_filename,file_size,width,height,public_url,created_at")
+        .eq("id", id)
+        .maybeSingle();
+
+      if (!data) {
+        setPhoto(null);
+        return;
       }
+
+      const signedUrl = await signPhotoPath(data.storage_path);
+      let displayName = "";
+
+      if (data.participant_id) {
+        const { data: participant } = await supabase
+          .from("participants")
+          .select("display_name")
+          .eq("id", data.participant_id)
+          .maybeSingle();
+        displayName = participant?.display_name?.trim() || "";
+      }
+
+      setPhoto({ ...data, public_url: signedUrl, display_name: displayName });
     })();
   }, [id]);
+
   const download = async () => {
     if (!photo?.public_url || busy) return;
     setBusy(true);
@@ -64,9 +82,12 @@ export default function PhotoView() {
       setBusy(false);
     }
   };
+
   const share = () =>
     photo?.public_url && Share.share({ message: photo.public_url });
+
   const uri = photo?.public_url;
+
   return (
     <View style={styles.root}>
       {uri ? (
@@ -84,8 +105,9 @@ export default function PhotoView() {
           )}
         </View>
       )}
+
       <View style={styles.scrimTop} />
-      <View style={styles.top}>
+      <View style={[styles.top, { top: Math.max(18, insets.top + 8) }]}>
         <Pressable
           accessibilityLabel="Go back"
           onPress={() => router.back()}
@@ -108,22 +130,35 @@ export default function PhotoView() {
           />
         </Pressable>
       </View>
+
       {message ? (
-        <View style={styles.message}>
+        <View style={[styles.message, { bottom: insets.bottom + 92 }]}>
           <Text style={styles.messageText}>{message}</Text>
         </View>
       ) : null}
-      <View style={styles.bottom}>
+
+      <View style={[styles.bottom, { bottom: Math.max(14, insets.bottom + 14) }]}>
         <View style={styles.meta}>
-          <Text style={styles.name}>
-            {photo?.display_name || "Mefie member"}
-          </Text>
+          <View style={styles.ownerRow}>
+            <View style={styles.ownerDot}>
+              <Text style={styles.ownerInitial}>
+                {(photo?.display_name || "M").slice(0, 1).toUpperCase()}
+              </Text>
+            </View>
+            <View style={styles.ownerText}>
+              <Text style={styles.kicker}>Captured by</Text>
+              <Text style={styles.name} numberOfLines={1}>
+                {photo?.display_name || "Mefie member"}
+              </Text>
+            </View>
+          </View>
           <Text style={styles.time}>
             {photo?.created_at
               ? new Date(photo.created_at).toLocaleString()
               : ""}
           </Text>
         </View>
+
         <Pressable
           accessibilityLabel="Save photo"
           onPress={download}
@@ -146,6 +181,7 @@ export default function PhotoView() {
     </View>
   );
 }
+
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: "#05080B" },
   loading: { flex: 1, alignItems: "center", justifyContent: "center" },
@@ -159,7 +195,6 @@ const styles = StyleSheet.create({
   },
   top: {
     position: "absolute",
-    top: 54,
     left: 18,
     right: 18,
     flexDirection: "row",
@@ -190,7 +225,6 @@ const styles = StyleSheet.create({
   count: { color: "#fff", fontSize: 13, fontFamily: typography.bold },
   bottom: {
     position: "absolute",
-    bottom: 28,
     left: 18,
     right: 18,
     flexDirection: "row",
@@ -198,14 +232,29 @@ const styles = StyleSheet.create({
     alignItems: "center",
     padding: 14,
     borderRadius: 24,
-    backgroundColor: "rgba(12,17,22,.54)",
+    backgroundColor: "rgba(12,17,22,.68)",
     borderWidth: 1,
     borderColor: "rgba(255,255,255,.18)",
     ...shadows,
   },
-  meta: { flex: 1 },
+  meta: { flex: 1, minWidth: 0, paddingRight: 12 },
+  ownerRow: { flexDirection: "row", alignItems: "center", minWidth: 0 },
+  ownerDot: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    backgroundColor: "rgba(255,255,255,.12)",
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,.18)",
+    alignItems: "center",
+    justifyContent: "center",
+    marginRight: 10,
+  },
+  ownerInitial: { color: "#fff", fontSize: 14, fontFamily: typography.bold },
+  ownerText: { flex: 1, minWidth: 0 },
+  kicker: { color: "rgba(255,255,255,.48)", fontSize: 10, fontFamily: typography.semibold, marginBottom: 2 },
   name: { color: "#fff", fontSize: 15, fontFamily: typography.extraBold },
-  time: { color: colors.muted, fontSize: 11, fontFamily: typography.regular, marginTop: 3 },
+  time: { color: colors.muted, fontSize: 10, fontFamily: typography.regular, marginTop: 5 },
   download: {
     height: 46,
     borderRadius: 23,
@@ -219,7 +268,6 @@ const styles = StyleSheet.create({
   downloadText: { color: colors.black, fontSize: 14, fontFamily: typography.extraBold },
   message: {
     position: "absolute",
-    top: 112,
     alignSelf: "center",
     backgroundColor: "rgba(10,14,18,.68)",
     paddingHorizontal: 16,
