@@ -31,11 +31,20 @@ export default function NameScreen() {
     try {
       await setDisplayName(value);
       if (supabase) {
-        await ensureAnonymousAuth();
+        const userId = await ensureAnonymousAuth();
         const { error: authError } = await supabase.auth.updateUser({
           data: { display_name: value },
         });
         if (authError) throw authError;
+
+        // Keep any memberships created before onboarding consistent with the
+        // Auth identity so existing event photos also show the chosen name.
+        if (userId) {
+          await supabase
+            .from("participants")
+            .update({ display_name: value, last_seen_at: new Date().toISOString() })
+            .eq("auth_user_id", userId);
+        }
       }
       await AsyncStorage.setItem(NAME_COMPLETED_KEY, "true");
       router.replace("/");
