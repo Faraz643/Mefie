@@ -1,5 +1,6 @@
 import "../lib/sentry";
 import { SentryErrorBoundary } from "../components/SentryErrorBoundary";
+import { NameGate } from "../components/NameGate";
 import { Stack } from 'expo-router';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
@@ -37,26 +38,20 @@ export default function RootLayout() {
       <GestureHandlerRootView style={{ flex: 1 }}>
         <SentryErrorBoundary>
           <AppProvider>
-            <StatusBar style="light" />
-            <Stack
-              screenOptions={{
-                headerShown: false,
-                animation: 'fade',
-                contentStyle: { backgroundColor: '#0A0F15' },
-              }}
-            >
-              <Stack.Screen name="(tabs)" options={{ animation: 'none' }} />
-              {/*
-                Temporary-invite navigation must be visually atomic. The global
-                fade animation combined with the invite lookup/join redirect can
-                expose intermediate native frames on Android, which looks like a
-                rapid multi-blink when the event screen mounts. Keep these two
-                routes transition-free; the event screen already performs its
-                own data loading without needing a navigation animation.
-              */}
-              <Stack.Screen name="rejoin/[token]" options={{ animation: 'none' }} />
-              <Stack.Screen name="event/[id]" options={{ animation: 'none' }} />
-            </Stack>
+            <NameGate>
+              <StatusBar style="light" />
+              <Stack
+                screenOptions={{
+                  headerShown: false,
+                  animation: 'fade',
+                  contentStyle: { backgroundColor: '#0A0F15' },
+                }}
+              >
+                <Stack.Screen name="(tabs)" options={{ animation: 'none' }} />
+                <Stack.Screen name="rejoin/[token]" options={{ animation: 'none' }} />
+                <Stack.Screen name="event/[id]" options={{ animation: 'none' }} />
+              </Stack>
+            </NameGate>
           </AppProvider>
         </SentryErrorBoundary>
       </GestureHandlerRootView>
