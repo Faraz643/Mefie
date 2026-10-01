@@ -2,11 +2,11 @@ package com.mefie.floating;
 
 import android.content.Intent;
 
+import androidx.annotation.Nullable;
+
 import com.facebook.react.HeadlessJsTaskService;
 import com.facebook.react.bridge.Arguments;
 import com.facebook.react.jstasks.HeadlessJsTaskConfig;
-
-import javax.annotation.Nullable;
 
 public final class MefiePhotoHeadlessService extends HeadlessJsTaskService {
   public static final String TASK_NAME = "MefiePhotoDetected";
