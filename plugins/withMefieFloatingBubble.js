@@ -82,7 +82,8 @@ function withMefieMainApplication(config) {
       source = packageMatch ? source.replace(packageMatch[0], `${packageMatch[0]}\n${importLine}`) : `${importLine}\n${source}`;
     }
 
-    if (!source.includes("MefieFloatingBubblePackage")) {
+    const registrationMarker = "MefieFloatingBubblePackage()";
+    if (!source.includes(registrationMarker)) {
       const javaPattern = /(List<ReactPackage>\s+packages\s*=\s*new\s+PackageList\([^;]+\)\.getPackages\(\);)/;
       const kotlinValPattern = /(val\s+packages\s*=\s*PackageList\([^\n]+\)\.packages)/;
       const kotlinApplyPattern = /(PackageList\(this\)\.packages\.apply\s*\{)/;
