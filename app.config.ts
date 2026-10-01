@@ -32,6 +32,7 @@ export default ({ config }: { config: any }) => {
         "expo-router",
         "expo-dev-client",
         "expo-asset",
+        "./plugins/withMefieFloatingBubble.js",
         [
           "@sentry/react-native/expo",
           {
@@ -52,7 +53,7 @@ export default ({ config }: { config: any }) => {
           "expo-media-library",
           {
             photosPermission:
-              "Mefie needs permission to save your shared moments to your photo library.",
+              "Mefie needs permission to save and share photos captured with your phone camera.",
             savePhotosPermission:
               "Mefie needs permission to save shared moments to your photo library.",
           },
