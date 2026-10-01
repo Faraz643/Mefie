@@ -5,7 +5,7 @@ import { ActivityIndicator, AppState, Modal, PermissionsAndroid, Platform, Press
 import { getParticipantId, supabase, useApp } from "../lib/app-context";
 import { captureException } from "../lib/sentry";
 import { hasFloatingOverlayPermission, openFloatingOverlaySettings, openPhoneCamera, startFloatingCameraSharing } from "../lib/mefie-floating-bubble";
-import { colors, typography } from "../lib/theme";
+import { typography } from "../lib/theme";
 
 function eventIdFromPath(pathname: string) {
   const match = pathname.match(/^\/camera\/([^/]+)/);
