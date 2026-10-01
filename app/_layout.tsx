@@ -9,7 +9,7 @@ import { AppProvider } from "../lib/app-context";
 import { startPhotoUploadQueue } from "../lib/photo-upload-queue";
 import { handleMefiePhotoDetected } from "../lib/mefie-native-photo-headless";
 import { captureException } from "../lib/sentry";
-import { AppRegistry, useEffect } from "react";
+import { AppRegistry, useEffect } from "react-native";
 import { useFonts } from "@expo-google-fonts/plus-jakarta-sans/useFonts";
 import { PlusJakartaSans_400Regular } from "@expo-google-fonts/plus-jakarta-sans/400Regular";
 import { PlusJakartaSans_500Medium } from "@expo-google-fonts/plus-jakarta-sans/500Medium";
