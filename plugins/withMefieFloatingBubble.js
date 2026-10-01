@@ -76,7 +76,7 @@ function withMefieManifest(config) {
 function withMefieMainApplication(config) {
   return withMainApplication(config, (config) => {
     let source = config.modResults.contents;
-    const importLine = `import ${NATIVE_PACKAGE}.MefieFloatingBubblePackage`;
+    const importLine = `import ${NATIVE_PACKAGE}.MefieFloatingBubblePackage;`;
     if (!source.includes(importLine)) {
       const packageMatch = source.match(/^package\s+[^;\n]+;?/m);
       source = packageMatch ? source.replace(packageMatch[0], `${packageMatch[0]}\n${importLine}`) : `${importLine}\n${source}`;
