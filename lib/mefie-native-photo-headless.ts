@@ -3,6 +3,7 @@ import * as FileSystem from "expo-file-system/legacy";
 import * as ImageManipulator from "expo-image-manipulator";
 import { supabase, ensureAnonymousAuth } from "./app-context";
 import { enqueuePhotoUpload } from "./photo-upload-queue";
+import { getFloatingSharingStatus } from "./mefie-floating-bubble";
 
 type NativePhotoTask = {
   id: string;
@@ -83,6 +84,12 @@ export async function handleMefiePhotoDetected(raw: unknown) {
   };
 
   try {
+    const sharing = await getFloatingSharingStatus();
+    if (!sharing.active || sharing.paused || sharing.eventId !== nativePhoto.eventId || sharing.participantId !== nativePhoto.participantId) {
+      await FileSystem.deleteAsync(nativePhoto.uri, { idempotent: true }).catch(() => undefined);
+      return;
+    }
+
     if (!supabase) throw new Error("Cloud connection is not configured.");
     const userId = await ensureAnonymousAuth();
     if (!userId) throw new Error("Mefie authentication is unavailable.");
@@ -106,13 +113,8 @@ export async function handleMefiePhotoDetected(raw: unknown) {
     let width = nativePhoto.width;
     let height = nativePhoto.height;
     if (!width || !height) {
-      const dimensions = await new Promise<{ width: number; height: number }>((resolve, reject) => {
-        // expo-image-manipulator will validate the image if dimensions are unknown.
-        // A conservative fallback keeps the transformation bounded.
-        resolve({ width: 1920, height: 1080 });
-      });
-      width = dimensions.width;
-      height = dimensions.height;
+      width = 1920;
+      height = 1080;
     }
 
     const preparedUri = await prepareJpeg(nativePhoto.uri, width, height);
@@ -156,8 +158,6 @@ export async function handleMefiePhotoDetected(raw: unknown) {
     await FileSystem.deleteAsync(preparedUri, { idempotent: true }).catch(() => undefined);
     await FileSystem.deleteAsync(nativePhoto.uri, { idempotent: true }).catch(() => undefined);
   } catch (error) {
-    // Preserve the original native file and put it into Mefie's existing durable
-    // retry queue. The normal foreground queue will optimize/retry it later.
     await fallbackToQueue(nativePhoto).catch(() => undefined);
   }
 }
