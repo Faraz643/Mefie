@@ -19,7 +19,7 @@ import { PlusJakartaSans_700Bold } from "@expo-google-fonts/plus-jakarta-sans/70
 import { PlusJakartaSans_800ExtraBold } from "@expo-google-fonts/plus-jakarta-sans/800ExtraBold";
 
 const registerHeadlessTask = (AppRegistry as typeof AppRegistry & {
-  registerHeadlessTask?: (taskName: string, taskProvider: () => () => Promise<void>) => void;
+  registerHeadlessTask?: (taskName: string, taskProvider: () => (taskData: unknown) => Promise<void>) => void;
 }).registerHeadlessTask;
 
 if (registerHeadlessTask) {
