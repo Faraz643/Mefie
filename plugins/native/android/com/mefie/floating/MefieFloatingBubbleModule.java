@@ -40,10 +40,34 @@ public final class MefieFloatingBubbleModule extends ReactContextBaseJavaModule 
   public void openOverlaySettings(Promise promise) {
     try {
       Context context = getReactApplicationContext();
-      Intent intent = new Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION);
-      intent.setData(Uri.parse("package:" + context.getPackageName()));
-      intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-      context.startActivity(intent);
+      boolean launched = false;
+
+      Intent appIntent = new Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION);
+      appIntent.setData(Uri.parse("package:" + context.getPackageName()));
+      appIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+      if (appIntent.resolveActivity(context.getPackageManager()) != null) {
+        try {
+          context.startActivity(appIntent);
+          launched = true;
+        } catch (Throwable ignored) {
+          launched = false;
+        }
+      }
+
+      if (!launched) {
+        Intent fallbackIntent = new Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION);
+        fallbackIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+        if (fallbackIntent.resolveActivity(context.getPackageManager()) != null) {
+          context.startActivity(fallbackIntent);
+          launched = true;
+        }
+      }
+
+      if (!launched) {
+        promise.reject("OVERLAY_SETTINGS_UNAVAILABLE", "Android overlay permission settings are unavailable on this device.");
+        return;
+      }
+
       promise.resolve(true);
     } catch (Throwable error) {
       promise.reject("OVERLAY_SETTINGS_FAILED", error);
