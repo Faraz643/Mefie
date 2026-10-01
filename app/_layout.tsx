@@ -18,8 +18,12 @@ import { PlusJakartaSans_600SemiBold } from "@expo-google-fonts/plus-jakarta-san
 import { PlusJakartaSans_700Bold } from "@expo-google-fonts/plus-jakarta-sans/700Bold";
 import { PlusJakartaSans_800ExtraBold } from "@expo-google-fonts/plus-jakarta-sans/800ExtraBold";
 
-if (typeof AppRegistry.registerHeadlessTask === "function") {
-  AppRegistry.registerHeadlessTask("MefiePhotoDetected", () => handleMefiePhotoDetected);
+const registerHeadlessTask = (AppRegistry as typeof AppRegistry & {
+  registerHeadlessTask?: (taskName: string, taskProvider: () => () => Promise<void>) => void;
+}).registerHeadlessTask;
+
+if (registerHeadlessTask) {
+  registerHeadlessTask("MefiePhotoDetected", () => handleMefiePhotoDetected);
 }
 
 export default function RootLayout() {
