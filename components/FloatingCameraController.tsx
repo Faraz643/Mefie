@@ -4,7 +4,7 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import { ActivityIndicator, AppState, Modal, PermissionsAndroid, Platform, Pressable, StyleSheet, Text, View } from "react-native";
 import { getParticipantId, supabase, useApp } from "../lib/app-context";
 import { captureException } from "../lib/sentry";
-import { hasFloatingOverlayPermission, openFloatingOverlaySettings, openPhoneCamera, startFloatingCameraSharing } from "../lib/mefie-floating-bubble";
+import { floatingCameraSupported, hasFloatingOverlayPermission, openFloatingOverlaySettings, openPhoneCamera, startFloatingCameraSharing } from "../lib/mefie-floating-bubble";
 import { typography } from "../lib/theme";
 
 function eventIdFromPath(pathname: string) {
@@ -80,11 +80,33 @@ export function FloatingCameraController() {
     return result === PermissionsAndroid.RESULTS.GRANTED || result === PermissionsAndroid.RESULTS.NEVER_ASK_AGAIN;
   }
 
+  async function openOverlayPermissionSettings() {
+    setError("");
+    try {
+      const opened = await openFloatingOverlaySettings();
+      if (!opened) {
+        setError("This Mefie build cannot open Android overlay permission settings. Install the latest Android build.");
+        setWaitingForOverlay(false);
+        return;
+      }
+      setWaitingForOverlay(true);
+    } catch (value: any) {
+      captureException(value, { area: "floating_overlay_settings" });
+      setError(value?.message || "Could not open Android overlay permission settings.");
+      setWaitingForOverlay(false);
+    }
+  }
+
   async function activate(openCamera: boolean) {
     if (!eventId || !participantId || busy) return;
     setBusy(true);
     setError("");
     try {
+      if (!floatingCameraSupported) {
+        setError("This Mefie build does not include the Android camera-sharing module. Install a fresh EAS Android build.");
+        return;
+      }
+
       const mediaPermission = await MediaLibrary.requestPermissionsAsync(false);
       if (!mediaPermission.granted) {
         setError("Mefie needs photo access to notice photos saved by the phone camera.");
@@ -95,8 +117,7 @@ export function FloatingCameraController() {
 
       const overlayGranted = await hasFloatingOverlayPermission();
       if (!overlayGranted) {
-        setWaitingForOverlay(true);
-        await openFloatingOverlaySettings();
+        await openOverlayPermissionSettings();
         return;
       }
 
@@ -106,6 +127,7 @@ export function FloatingCameraController() {
         return;
       }
 
+      setWaitingForOverlay(false);
       setVisible(false);
       if (openCamera) await openPhoneCamera();
     } catch (value: any) {
@@ -131,8 +153,8 @@ export function FloatingCameraController() {
           {waitingForOverlay ? (
             <View style={styles.waiting}><ActivityIndicator color="#76E39A" /><Text style={styles.waitingText}>Enable “Display over other apps”, then return here.</Text></View>
           ) : null}
-          <Pressable disabled={busy || !participantId} onPress={() => void activate(true)} style={({ pressed }) => [styles.primary, pressed && styles.pressed, (busy || !participantId) && styles.disabled]}>
-            {busy ? <ActivityIndicator color="#08100B" /> : <Text style={styles.primaryText}>{waitingForOverlay ? "Waiting for permission…" : "Open phone camera"}</Text>}
+          <Pressable disabled={busy || !participantId} onPress={() => waitingForOverlay ? void openOverlayPermissionSettings() : void activate(true)} style={({ pressed }) => [styles.primary, pressed && styles.pressed, (busy || !participantId) && styles.disabled]}>
+            {busy ? <ActivityIndicator color="#08100B" /> : <Text style={styles.primaryText}>{waitingForOverlay ? "Open permission settings" : "Open phone camera"}</Text>}
           </Pressable>
           <Pressable disabled={busy} onPress={() => setVisible(false)} style={styles.secondary}><Text style={styles.secondaryText}>Not now</Text></Pressable>
         </View>
