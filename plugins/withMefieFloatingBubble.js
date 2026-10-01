@@ -18,14 +18,7 @@ const SERVICE_CLASSES = [
 
 function withMefieNativeSources(config) {
   return withDangerousMod(config, ["android", async (config) => {
-    const targetDir = path.join(
-      config.modRequest.platformProjectRoot,
-      "app",
-      "src",
-      "main",
-      "java",
-      ...NATIVE_PACKAGE.split("."),
-    );
+    const targetDir = path.join(config.modRequest.platformProjectRoot, "app", "src", "main", "java", ...NATIVE_PACKAGE.split("."));
     fs.mkdirSync(targetDir, { recursive: true });
     for (const file of SERVICE_CLASSES) {
       fs.copyFileSync(path.join(NATIVE_SOURCE_DIR, file), path.join(targetDir, file));
@@ -37,7 +30,6 @@ function withMefieNativeSources(config) {
 function withMefieManifest(config) {
   return withAndroidManifest(config, (config) => {
     const manifest = config.modResults.manifest;
-    manifest.$ = manifest.$ || {};
     const permissions = [
       "android.permission.SYSTEM_ALERT_WINDOW",
       "android.permission.FOREGROUND_SERVICE",
@@ -54,21 +46,18 @@ function withMefieManifest(config) {
 
     const application = AndroidConfig.Manifest.getMainApplicationOrThrow(config.modResults);
     application.service = application.service || [];
-    const serviceName = `${NATIVE_PACKAGE}.MefieFloatingBubbleService`;
-    const headlessName = `${NATIVE_PACKAGE}.MefiePhotoHeadlessService`;
-
     const upsertService = (name, attrs) => {
       const existing = application.service.find((service) => service?.$?.["android:name"] === name);
       if (existing) Object.assign(existing.$, attrs);
       else application.service.push({ $: { "android:name": name, ...attrs } });
     };
 
-    upsertService(serviceName, {
+    upsertService(`${NATIVE_PACKAGE}.MefieFloatingBubbleService`, {
       "android:exported": "false",
       "android:foregroundServiceType": "specialUse",
       "android:stopWithTask": "false",
     });
-    upsertService(headlessName, { "android:exported": "false" });
+    upsertService(`${NATIVE_PACKAGE}.MefiePhotoHeadlessService`, { "android:exported": "false" });
 
     application.property = application.property || [];
     const propertyName = "android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE";
@@ -87,27 +76,24 @@ function withMefieManifest(config) {
 function withMefieMainApplication(config) {
   return withMainApplication(config, (config) => {
     let source = config.modResults.contents;
-    const importLine = `import ${NATIVE_PACKAGE}.MefieFloatingBubblePackage;`;
+    const importLine = `import ${NATIVE_PACKAGE}.MefieFloatingBubblePackage`;
     if (!source.includes(importLine)) {
       const packageMatch = source.match(/^package\s+[^;\n]+;?/m);
-      if (packageMatch) {
-        source = source.replace(packageMatch[0], `${packageMatch[0]}\n${importLine}`);
-      } else {
-        source = `${importLine}\n${source}`;
-      }
+      source = packageMatch ? source.replace(packageMatch[0], `${packageMatch[0]}\n${importLine}`) : `${importLine}\n${source}`;
     }
 
-    if (!source.includes("new MefieFloatingBubblePackage()")) {
-      const listPattern = /(List<ReactPackage>\s+packages\s*=\s*new\s+PackageList\([^;]+\)\.getPackages\(\);)/;
-      if (listPattern.test(source)) {
-        source = source.replace(listPattern, `$1\n      packages.add(new MefieFloatingBubblePackage());`);
+    if (!source.includes("MefieFloatingBubblePackage")) {
+      const javaPattern = /(List<ReactPackage>\s+packages\s*=\s*new\s+PackageList\([^;]+\)\.getPackages\(\);)/;
+      const kotlinValPattern = /(val\s+packages\s*=\s*PackageList\([^\n]+\)\.packages)/;
+      const kotlinApplyPattern = /(PackageList\(this\)\.packages\.apply\s*\{)/;
+      if (javaPattern.test(source)) {
+        source = source.replace(javaPattern, `$1\n      packages.add(new MefieFloatingBubblePackage());`);
+      } else if (kotlinValPattern.test(source)) {
+        source = source.replace(kotlinValPattern, `$1\n          packages.add(MefieFloatingBubblePackage())`);
+      } else if (kotlinApplyPattern.test(source)) {
+        source = source.replace(kotlinApplyPattern, `$1\n          add(MefieFloatingBubblePackage())`);
       } else {
-        const kotlinPattern = /(val\s+packages\s*=\s*PackageList\([^\n]+\)\.packages)/;
-        if (kotlinPattern.test(source)) {
-          source = source.replace(kotlinPattern, `$1\n          packages.add(MefieFloatingBubblePackage())`);
-        } else {
-          throw new Error("Mefie floating bubble plugin could not locate the React package list in MainApplication.");
-        }
+        throw new Error("Mefie floating bubble plugin could not locate the React package list in MainApplication.");
       }
     }
     config.modResults.contents = source;
