@@ -85,7 +85,7 @@ export function FloatingCameraController() {
     setBusy(true);
     setError("");
     try {
-      const mediaPermission = await MediaLibrary.requestPermissionsAsync(false, ["photo"]);
+      const mediaPermission = await MediaLibrary.requestPermissionsAsync(false);
       if (!mediaPermission.granted) {
         setError("Mefie needs photo access to notice photos saved by the phone camera.");
         return;
