@@ -1,0 +1,17 @@
+node_modules/
+.expo/
+android/
+ios/
+.git/
+.env
+.env.local
+.env.sentry-build-plugin
+
+# Keep the custom native Android module required by the Mefie config plugin.
+!plugins/
+!plugins/native/
+!plugins/native/android/
+!plugins/native/android/com/
+!plugins/native/android/com/mefie/
+!plugins/native/android/com/mefie/floating/
+!plugins/native/android/com/mefie/floating/**
