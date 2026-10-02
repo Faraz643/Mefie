@@ -187,6 +187,8 @@ public final class MefieFloatingBubbleService extends Service {
     bubble.setTypeface(android.graphics.Typeface.DEFAULT, android.graphics.Typeface.BOLD);
     bubble.setElevation(dp(10));
     bubble.setContentDescription("Mefie camera sharing");
+    bubble.setClickable(true);
+    bubble.setFocusable(false);
     bubble.setBackground(circleBackground());
 
     activeDot = new TextView(this);
@@ -237,8 +239,15 @@ public final class MefieFloatingBubbleService extends Service {
         }
         return true;
       case MotionEvent.ACTION_UP:
+        if (dragging) {
+          snapBubble();
+        } else {
+          view.performClick();
+          togglePopup();
+        }
+        return true;
+      case MotionEvent.ACTION_CANCEL:
         if (dragging) snapBubble();
-        else togglePopup();
         return true;
       default:
         return true;
