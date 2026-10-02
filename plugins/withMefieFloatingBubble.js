@@ -8,7 +8,7 @@ const fs = require("fs");
 const path = require("path");
 
 const NATIVE_PACKAGE = "com.mefie.floating";
-const NATIVE_SOURCE_DIR = path.join(__dirname, "native", "android", "com", "mefie", "floating");
+const NATIVE_SOURCE_DIR = path.resolve(__dirname, "native", "android", "com", "mefie", "floating");
 const SERVICE_CLASSES = [
   "MefieFloatingBubbleModule.java",
   "MefieFloatingBubblePackage.java",
@@ -18,11 +18,31 @@ const SERVICE_CLASSES = [
 
 function withMefieNativeSources(config) {
   return withDangerousMod(config, ["android", async (config) => {
-    const targetDir = path.join(config.modRequest.platformProjectRoot, "app", "src", "main", "java", ...NATIVE_PACKAGE.split("."));
-    fs.mkdirSync(targetDir, { recursive: true });
-    for (const file of SERVICE_CLASSES) {
-      fs.copyFileSync(path.join(NATIVE_SOURCE_DIR, file), path.join(targetDir, file));
+    const targetDir = path.join(
+      config.modRequest.platformProjectRoot,
+      "app",
+      "src",
+      "main",
+      "java",
+      ...NATIVE_PACKAGE.split("."),
+    );
+
+    if (!fs.existsSync(NATIVE_SOURCE_DIR)) {
+      throw new Error(
+        `Mefie native Android source directory is missing from the build archive: ${NATIVE_SOURCE_DIR}`,
+      );
     }
+
+    fs.mkdirSync(targetDir, { recursive: true });
+
+    for (const file of SERVICE_CLASSES) {
+      const source = path.join(NATIVE_SOURCE_DIR, file);
+      if (!fs.existsSync(source)) {
+        throw new Error(`Mefie native Android source file is missing from the build archive: ${source}`);
+      }
+      fs.copyFileSync(source, path.join(targetDir, file));
+    }
+
     return config;
   }]);
 }
@@ -87,6 +107,7 @@ function withMefieMainApplication(config) {
       const javaPattern = /(List<ReactPackage>\s+packages\s*=\s*new\s+PackageList\([^;]+\)\.getPackages\(\);)/;
       const kotlinValPattern = /(val\s+packages\s*=\s*PackageList\([^\n]+\)\.packages)/;
       const kotlinApplyPattern = /(PackageList\(this\)\.packages\.apply\s*\{)/;
+
       if (javaPattern.test(source)) {
         source = source.replace(javaPattern, `$1\n      packages.add(new MefieFloatingBubblePackage());`);
       } else if (kotlinValPattern.test(source)) {
@@ -97,6 +118,7 @@ function withMefieMainApplication(config) {
         throw new Error("Mefie floating bubble plugin could not locate the React package list in MainApplication.");
       }
     }
+
     config.modResults.contents = source;
     return config;
   });
