@@ -84,16 +84,11 @@ public final class MefieFloatingBubbleService extends Service {
   @Override
   public void onCreate() {
     super.onCreate();
-    // A Service context has no associated Display on Android 11+.
-    // Obtain the real display first, then create the visual window context.
-    if (Build.VERSION.SDK_INT >= 30) {
-      android.view.Display display = getSystemService(WindowManager.class).getDefaultDisplay();
-      windowContext = createDisplayContext(display).createWindowContext(overlayType(), null);
-      windowManager = (WindowManager) windowContext.getSystemService(WINDOW_SERVICE);
-    } else {
-      windowContext = this;
-      windowManager = (WindowManager) getSystemService(WINDOW_SERVICE);
-    }
+    // Use the Service's WindowManager directly. This is supported for
+    // application overlays and avoids OEM-specific Android 14 failures
+    // when creating a visual WindowContext from a Service.
+    windowContext = this;
+    windowManager = (WindowManager) getSystemService(WINDOW_SERVICE);
   }
 
   @Override
@@ -128,6 +123,14 @@ public final class MefieFloatingBubbleService extends Service {
   }
 
   private void saveSession(String eventId, String eventName, String participantId) {
+    // START may be delivered more than once. Do not reset the media baseline
+    // for an already-running session, otherwise a photo can be skipped.
+    if (isActive(this)
+      && TextUtils.equals(eventId, getEventId(this))
+      && TextUtils.equals(participantId, getParticipantId(this))) {
+      return;
+    }
+
     long baseline = findLatestMediaId();
     getPrefs().edit()
       .putBoolean(PREF_ACTIVE, true)
@@ -642,9 +645,7 @@ public final class MefieFloatingBubbleService extends Service {
     unregisterMediaObserver();
     hidePopup();
     removeBubbleWindow();
-    if (windowContext != null && windowContext != this && Build.VERSION.SDK_INT >= 30) {
-      try { windowContext = null; } catch (Throwable ignored) {}
-    }
+    windowContext = null;
     super.onDestroy();
   }
 
