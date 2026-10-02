@@ -84,8 +84,11 @@ public final class MefieFloatingBubbleService extends Service {
   @Override
   public void onCreate() {
     super.onCreate();
+    // A Service context has no associated Display on Android 11+.
+    // Obtain the real display first, then create the visual window context.
     if (Build.VERSION.SDK_INT >= 30) {
-      windowContext = createWindowContext(overlayType(), null);
+      android.view.Display display = getSystemService(WindowManager.class).getDefaultDisplay();
+      windowContext = createDisplayContext(display).createWindowContext(overlayType(), null);
       windowManager = (WindowManager) windowContext.getSystemService(WINDOW_SERVICE);
     } else {
       windowContext = this;
