@@ -65,7 +65,9 @@ public final class MefieFloatingBubbleService extends Service {
 
   private final Handler handler = new Handler(Looper.getMainLooper());
   private WindowManager windowManager;
+  private Context windowContext;
   private TextView bubble;
+  private boolean bubbleAttached;
   private TextView activeDot;
   private View popupView;
   private WindowManager.LayoutParams bubbleParams;
@@ -82,7 +84,13 @@ public final class MefieFloatingBubbleService extends Service {
   @Override
   public void onCreate() {
     super.onCreate();
-    windowManager = (WindowManager) getSystemService(WINDOW_SERVICE);
+    if (Build.VERSION.SDK_INT >= 30) {
+      windowContext = createWindowContext(overlayType(), null);
+      windowManager = (WindowManager) windowContext.getSystemService(WINDOW_SERVICE);
+    } else {
+      windowContext = this;
+      windowManager = (WindowManager) getSystemService(WINDOW_SERVICE);
+    }
   }
 
   @Override
@@ -177,45 +185,53 @@ public final class MefieFloatingBubbleService extends Service {
   }
 
   private void ensureBubble() {
-    if (bubble != null || !Settings.canDrawOverlays(this)) return;
+    if (!Settings.canDrawOverlays(this)) return;
 
-    bubble = new TextView(this);
-    bubble.setText("M");
-    bubble.setTextColor(Color.WHITE);
-    bubble.setTextSize(20);
-    bubble.setGravity(Gravity.CENTER);
-    bubble.setTypeface(android.graphics.Typeface.DEFAULT, android.graphics.Typeface.BOLD);
-    bubble.setElevation(dp(10));
-    bubble.setContentDescription("Mefie camera sharing");
-    bubble.setClickable(true);
-    bubble.setFocusable(false);
-    bubble.setBackground(circleBackground());
+    // START can be delivered repeatedly (for example after returning from the
+    // system camera). Never create a second overlay window for the same service.
+    if (bubble != null) {
+      if (bubbleAttached && bubble.getWindowToken() != null) return;
+      removeBubbleWindow();
+    }
 
-    activeDot = new TextView(this);
-    activeDot.setText("");
-    activeDot.setBackground(circleColor("#69E58A"));
-
-    LinearLayout bubbleContainer = new LinearLayout(this);
-    bubbleContainer.setGravity(Gravity.CENTER);
-    bubbleContainer.setBackgroundColor(Color.TRANSPARENT);
-    bubbleContainer.addView(bubble, new LinearLayout.LayoutParams(dp(BUBBLE_DP), dp(BUBBLE_DP)));
+    Context context = windowContext != null ? windowContext : this;
+    TextView newBubble = new TextView(context);
+    newBubble.setText("M");
+    newBubble.setTextColor(Color.WHITE);
+    newBubble.setTextSize(20);
+    newBubble.setGravity(Gravity.CENTER);
+    newBubble.setTypeface(android.graphics.Typeface.DEFAULT, android.graphics.Typeface.BOLD);
+    // Do not use View elevation here. On some Android 14 OEM builds it creates
+    // large surface insets around the overlay and can make hit testing unreliable.
+    newBubble.setElevation(0f);
+    newBubble.setContentDescription("Mefie camera sharing");
+    newBubble.setClickable(true);
+    newBubble.setFocusable(false);
+    newBubble.setBackground(circleBackground());
+    newBubble.setOnTouchListener(this::handleBubbleTouch);
+    newBubble.setOnClickListener(v -> { });
 
     bubbleParams = new WindowManager.LayoutParams(
       dp(BUBBLE_DP), dp(BUBBLE_DP), overlayType(),
       WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE |
-        WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL,
+        WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL |
+        WindowManager.LayoutParams.FLAG_HARDWARE_ACCELERATED,
       PixelFormat.TRANSLUCENT
     );
     bubbleParams.gravity = Gravity.TOP | Gravity.START;
-    bubbleParams.x = getPrefs().getInt(PREF_BUBBLE_X, defaultX());
-    bubbleParams.y = getPrefs().getInt(PREF_BUBBLE_Y, dp(180));
+    bubbleParams.x = clamp(getPrefs().getInt(PREF_BUBBLE_X, defaultX()), 0, screenWidth() - dp(BUBBLE_DP));
+    bubbleParams.y = clamp(getPrefs().getInt(PREF_BUBBLE_Y, dp(180)), dp(24), screenHeight() - dp(BUBBLE_DP) - dp(24));
 
     try {
-      windowManager.addView(bubble, bubbleParams);
-      bubble.setOnTouchListener(this::handleBubbleTouch);
+      windowManager.addView(newBubble, bubbleParams);
+      bubble = newBubble;
+      bubbleAttached = true;
+      activeDot = null;
     } catch (Throwable error) {
+      bubbleAttached = false;
       bubble = null;
       activeDot = null;
+      bubbleParams = null;
     }
   }
 
@@ -345,11 +361,24 @@ public final class MefieFloatingBubbleService extends Service {
   }
 
   private void hidePopup() {
-    if (popupView != null) {
-      try { windowManager.removeView(popupView); } catch (Throwable ignored) {}
-    }
+    View view = popupView;
     popupView = null;
     popupVisible = false;
+    if (view != null && windowManager != null) {
+      try { windowManager.removeViewImmediate(view); } catch (Throwable ignored) {}
+    }
+    popupParams = null;
+  }
+
+  private void removeBubbleWindow() {
+    TextView view = bubble;
+    bubble = null;
+    activeDot = null;
+    bubbleAttached = false;
+    if (view != null && windowManager != null) {
+      try { windowManager.removeViewImmediate(view); } catch (Throwable ignored) {}
+    }
+    bubbleParams = null;
   }
 
   private int popupX() {
@@ -599,11 +628,7 @@ public final class MefieFloatingBubbleService extends Service {
   private void stopSession() {
     unregisterMediaObserver();
     hidePopup();
-    if (bubble != null) {
-      try { windowManager.removeView(bubble); } catch (Throwable ignored) {}
-    }
-    bubble = null;
-    activeDot = null;
+    removeBubbleWindow();
     getPrefs().edit().clear().apply();
     stopForeground(STOP_FOREGROUND_REMOVE);
     stopSelf();
@@ -613,10 +638,10 @@ public final class MefieFloatingBubbleService extends Service {
   public void onDestroy() {
     unregisterMediaObserver();
     hidePopup();
-    if (bubble != null) {
-      try { windowManager.removeView(bubble); } catch (Throwable ignored) {}
+    removeBubbleWindow();
+    if (windowContext != null && windowContext != this && Build.VERSION.SDK_INT >= 30) {
+      try { windowContext = null; } catch (Throwable ignored) {}
     }
-    bubble = null;
     super.onDestroy();
   }
 
