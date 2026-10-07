@@ -32,7 +32,10 @@ export default ({ config }: { config: any }) => {
         "expo-router",
         "expo-dev-client",
         "expo-asset",
-        "./plugins/withMefieFloatingBubble.js",
+        "./plugins/withMefieCameraSharing.js",
+        // Floating camera overlay feature intentionally disabled. The native
+        // floating plugin remains in the repository for reference only.
+        // "./plugins/withMefieFloatingBubble.js",
         [
           "@sentry/react-native/expo",
           {
