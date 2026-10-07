@@ -47,6 +47,19 @@ public final class MefieCameraSharingModule extends ReactContextBaseJavaModule {
     } catch (Throwable e) { promise.reject("CAMERA_SHARING_STATUS_FAILED", e); }
   }
 
+  @ReactMethod public void openSystemCamera(Promise promise) {
+    try {
+      Context context = getReactApplicationContext();
+      Intent intent = new Intent("android.media.action.IMAGE_CAPTURE").addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+      if (intent.resolveActivity(context.getPackageManager()) == null) {
+        promise.reject("NO_CAMERA_APP", "No camera app is available on this device.");
+        return;
+      }
+      context.startActivity(intent);
+      promise.resolve(true);
+    } catch (Throwable e) { promise.reject("CAMERA_OPEN_FAILED", e); }
+  }
+
   @ReactMethod public void incrementSharedPhotoCount(Promise promise) {
     try { MefieCameraSharingService.incrementSharedPhotoCount(getReactApplicationContext()); promise.resolve(true); }
     catch (Throwable e) { promise.reject("CAMERA_SHARING_COUNT_FAILED", e); }
