@@ -16,6 +16,7 @@ type NativeCameraSharing = {
   stop(): Promise<boolean>;
   getStatus(): Promise<CameraSharingStatus>;
   incrementSharedPhotoCount(): Promise<boolean>;
+  openSystemCamera(): Promise<boolean>;
 };
 
 const native = Platform.OS === "android"
@@ -37,3 +38,7 @@ export async function pauseCameraSharing(){ return native ? native.pause() : fal
 export async function resumeCameraSharing(){ return native ? native.resume() : false; }
 export async function stopCameraSharing(){ return native ? native.stop() : false; }
 export async function incrementSharedPhotoCount(){ return native ? native.incrementSharedPhotoCount() : false; }
+export async function openSystemCamera() {
+  if (!native) throw new Error("Phone-camera handoff is available on Android only.");
+  return native.openSystemCamera();
+}
