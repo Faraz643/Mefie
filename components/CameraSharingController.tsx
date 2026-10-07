@@ -4,7 +4,7 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import { ActivityIndicator, Modal, PermissionsAndroid, Platform, Pressable, StyleSheet, Text, View } from "react-native";
 import { getParticipantId, supabase, useApp } from "../lib/app-context";
 import { captureException } from "../lib/sentry";
-import { cameraSharingSupported, startCameraSharing } from "../lib/mefie-camera-sharing";
+import { cameraSharingSupported, openSystemCamera, startCameraSharing } from "../lib/mefie-camera-sharing";
 import { typography } from "../lib/theme";
 
 function eventIdFromPath(pathname:string){const match=pathname.match(/^\/camera\/([^/]+)/);return match?decodeURIComponent(match[1]):null;}
@@ -62,12 +62,12 @@ export function CameraSharingController(){
       if(!(await requestNotificationPermission())){setError("Notification permission is required for sharing controls.");return;}
       if(!(await startCameraSharing(eventId,eventName,participantId,photoCount))){setError("Mefie could not start phone-camera sharing.");return;}
       setVisible(false);
-      try{
-        const {NativeModules}=require("react-native");
-        if(!NativeModules.MefieCameraSharing?.openSystemCamera) throw new Error("Camera handoff unavailable.");
-        const opened=await NativeModules.MefieCameraSharing.openSystemCamera();
-        if(opened===false)throw new Error("No camera app is available.");
-      }catch(e:any){setError(e?.message||"Could not open the phone camera.");}
+      try {
+        const opened = await openSystemCamera();
+        if (!opened) throw new Error("No camera app is available.");
+      } catch (e: any) {
+        setError(e?.message || "Could not open the phone camera.");
+      }
     }catch(e:any){captureException(e,{area:"camera_sharing_start"});if(mounted.current)setError(e?.message||"Could not start camera sharing.");}
     finally{if(mounted.current)setBusy(false);}
   }
