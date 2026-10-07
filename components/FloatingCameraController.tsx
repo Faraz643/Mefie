@@ -1,3 +1,8 @@
+/*
+  FLOATING CAMERA FEATURE DISABLED.
+  Replaced by the Android persistent notification camera-sharing controls.
+  Original implementation intentionally retained here for reference only.
+
 import * as MediaLibrary from "expo-media-library";
 import { usePathname } from "expo-router";
 import React, { useEffect, useMemo, useRef, useState } from "react";
@@ -185,3 +190,5 @@ const styles = StyleSheet.create({
   pressed: { opacity: 0.82 },
   disabled: { opacity: 0.55 },
 });
+
+*/
