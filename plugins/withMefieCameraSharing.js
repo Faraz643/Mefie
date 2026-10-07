@@ -33,7 +33,12 @@ function withManifest(config) {
     manifest["uses-permission"] = manifest["uses-permission"] || [];
     for (const permission of permissions) {
       if (!manifest["uses-permission"].some(x => x?.$?.["android:name"] === permission)) {
-        manifest["uses-permission"].push({ $: { "android:name": permission } });
+        manifest["uses-permission"].push({
+          $: {
+            "android:name": permission,
+            ...(permission === "android.permission.READ_EXTERNAL_STORAGE" ? { "android:maxSdkVersion": "32" } : {})
+          }
+        });
       }
     }
 
