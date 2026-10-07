@@ -105,7 +105,10 @@ public final class MefieCameraSharingService extends Service {
     if(scanRunnable!=null) handler.removeCallbacks(scanRunnable);
     scanRunnable = () -> {
       scanRunnable = null;
-      if (!scanRunning.compareAndSet(false, true)) return;
+      if (!scanRunning.compareAndSet(false, true)) {
+        scheduleScan();
+        return;
+      }
       scanExecutor.execute(() -> {
         try { scanForNewPhotos(); }
         finally { scanRunning.set(false); }
