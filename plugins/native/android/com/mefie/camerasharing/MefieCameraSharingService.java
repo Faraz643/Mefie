@@ -36,6 +36,7 @@ public final class MefieCameraSharingService extends Service {
   private static final int NOTIFICATION_ID=42017;
   private static final long DEBOUNCE_MS=450L;
   private static final long MAX_SOURCE_BYTES=40L*1024L*1024L;
+  private static final Object COUNT_LOCK=new Object();
 
   private final Handler handler=new Handler(Looper.getMainLooper());
   private final ExecutorService scanExecutor=Executors.newSingleThreadExecutor();
@@ -206,9 +207,13 @@ public final class MefieCameraSharingService extends Service {
   private void updateNotification(){NotificationManager m=(NotificationManager)getSystemService(NOTIFICATION_SERVICE);if(m!=null&&isActive(this))m.notify(NOTIFICATION_ID,buildNotification());}
 
   public static void incrementSharedPhotoCount(Context c){
-    android.content.SharedPreferences p=c.getSharedPreferences(PREFS,MODE_PRIVATE); if(!p.getBoolean(ACTIVE,false))return;
-    p.edit().putInt(COUNT,p.getInt(COUNT,0)+1).apply();
-    NotificationManager m=(NotificationManager)c.getSystemService(Context.NOTIFICATION_SERVICE); if(m!=null)m.notify(NOTIFICATION_ID,buildNotification(c));
+    synchronized(COUNT_LOCK){
+      android.content.SharedPreferences p=c.getSharedPreferences(PREFS,MODE_PRIVATE);
+      if(!p.getBoolean(ACTIVE,false))return;
+      p.edit().putInt(COUNT,p.getInt(COUNT,0)+1).apply();
+      NotificationManager m=(NotificationManager)c.getSystemService(Context.NOTIFICATION_SERVICE);
+      if(m!=null)m.notify(NOTIFICATION_ID,buildNotification(c));
+    }
   }
 
   private static Notification buildNotification(Context c){
