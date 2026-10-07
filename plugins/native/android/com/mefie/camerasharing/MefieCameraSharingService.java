@@ -206,10 +206,10 @@ public final class MefieCameraSharingService extends Service {
   }
   private void updateNotification(){NotificationManager m=(NotificationManager)getSystemService(NOTIFICATION_SERVICE);if(m!=null&&isActive(this))m.notify(NOTIFICATION_ID,buildNotification());}
 
-  public static void incrementSharedPhotoCount(Context c){
+  public static void incrementSharedPhotoCount(Context c, String eventId){
     synchronized(COUNT_LOCK){
       android.content.SharedPreferences p=c.getSharedPreferences(PREFS,MODE_PRIVATE);
-      if(!p.getBoolean(ACTIVE,false))return;
+      if(!p.getBoolean(ACTIVE,false)||!TextUtils.equals(eventId,p.getString(EVENT_ID,null)))return;
       p.edit().putInt(COUNT,p.getInt(COUNT,0)+1).apply();
       NotificationManager m=(NotificationManager)c.getSystemService(Context.NOTIFICATION_SERVICE);
       if(m!=null)m.notify(NOTIFICATION_ID,buildNotification(c));
