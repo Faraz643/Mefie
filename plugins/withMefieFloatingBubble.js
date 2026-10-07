@@ -1,3 +1,8 @@
+/*
+  FLOATING CAMERA FEATURE DISABLED.
+  Replaced by the Android persistent notification camera-sharing controls.
+  Original implementation intentionally retained here for reference only.
+
 const {
   withAndroidManifest,
   withDangerousMod,
@@ -130,3 +135,5 @@ module.exports = function withMefieFloatingBubble(config) {
   config = withMefieMainApplication(config);
   return config;
 };
+
+*/
