@@ -60,8 +60,8 @@ public final class MefieCameraSharingModule extends ReactContextBaseJavaModule {
     } catch (Throwable e) { promise.reject("CAMERA_OPEN_FAILED", e); }
   }
 
-  @ReactMethod public void incrementSharedPhotoCount(Promise promise) {
-    try { MefieCameraSharingService.incrementSharedPhotoCount(getReactApplicationContext()); promise.resolve(true); }
+  @ReactMethod public void incrementSharedPhotoCount(String eventId, Promise promise) {
+    try { MefieCameraSharingService.incrementSharedPhotoCount(getReactApplicationContext(), eventId); promise.resolve(true); }
     catch (Throwable e) { promise.reject("CAMERA_SHARING_COUNT_FAILED", e); }
   }
 
