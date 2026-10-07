@@ -220,8 +220,8 @@ public final class MefieCameraSharingService extends Service {
   @Nullable @Override public IBinder onBind(Intent intent){return null;}
 
   private android.content.SharedPreferences getPrefs(){return getSharedPreferences(PREFS,MODE_PRIVATE);}
-  private String mediaVersion(){if(Build.VERSION.SDK_INT<29)return "";try{return MediaStore.getVersion(this,MediaStore.VOLUME_EXTERNAL);}catch(Throwable e){return "";}}
-  private long currentGeneration(){if(Build.VERSION.SDK_INT<30)return 0;try{return MediaStore.getGeneration(this,MediaStore.VOLUME_EXTERNAL);}catch(Throwable e){return 0;}}
+  private String mediaVersion(){if(Build.VERSION.SDK_INT<29)return "";try{return MediaStore.getVersion(this,MediaStore.VOLUME_EXTERNAL_PRIMARY);}catch(Throwable e){return "";}}
+  private long currentGeneration(){if(Build.VERSION.SDK_INT<30)return 0;try{return MediaStore.getGeneration(this,MediaStore.VOLUME_EXTERNAL_PRIMARY);}catch(Throwable e){return 0;}}
   private long latestMediaId(){Cursor c=null;try{c=getContentResolver().query(MediaStore.Images.Media.EXTERNAL_CONTENT_URI,new String[]{MediaStore.Images.Media._ID},null,null,MediaStore.Images.Media._ID+" DESC LIMIT 1");if(c!=null&&c.moveToFirst())return c.getLong(0);}catch(Throwable ignored){}finally{if(c!=null)c.close();}return 0;}
   public static boolean isActive(Context c){return c.getSharedPreferences(PREFS,MODE_PRIVATE).getBoolean(ACTIVE,false);}
   public static boolean isPaused(Context c){return c.getSharedPreferences(PREFS,MODE_PRIVATE).getBoolean(PAUSED,false);}
