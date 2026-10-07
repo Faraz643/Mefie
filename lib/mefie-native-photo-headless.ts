@@ -3,7 +3,7 @@ import * as FileSystem from "expo-file-system/legacy";
 import * as ImageManipulator from "expo-image-manipulator";
 import { supabase, ensureAnonymousAuth } from "./app-context";
 import { enqueuePhotoUpload } from "./photo-upload-queue";
-import { getFloatingSharingStatus } from "./mefie-floating-bubble";
+import { getCameraSharingStatus, incrementSharedPhotoCount } from "./mefie-camera-sharing";
 
 type NativePhotoTask = {
   id: string;
@@ -84,7 +84,7 @@ export async function handleMefiePhotoDetected(raw: unknown) {
   };
 
   try {
-    const sharing = await getFloatingSharingStatus();
+    const sharing = await getCameraSharingStatus();
     if (!sharing.active || sharing.paused || sharing.eventId !== nativePhoto.eventId || sharing.participantId !== nativePhoto.participantId) {
       await FileSystem.deleteAsync(nativePhoto.uri, { idempotent: true }).catch(() => undefined);
       return;
@@ -157,6 +157,8 @@ export async function handleMefiePhotoDetected(raw: unknown) {
 
     await FileSystem.deleteAsync(preparedUri, { idempotent: true }).catch(() => undefined);
     await FileSystem.deleteAsync(nativePhoto.uri, { idempotent: true }).catch(() => undefined);
+    // Count only after the photo metadata and thumbnail have been finalized.
+    await incrementSharedPhotoCount().catch(() => undefined);
   } catch (error) {
     await fallbackToQueue(nativePhoto).catch(() => undefined);
   }
