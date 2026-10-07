@@ -1,7 +1,9 @@
 import "../lib/sentry";
 import { SentryErrorBoundary } from "../components/SentryErrorBoundary";
 import { NameGate } from "../components/NameGate";
-import { FloatingCameraController } from "../components/FloatingCameraController";
+import { CameraSharingController } from "../components/CameraSharingController";
+// FloatingCameraController intentionally disabled; notification controls replace the overlay.
+// import { FloatingCameraController } from "../components/FloatingCameraController";
 import { Stack } from "expo-router";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { SafeAreaProvider } from "react-native-safe-area-context";
@@ -62,7 +64,8 @@ export default function RootLayout() {
                 <Stack.Screen name="rejoin/[token]" options={{ animation: "none" }} />
                 <Stack.Screen name="event/[id]" options={{ animation: "none" }} />
               </Stack>
-              <FloatingCameraController />
+              <CameraSharingController />
+              {/* <FloatingCameraController /> */}
             </NameGate>
           </AppProvider>
         </SentryErrorBoundary>
