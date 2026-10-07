@@ -110,21 +110,20 @@ public final class MefieCameraSharingService extends Service {
       if(Build.VERSION.SDK_INT>=30&&!TextUtils.equals(savedVersion,currentVersion)){ resetBaseline(); lastGen=getPrefs().getLong(GENERATION,0); }
       boolean generation=Build.VERSION.SDK_INT>=30;
       String column=generation?MediaStore.Images.Media.GENERATION_ADDED:MediaStore.Images.Media._ID;
-      String[] projection={MediaStore.Images.Media._ID,MediaStore.Images.Media.DATE_ADDED,MediaStore.Images.Media.MIME_TYPE,
+      String[] projection={MediaStore.Images.Media._ID,MediaStore.Images.Media.MIME_TYPE,
         MediaStore.Images.Media.DISPLAY_NAME,MediaStore.Images.Media.SIZE,MediaStore.Images.Media.WIDTH,MediaStore.Images.Media.HEIGHT,
         MediaStore.Images.Media.BUCKET_DISPLAY_NAME,Build.VERSION.SDK_INT>=29?MediaStore.Images.Media.RELATIVE_PATH:MediaStore.Images.Media.DATA,column};
       long baseline=generation?lastGen:lastId;
       cursor=getContentResolver().query(MediaStore.Images.Media.EXTERNAL_CONTENT_URI,projection,column+" > ?",new String[]{String.valueOf(baseline)},column+" ASC");
       if(cursor==null)return;
-      int idI=cursor.getColumnIndexOrThrow(MediaStore.Images.Media._ID), dateI=cursor.getColumnIndexOrThrow(MediaStore.Images.Media.DATE_ADDED),
+      int idI=cursor.getColumnIndexOrThrow(MediaStore.Images.Media._ID),
         mimeI=cursor.getColumnIndexOrThrow(MediaStore.Images.Media.MIME_TYPE), nameI=cursor.getColumnIndexOrThrow(MediaStore.Images.Media.DISPLAY_NAME),
         sizeI=cursor.getColumnIndexOrThrow(MediaStore.Images.Media.SIZE), widthI=cursor.getColumnIndex(MediaStore.Images.Media.WIDTH),
         heightI=cursor.getColumnIndex(MediaStore.Images.Media.HEIGHT), bucketI=cursor.getColumnIndex(MediaStore.Images.Media.BUCKET_DISPLAY_NAME),
         pathI=cursor.getColumnIndex(Build.VERSION.SDK_INT>=29?MediaStore.Images.Media.RELATIVE_PATH:MediaStore.Images.Media.DATA);
-      long start=getPrefs().getLong(START_MS,System.currentTimeMillis()), goodGen=lastGen, goodId=lastId;
+      long goodGen=lastGen, goodId=lastId;
       while(cursor.moveToNext()){
         long id=cursor.getLong(idI), value=cursor.getLong(cursor.getColumnIndexOrThrow(column));
-        if(cursor.getLong(dateI)*1000L<start-5000L){ if(generation)goodGen=Math.max(goodGen,value);else goodId=Math.max(goodId,id); continue; }
         String mime=cursor.getString(mimeI), name=cursor.getString(nameI), bucket=cursor.getString(bucketI);
         String path=pathI>=0?cursor.getString(pathI):"";
         long size=cursor.getLong(sizeI);
