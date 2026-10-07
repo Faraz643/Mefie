@@ -14,6 +14,9 @@ import androidx.core.app.NotificationCompat;
 import java.io.*;
 import java.util.Locale;
 import java.util.UUID;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 public final class MefieCameraSharingService extends Service {
   public static final String ACTION_START="com.mefie.camerasharing.START";
@@ -35,6 +38,8 @@ public final class MefieCameraSharingService extends Service {
   private static final long MAX_SOURCE_BYTES=40L*1024L*1024L;
 
   private final Handler handler=new Handler(Looper.getMainLooper());
+  private final ExecutorService scanExecutor=Executors.newSingleThreadExecutor();
+  private final AtomicBoolean scanRunning=new AtomicBoolean(false);
   private ContentObserver observer;
   private Runnable scanRunnable;
 
@@ -98,7 +103,15 @@ public final class MefieCameraSharingService extends Service {
   private void scheduleScan(){
     if(!isActive(this)||isPaused(this)) return;
     if(scanRunnable!=null) handler.removeCallbacks(scanRunnable);
-    scanRunnable=this::scanForNewPhotos; handler.postDelayed(scanRunnable,DEBOUNCE_MS);
+    scanRunnable = () -> {
+      scanRunnable = null;
+      if (!scanRunning.compareAndSet(false, true)) return;
+      scanExecutor.execute(() -> {
+        try { scanForNewPhotos(); }
+        finally { scanRunning.set(false); }
+      });
+    };
+    handler.postDelayed(scanRunnable,DEBOUNCE_MS);
   }
 
   private void scanForNewPhotos(){
@@ -221,7 +234,11 @@ public final class MefieCameraSharingService extends Service {
   }
 
   private void stopSession(){unregisterObserver();getPrefs().edit().clear().apply();stopForeground(STOP_FOREGROUND_REMOVE);stopSelf();}
-  @Override public void onDestroy(){unregisterObserver();super.onDestroy();}
+  @Override public void onDestroy(){
+    unregisterObserver();
+    scanExecutor.shutdownNow();
+    super.onDestroy();
+  }
   @Nullable @Override public IBinder onBind(Intent intent){return null;}
 
   private android.content.SharedPreferences getPrefs(){return getSharedPreferences(PREFS,MODE_PRIVATE);}
