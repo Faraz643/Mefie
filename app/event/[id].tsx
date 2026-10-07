@@ -27,6 +27,7 @@ import { BackButton } from "../../components/Screen";
 import { IconButton } from "../../components/Glass";
 import { colors, shadows, typography } from "../../lib/theme";
 import { getParticipantId, getSessionId, supabase, useApp } from "../../lib/app-context";
+import { stopCameraSharing } from "../../lib/mefie-camera-sharing";
 import { attachSignedPhotoUrls } from "../../lib/photo-storage";
 import { getCachedEventDetail, getCachedEventDetailSync, setCachedEventDetail } from "../../lib/event-cache";
 
@@ -404,6 +405,7 @@ export default function EventScreen() {
                 );
                 if (leaveError) throw leaveError;
                 if (!data) throw new Error("You are not a participant in this event.");
+                await stopCameraSharing().catch(() => undefined);
                 setParticipantId(null);
                 router.replace("/events");
               } catch (e: any) {
