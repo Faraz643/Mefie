@@ -158,7 +158,7 @@ export async function handleMefiePhotoDetected(raw: unknown) {
     await FileSystem.deleteAsync(preparedUri, { idempotent: true }).catch(() => undefined);
     await FileSystem.deleteAsync(nativePhoto.uri, { idempotent: true }).catch(() => undefined);
     // Count only after the photo metadata and thumbnail have been finalized.
-    await incrementSharedPhotoCount().catch(() => undefined);
+    await incrementSharedPhotoCount(nativePhoto.eventId).catch(() => undefined);
   } catch (error) {
     await fallbackToQueue(nativePhoto).catch(() => undefined);
   }
