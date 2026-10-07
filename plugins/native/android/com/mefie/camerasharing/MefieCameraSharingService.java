@@ -173,8 +173,8 @@ public final class MefieCameraSharingService extends Service {
       .setStyle(new NotificationCompat.BigTextStyle().bigText((paused?"Sharing paused":"Sharing ON")+" · "+name+" · "+count+(count==1?" photo":" photos")))
       .setOngoing(true).setOnlyAlertOnce(true).setCategory(NotificationCompat.CATEGORY_SERVICE).setPriority(NotificationCompat.PRIORITY_LOW)
       .setColor(Color.rgb(105,229,138)).setContentIntent(openAppPendingIntent());
-    b.addAction(0,paused?"Resume":"Pause",actionPendingIntent(paused?ACTION_RESUME:ACTION_PAUSE,42019));
-    b.addAction(0,"Stop",actionPendingIntent(ACTION_STOP,42020)); return b.build();
+    b.addAction(paused?android.R.drawable.ic_media_play:android.R.drawable.ic_media_pause,paused?"Resume":"Pause",actionPendingIntent(paused?ACTION_RESUME:ACTION_PAUSE,42019));
+    b.addAction(android.R.drawable.ic_menu_close_clear_cancel,"Stop",actionPendingIntent(ACTION_STOP,42020)); return b.build();
   }
 
   private PendingIntent actionPendingIntent(String action,int code){
@@ -204,9 +204,9 @@ public final class MefieCameraSharingService extends Service {
     int flags=PendingIntent.FLAG_UPDATE_CURRENT;if(Build.VERSION.SDK_INT>=23)flags|=PendingIntent.FLAG_IMMUTABLE;
     if(launch!=null)b.setContentIntent(PendingIntent.getActivity(c,42018,launch,flags));
     Intent toggle=new Intent(c,MefieCameraSharingService.class).setAction(paused?ACTION_RESUME:ACTION_PAUSE);
-    b.addAction(0,paused?"Resume":"Pause",PendingIntent.getService(c,42019,toggle,flags));
+    b.addAction(paused?android.R.drawable.ic_media_play:android.R.drawable.ic_media_pause,paused?"Resume":"Pause",PendingIntent.getService(c,42019,toggle,flags));
     Intent stop=new Intent(c,MefieCameraSharingService.class).setAction(ACTION_STOP);
-    b.addAction(0,"Stop",PendingIntent.getService(c,42020,stop,flags)); return b.build();
+    b.addAction(android.R.drawable.ic_menu_close_clear_cancel,"Stop",PendingIntent.getService(c,42020,stop,flags)); return b.build();
   }
 
   private void createChannel(){
