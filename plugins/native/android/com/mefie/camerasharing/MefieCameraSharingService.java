@@ -179,7 +179,9 @@ public final class MefieCameraSharingService extends Service {
 
   private PendingIntent actionPendingIntent(String action,int code){
     Intent i=new Intent(this,MefieCameraSharingService.class).setAction(action); int flags=PendingIntent.FLAG_UPDATE_CURRENT;
-    if(Build.VERSION.SDK_INT>=23)flags|=PendingIntent.FLAG_IMMUTABLE; return PendingIntent.getService(this,code,i,flags);
+    if(Build.VERSION.SDK_INT>=23)flags|=PendingIntent.FLAG_IMMUTABLE; return Build.VERSION.SDK_INT >= Build.VERSION_CODES.O
+      ? PendingIntent.getForegroundService(this, code, i, flags)
+      : PendingIntent.getService(this, code, i, flags);
   }
   private PendingIntent openAppPendingIntent(){
     Intent i=getPackageManager().getLaunchIntentForPackage(getPackageName()); if(i==null)return null;
@@ -204,9 +206,13 @@ public final class MefieCameraSharingService extends Service {
     int flags=PendingIntent.FLAG_UPDATE_CURRENT;if(Build.VERSION.SDK_INT>=23)flags|=PendingIntent.FLAG_IMMUTABLE;
     if(launch!=null)b.setContentIntent(PendingIntent.getActivity(c,42018,launch,flags));
     Intent toggle=new Intent(c,MefieCameraSharingService.class).setAction(paused?ACTION_RESUME:ACTION_PAUSE);
-    b.addAction(paused?android.R.drawable.ic_media_play:android.R.drawable.ic_media_pause,paused?"Resume":"Pause",PendingIntent.getService(c,42019,toggle,flags));
+    b.addAction(paused?android.R.drawable.ic_media_play:android.R.drawable.ic_media_pause,paused?"Resume":"Pause",Build.VERSION.SDK_INT >= Build.VERSION_CODES.O
+      ? PendingIntent.getForegroundService(c,42019,toggle,flags)
+      : PendingIntent.getService(c,42019,toggle,flags));
     Intent stop=new Intent(c,MefieCameraSharingService.class).setAction(ACTION_STOP);
-    b.addAction(android.R.drawable.ic_menu_close_clear_cancel,"Stop",PendingIntent.getService(c,42020,stop,flags)); return b.build();
+    b.addAction(android.R.drawable.ic_menu_close_clear_cancel,"Stop",Build.VERSION.SDK_INT >= Build.VERSION_CODES.O
+      ? PendingIntent.getForegroundService(c,42020,stop,flags)
+      : PendingIntent.getService(c,42020,stop,flags)); return b.build();
   }
 
   private void createChannel(){
