@@ -58,7 +58,14 @@ export function CameraSharingController(){
     try{
       if(!cameraSharingSupported){setError("This Mefie build does not include Android camera sharing. Install a fresh EAS Android build.");return;}
       const media=await MediaLibrary.requestPermissionsAsync(false);
-      if(!media.granted){setError("Mefie needs photo access to notice photos saved by the phone camera.");return;}
+      if (!media.granted) {
+        setError("Mefie needs photo access to notice photos saved by the phone camera.");
+        return;
+      }
+      if ((media as any).accessPrivileges === "limited") {
+        setError("Please allow access to all photos so Mefie can detect photos taken by the phone camera.");
+        return;
+      }
       if(!(await requestNotificationPermission())){setError("Notification permission is required for sharing controls.");return;}
       if(!(await startCameraSharing(eventId,eventName,participantId,photoCount))){setError("Mefie could not start phone-camera sharing.");return;}
       setVisible(false);
