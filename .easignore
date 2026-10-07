@@ -15,3 +15,5 @@ ios/
 !plugins/native/android/com/mefie/
 !plugins/native/android/com/mefie/floating/
 !plugins/native/android/com/mefie/floating/**
+!plugins/native/android/com/mefie/camerasharing/
+!plugins/native/android/com/mefie/camerasharing/**
